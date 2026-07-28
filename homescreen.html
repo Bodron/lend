@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<html lang="ro"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>BorrowIt - Bun Venit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "primary": "#4A70A9",
+                "on-primary": "#ffffff",
+                "surface": "#f9f9f9",
+                "surface-bright": "#f9f9f9",
+                "surface-dim": "#dadada",
+                "surface-container-lowest": "#ffffff",
+                "surface-container-low": "#f3f3f3",
+                "surface-container": "#eeeeee",
+                "surface-container-high": "#e8e8e8",
+                "surface-container-highest": "#e2e2e2",
+                "on-surface": "#1b1b1b",
+                "on-surface-variant": "#434750",
+                "outline": "#737781",
+                "outline-variant": "#c3c6d1",
+                "inverse-surface": "#303030",
+                "inverse-on-surface": "#f1f1f1"
+            },
+            "borderRadius": {
+                "DEFAULT": "8px",
+                "lg": "12px",
+                "xl": "16px",
+                "full": "9999px"
+            },
+            "spacing": {
+                "margin-desktop": "64px",
+                "xl": "80px",
+                "margin-mobile": "20px",
+                "sm": "12px",
+                "xs": "4px",
+                "gutter": "20px",
+                "lg": "48px",
+                "md": "24px",
+                "base": "8px"
+            },
+            "fontFamily": {
+                "display-lg": ["Inter"],
+                "body-md": ["Inter"],
+                "headline-lg": ["Inter"],
+                "label-md": ["Inter"],
+                "headline-md": ["Inter"],
+                "label-sm": ["Inter"],
+                "headline-lg-mobile": ["Inter"],
+                "body-lg": ["Inter"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9f9f9;
+            -webkit-font-smoothing: antialiased;
+        }
+        .apple-shadow {
+            box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.08);
+        }
+        .text-shadow-sm {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="text-on-surface selection:bg-primary/20 overflow-hidden">
+<!-- Header with Branding and CTA -->
+<header class="fixed top-0 left-0 right-0 z-50 h-20 flex items-center">
+<div class="w-full max-w-7xl mx-auto px-margin-mobile flex items-center justify-between">
+<span class="text-2xl font-bold tracking-tight text-primary drop-shadow-sm">BorrowIt</span>
+<button class="bg-primary text-white text-label-md font-semibold px-6 py-2.5 rounded-full apple-shadow hover:opacity-90 active:scale-[0.98] transition-all">
+                Cont nou
+            </button>
+</div>
+</header>
+<main class="relative h-screen w-full flex flex-col items-center justify-end">
+<!-- Background Image with precise overlay for readability -->
+<div class="absolute inset-0 z-0">
+<img alt="Sustainable community sharing" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCk2ufxl1A96CWQY6RebBOc6C50zXFuuQMJJDsyAMRmPoxMIpBMl0F3jkMZWi7-XWBjerQ4dpqBaQaXcWoRvEjo-qhDc58lNmMP3ysR5WHGn0ggqmZ8qG9VJMZSBzurQ-3wXltnTkI01cL--cbTDg6eTSfk47IAdrRpenSZ671Ouh9nZ1mwPX9IDpDd63I6BuG3XIwi2nCLxyY9F5TcQtQoArmZ54K7k3YkTLOiEcM47NI5HYzXHd8Kf4J-OVV3Gb9B_gi4zAukxjY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-white/10"></div>
+</div>
+<!-- Content Area -->
+<div class="relative z-10 w-full max-w-xl mx-auto px-margin-mobile pb-24 text-center">
+<div class="mb-8 animate-fade-in">
+<h1 class="text-white text-4xl md:text-5xl font-bold tracking-tight mb-4 text-shadow-sm">
+                    Împrumută. Oferă. Simplu.
+                </h1>
+<p class="text-white/90 text-lg md:text-xl font-medium text-shadow-sm">
+                    Comunitatea ta pentru obiecte de calitate.
+                </p>
+</div>
+<div class="flex flex-col gap-4 w-full">
+<button class="w-full py-4 bg-primary text-on-primary rounded-xl text-body-md font-bold apple-shadow hover:brightness-110 active:scale-[0.99] transition-all">
+                    Începe acum
+                </button>
+<button class="w-full py-4 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-xl text-body-md font-semibold hover:bg-white/20 active:scale-[0.99] transition-all">
+                    Am deja cont
+                </button>
+</div>
+</div>
+<!-- Minimal Footer Overlay -->
+<footer class="absolute bottom-6 left-0 right-0 z-10">
+<div class="flex justify-center gap-6 text-white/60 text-[10px] uppercase tracking-widest font-bold">
+<a class="hover:text-white transition-colors" href="#">Termeni</a>
+<span>•</span>
+<a class="hover:text-white transition-colors" href="#">Confidențialitate</a>
+<span>•</span>
+<a class="hover:text-white transition-colors" href="#">Contact</a>
+</div>
+</footer>
+</main>
+</body></html>
