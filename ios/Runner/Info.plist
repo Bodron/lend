@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Lend Everything uses the camera so you can take photos or videos for your item listings.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Lend Everything uses your location to show nearby items and improve rental search results when this feature is enabled.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Lend Everything uses your photo library so you can choose photos or videos for your item listings.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
