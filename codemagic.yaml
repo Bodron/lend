@@ -24,7 +24,13 @@ workflows:
       - name: Set up iOS code signing
         script: xcode-project use-profiles
       - name: Build signed IPA
-        script: flutter build ipa --release --export-options-plist=$CM_EXPORT_OPTIONS_PLIST
+        script: |
+          APP_BUILD_BASE_URL="${APP_BASE_URL:-$APP_BASE_URL_DEV}"
+          if [ -z "$APP_BUILD_BASE_URL" ]; then
+            echo "APP_BASE_URL or APP_BASE_URL_DEV must be set in Codemagic environment."
+            exit 1
+          fi
+          flutter build ipa --release --export-options-plist=$CM_EXPORT_OPTIONS_PLIST --dart-define=APP_BASE_URL="$APP_BUILD_BASE_URL"
     artifacts:
       - build/ios/ipa/*.ipa
       - build/ios/archive/*.xcarchive

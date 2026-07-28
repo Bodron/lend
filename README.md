@@ -2,6 +2,33 @@
 
 A new Flutter project.
 
+## Run
+
+On Windows, use the interactive runner:
+
+```powershell
+.\run_lend.ps1
+```
+
+Choose `1` for the existing local API configuration or `2` for the dev API at
+`https://lend.bcmenu.ro/`.
+
+The runner reads `.env` when present:
+
+```env
+APP_BASE_URL_DEV=https://lend.bcmenu.ro
+APP_BASE_URL_LOCAL=
+```
+
+For Codemagic, set `APP_BASE_URL` or `APP_BASE_URL_DEV` in the workflow
+environment. The value is passed to Flutter with `--dart-define=APP_BASE_URL`.
+
+Extra Flutter arguments are forwarded, for example:
+
+```powershell
+.\run_lend.ps1 -d chrome
+```
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.

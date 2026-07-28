@@ -10,7 +10,13 @@ class AuthApi {
 
   final http.Client _client;
 
+  static const _configuredBaseUrl = String.fromEnvironment('APP_BASE_URL');
+
   static String get baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _normalizeBaseUrl(_configuredBaseUrl);
+    }
+
     if (kIsWeb) {
       return 'http://localhost:3000/api';
     }
@@ -20,6 +26,17 @@ class AuthApi {
     }
 
     return 'http://localhost:3000/api';
+  }
+
+  static String _normalizeBaseUrl(String value) {
+    final trimmed = value.trim();
+    final withoutTrailingSlash = trimmed.endsWith('/')
+        ? trimmed.substring(0, trimmed.length - 1)
+        : trimmed;
+
+    return withoutTrailingSlash.endsWith('/api')
+        ? withoutTrailingSlash
+        : '$withoutTrailingSlash/api';
   }
 
   Future<AuthSession> register({
