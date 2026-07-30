@@ -76,7 +76,7 @@ class _Header extends StatelessWidget {
         Text(
           strings.appName,
           style: const TextStyle(
-            color: HomeScreen._primary,
+            color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.w800,
             letterSpacing: 0,

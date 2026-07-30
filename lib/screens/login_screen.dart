@@ -10,7 +10,7 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   static const _primary = Color(0xFF4A70A9);
-  static const _background = Color(0xFFEFECE4);
+  static const _background = Color(0xFFF5F5F7);
   static const _text = Color(0xFF202124);
   static const _muted = Color(0xFF5F6673);
   static const _outline = Color(0xFFC3C9D6);
@@ -161,7 +161,7 @@ class _LoginHeader extends StatelessWidget {
           Text(
             strings.appName,
             style: const TextStyle(
-              color: LoginScreen._primary,
+              color: LoginScreen._text,
               fontSize: 24,
               fontWeight: FontWeight.w800,
             ),
@@ -179,7 +179,7 @@ class _LoginHeader extends StatelessWidget {
             ),
             child: const Icon(
               Icons.account_circle_outlined,
-              color: LoginScreen._primary,
+              color: LoginScreen._text,
               size: 28,
             ),
           ),
@@ -275,7 +275,7 @@ class _LoginCard extends StatelessWidget {
             child: TextButton(
               onPressed: () {},
               style: TextButton.styleFrom(
-                foregroundColor: LoginScreen._primary,
+                foregroundColor: LoginScreen._text,
                 minimumSize: Size.zero,
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -327,11 +327,17 @@ class _LoginCard extends StatelessWidget {
           const Row(
             children: [
               Expanded(
-                child: _SocialButton(icon: Icons.g_mobiledata, label: 'Google'),
+                child: _SocialButton(
+                  assetPath: 'assets/auth/google_g.png',
+                  label: 'Google',
+                ),
               ),
               SizedBox(width: 12),
               Expanded(
-                child: _SocialButton(icon: Icons.apple_rounded, label: 'Apple'),
+                child: _SocialButton(
+                  assetPath: 'assets/auth/apple_logo.png',
+                  label: 'Apple',
+                ),
               ),
             ],
           ),
@@ -460,9 +466,9 @@ class _DividerLabel extends StatelessWidget {
 }
 
 class _SocialButton extends StatelessWidget {
-  const _SocialButton({required this.icon, required this.label});
+  const _SocialButton({required this.assetPath, required this.label});
 
-  final IconData icon;
+  final String assetPath;
   final String label;
 
   @override
@@ -471,7 +477,12 @@ class _SocialButton extends StatelessWidget {
       height: 46,
       child: OutlinedButton.icon(
         onPressed: () {},
-        icon: Icon(icon, color: LoginScreen._text),
+        icon: Image.asset(
+          assetPath,
+          width: 18,
+          height: 18,
+          fit: BoxFit.contain,
+        ),
         label: Text(
           label,
           overflow: TextOverflow.ellipsis,
@@ -517,7 +528,7 @@ class _CreateAccountPrompt extends StatelessWidget {
             );
           },
           style: TextButton.styleFrom(
-            foregroundColor: LoginScreen._primary,
+            foregroundColor: LoginScreen._text,
             minimumSize: Size.zero,
             padding: EdgeInsets.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -551,7 +562,7 @@ class _TrustBadge extends StatelessWidget {
             const Icon(
               Icons.shield_rounded,
               size: 18,
-              color: LoginScreen._primary,
+              color: LoginScreen._text,
             ),
             const SizedBox(width: 9),
             Flexible(
@@ -562,7 +573,7 @@ class _TrustBadge extends StatelessWidget {
                 ),
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: LoginScreen._primary,
+                  color: LoginScreen._text,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),

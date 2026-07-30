@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../widgets/lend_bottom_navigation.dart';
+import 'add_listing_screen.dart';
 import 'main_shell.dart';
 
 class ReturnQrScreen extends StatelessWidget {
@@ -19,7 +20,7 @@ class ReturnQrScreen extends StatelessWidget {
   static const _primary = Color(0xFF30578F);
   static const _secondary = Color(0xFF446085);
   static const _secondaryContainer = Color(0xFFB7D3FE);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _surface = Color(0xFFF9F9F9);
   static const _surfaceLow = Color(0xFFF3F3F3);
   static const _text = Color(0xFF1B1B1B);
@@ -79,6 +80,13 @@ class ReturnQrScreen extends StatelessWidget {
               alignment: Alignment.bottomCenter,
               child: LendBottomNavigation(
                 currentIndex: 2,
+                onAddListing: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AddListingScreen(),
+                    ),
+                  );
+                },
                 onSelected: (index) {
                   if (index == 0) {
                     Navigator.of(context).pushAndRemoveUntil(
@@ -142,7 +150,7 @@ class _ReturnTopBar extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.close_rounded),
-            color: ReturnQrScreen._primary,
+            color: ReturnQrScreen._text,
           ),
           Expanded(
             child: Text(
@@ -152,7 +160,7 @@ class _ReturnTopBar extends StatelessWidget {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: ReturnQrScreen._primary,
+                color: ReturnQrScreen._text,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
@@ -195,7 +203,7 @@ class _ReturnStatusBadge extends StatelessWidget {
                   context,
                 ).choose('Retur in curs', 'Return in progress'),
                 style: const TextStyle(
-                  color: Color(0xFF3F5B80),
+                  color: ReturnQrScreen._text,
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
@@ -336,7 +344,7 @@ class _QrShell extends StatelessWidget {
           ),
           child: const Icon(
             Icons.qr_code_2_rounded,
-            color: ReturnQrScreen._primary,
+            color: ReturnQrScreen._text,
             size: 32,
           ),
         ),

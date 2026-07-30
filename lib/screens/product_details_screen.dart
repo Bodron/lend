@@ -104,7 +104,7 @@ class _DetailsTopBar extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.arrow_back_rounded),
-            color: _ProductDetailsScreenState._primary,
+            color: _ProductDetailsScreenState._text,
           ),
           const SizedBox(width: 4),
           Expanded(
@@ -114,7 +114,7 @@ class _DetailsTopBar extends StatelessWidget {
               ).choose('Detalii produs', 'Product details'),
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: _ProductDetailsScreenState._primary,
+                color: _ProductDetailsScreenState._text,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -123,12 +123,12 @@ class _DetailsTopBar extends StatelessWidget {
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.ios_share_rounded),
-            color: _ProductDetailsScreenState._primary,
+            color: _ProductDetailsScreenState._text,
           ),
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.favorite_border_rounded),
-            color: _ProductDetailsScreenState._primary,
+            color: _ProductDetailsScreenState._text,
           ),
         ],
       ),
@@ -337,7 +337,7 @@ class _StatusBadges extends StatelessWidget {
           label: AppLocalizations.of(
             context,
           ).choose('Asigurare inclusa', 'Insurance included'),
-          color: _ProductDetailsScreenState._primary,
+          color: _ProductDetailsScreenState._text,
         ),
         _StatusBadge(
           icon: Icons.check_circle_outline_rounded,
@@ -574,7 +574,7 @@ class _SpecCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: _ProductDetailsScreenState._primary),
+            Icon(icon, color: _ProductDetailsScreenState._text),
             const Spacer(),
             Text(
               label,
@@ -621,7 +621,7 @@ class _ReviewsSection extends StatelessWidget {
             TextButton(
               onPressed: () {},
               style: TextButton.styleFrom(
-                foregroundColor: _ProductDetailsScreenState._primary,
+                foregroundColor: _ProductDetailsScreenState._text,
               ),
               child: Text(
                 AppLocalizations.of(context).choose('Vezi toate', 'See all'),
@@ -643,7 +643,7 @@ class _ReviewsSection extends StatelessWidget {
                   children: [
                     const CircleAvatar(
                       backgroundColor: Color(0xFFB7D3FE),
-                      foregroundColor: Color(0xFF3F5B80),
+                      foregroundColor: _ProductDetailsScreenState._text,
                       child: Text('M'),
                     ),
                     const SizedBox(width: 12),
@@ -674,7 +674,7 @@ class _ReviewsSection extends StatelessWidget {
                     Text(
                       product.ratingLabel,
                       style: const TextStyle(
-                        color: _ProductDetailsScreenState._primary,
+                        color: _ProductDetailsScreenState._text,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -749,7 +749,7 @@ class _OwnerCard extends StatelessWidget {
                       bottom: 0,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: _ProductDetailsScreenState._primary,
+                          color: _ProductDetailsScreenState._text,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -843,9 +843,9 @@ class _OwnerCard extends StatelessWidget {
               child: OutlinedButton(
                 onPressed: () {},
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: _ProductDetailsScreenState._primary,
+                  foregroundColor: _ProductDetailsScreenState._text,
                   side: const BorderSide(
-                    color: _ProductDetailsScreenState._primary,
+                    color: _ProductDetailsScreenState._text,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1060,7 +1060,7 @@ class _OwnerStat extends StatelessWidget {
         Text(
           value,
           style: const TextStyle(
-            color: _ProductDetailsScreenState._primary,
+            color: _ProductDetailsScreenState._text,
             fontSize: 18,
             fontWeight: FontWeight.w800,
           ),

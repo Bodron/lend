@@ -26,7 +26,6 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  static const _primary = Color(0xFF30578F);
   static const _primaryContainer = Color(0xFF4A70A9);
   static const _secondary = Color(0xFF446085);
   static const _background = Color(0xFFF9F9F9);
@@ -170,7 +169,7 @@ class _CartTopBar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: _CartScreenState._primary,
+                color: _CartScreenState._text,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -435,14 +434,14 @@ class _CartItemDetails extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.calendar_today_rounded,
-                    color: _CartScreenState._primary,
+                    color: _CartScreenState._text,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '${_formatShortDate(startDate)} - ${_formatShortDate(endDate)}',
                     style: const TextStyle(
-                      color: _CartScreenState._primary,
+                      color: _CartScreenState._text,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -458,7 +457,7 @@ class _CartItemDetails extends StatelessWidget {
               child: Text(
                 '${product.pricePerDay} RON',
                 style: const TextStyle(
-                  color: _CartScreenState._primary,
+                  color: _CartScreenState._text,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                 ),
@@ -472,7 +471,7 @@ class _CartItemDetails extends StatelessWidget {
                   context,
                 ).choose('$rentalDays zile', '$rentalDays days'),
                 style: const TextStyle(
-                  color: _CartScreenState._primary,
+                  color: _CartScreenState._text,
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                 ),
@@ -618,7 +617,7 @@ class _OrderSummaryCard extends StatelessWidget {
                     Text(
                       '$total.00 RON',
                       style: const TextStyle(
-                        color: _CartScreenState._primary,
+                        color: _CartScreenState._text,
                         fontSize: 32,
                         height: 1.1,
                         fontWeight: FontWeight.w900,

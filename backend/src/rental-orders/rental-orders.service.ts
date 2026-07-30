@@ -74,6 +74,7 @@ export class RentalOrdersService {
         categorySlug: product.categorySlug,
         city: product.city,
         ownerName: product.ownerName,
+        imageKey: image?.key,
         imageUrl: image?.key
           ? await this.s3StorageService.getReadableUrl(image.key)
           : image?.url,
@@ -91,10 +92,28 @@ export class RentalOrdersService {
   }
 
   async findMine(renterId: string): Promise<RentalOrderDocument[]> {
-    return this.rentalOrderModel
+    const orders = await this.rentalOrderModel
       .find({ renterId })
       .sort({ createdAt: -1 })
       .exec();
+
+    await Promise.all(
+      orders.map(async (order) => {
+        let imageKey = order.productSnapshot.imageKey;
+
+        if (!imageKey) {
+          const product = await this.productModel.findById(order.productId).exec();
+          imageKey = product?.images[0]?.key;
+        }
+
+        if (imageKey) {
+          order.productSnapshot.imageUrl =
+            await this.s3StorageService.getReadableUrl(imageKey);
+        }
+      }),
+    );
+
+    return orders;
   }
 
   async updateStatus(

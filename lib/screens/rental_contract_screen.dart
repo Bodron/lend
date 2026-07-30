@@ -33,7 +33,7 @@ class RentalContractScreen extends StatefulWidget {
 class _RentalContractScreenState extends State<RentalContractScreen> {
   static const _primary = Color(0xFF30578F);
   static const _secondary = Color(0xFF446085);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _surface = Color(0xFFF9F9F9);
   static const _surfaceContainer = Color(0xFFEEEEEE);
   static const _text = Color(0xFF1B1B1B);
@@ -46,6 +46,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
   final _rentalOrdersApi = RentalOrdersApi();
   final List<Offset?> _signaturePoints = [];
+  bool _isSigning = false;
   bool _submitting = false;
 
   void _addPoint(Offset point) {
@@ -62,6 +63,16 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
   void _clearSignature() {
     setState(_signaturePoints.clear);
+  }
+
+  void _setSigning(bool value) {
+    if (_isSigning == value) {
+      return;
+    }
+
+    setState(() {
+      _isSigning = value;
+    });
   }
 
   Future<void> _submitOrder() async {
@@ -127,6 +138,9 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         child: Stack(
           children: [
             CustomScrollView(
+              physics: _isSigning
+                  ? const NeverScrollableScrollPhysics()
+                  : const BouncingScrollPhysics(),
               slivers: [
                 const SliverToBoxAdapter(child: _ContractTopBar()),
                 SliverPadding(
@@ -153,6 +167,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
                                   onPoint: _addPoint,
                                   onStrokeEnd: _endStroke,
                                   onClear: _clearSignature,
+                                  onSigningChanged: _setSigning,
                                 ),
                               ],
                             );
@@ -173,6 +188,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
                                   onPoint: _addPoint,
                                   onStrokeEnd: _endStroke,
                                   onClear: _clearSignature,
+                                  onSigningChanged: _setSigning,
                                 ),
                               ),
                             ],
@@ -222,7 +238,7 @@ class _ContractTopBar extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.arrow_back_rounded),
-            color: _RentalContractScreenState._muted,
+            color: _RentalContractScreenState._text,
           ),
           Expanded(
             child: Text(
@@ -232,7 +248,7 @@ class _ContractTopBar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: _RentalContractScreenState._primary,
+                color: _RentalContractScreenState._text,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -301,7 +317,7 @@ class _LegalDocumentCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.verified_user_outlined,
-                          color: _RentalContractScreenState._primary,
+                          color: _RentalContractScreenState._text,
                           size: 16,
                         ),
                         const SizedBox(width: 4),
@@ -311,7 +327,7 @@ class _LegalDocumentCard extends StatelessWidget {
                             'Secured by BorrowIt',
                           ),
                           style: const TextStyle(
-                            color: _RentalContractScreenState._primary,
+                            color: _RentalContractScreenState._text,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
                           ),
@@ -341,7 +357,7 @@ class _LegalDocumentCard extends StatelessWidget {
                     const SizedBox(height: 24),
                     _HighlightedLegalSection(
                       icon: Icons.gavel_rounded,
-                      color: _RentalContractScreenState._primary,
+                      color: _RentalContractScreenState._text,
                       title: AppLocalizations.of(
                         context,
                       ).choose('Responsabilitate', 'Responsibility'),
@@ -398,7 +414,7 @@ class _LegalSection extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            color: _RentalContractScreenState._primary,
+            color: _RentalContractScreenState._text,
             fontSize: 22,
             fontWeight: FontWeight.w800,
           ),
@@ -534,7 +550,7 @@ class _OwnerSignatureCard extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.check_circle_rounded,
-                      color: _RentalContractScreenState._primary,
+                      color: _RentalContractScreenState._text,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
@@ -543,7 +559,7 @@ class _OwnerSignatureCard extends StatelessWidget {
                         context,
                       ).choose('Identitate verificata', 'Verified identity'),
                       style: const TextStyle(
-                        color: _RentalContractScreenState._primary,
+                        color: _RentalContractScreenState._text,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -565,12 +581,14 @@ class _TenantSignatureCard extends StatelessWidget {
     required this.onPoint,
     required this.onStrokeEnd,
     required this.onClear,
+    required this.onSigningChanged,
   });
 
   final List<Offset?> points;
   final ValueChanged<Offset> onPoint;
   final VoidCallback onStrokeEnd;
   final VoidCallback onClear;
+  final ValueChanged<bool> onSigningChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -598,11 +616,22 @@ class _TenantSignatureCard extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             SizedBox(
-              height: 112,
-              child: GestureDetector(
-                onPanStart: (details) => onPoint(details.localPosition),
-                onPanUpdate: (details) => onPoint(details.localPosition),
-                onPanEnd: (_) => onStrokeEnd(),
+              height: 150,
+              child: Listener(
+                behavior: HitTestBehavior.opaque,
+                onPointerDown: (event) {
+                  onSigningChanged(true);
+                  onPoint(event.localPosition);
+                },
+                onPointerMove: (event) => onPoint(event.localPosition),
+                onPointerUp: (_) {
+                  onStrokeEnd();
+                  onSigningChanged(false);
+                },
+                onPointerCancel: (_) {
+                  onStrokeEnd();
+                  onSigningChanged(false);
+                },
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: CustomPaint(
@@ -777,7 +806,6 @@ class _PricingBar extends StatelessWidget {
                   context,
                 ).choose('Pret total', 'Total price'),
                 value: '$total RON',
-                dark: true,
               ),
             ],
           );
@@ -844,12 +872,10 @@ class _TotalMetric extends StatelessWidget {
   const _TotalMetric({
     required this.label,
     required this.value,
-    this.dark = false,
   });
 
   final String label;
   final String value;
-  final bool dark;
 
   @override
   Widget build(BuildContext context) {
@@ -874,9 +900,7 @@ class _TotalMetric extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: dark
-                  ? _RentalContractScreenState._text
-                  : _RentalContractScreenState._primary,
+              color: _RentalContractScreenState._text,
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),

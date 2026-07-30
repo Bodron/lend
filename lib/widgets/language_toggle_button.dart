@@ -12,7 +12,7 @@ class LanguageToggleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
     final controller = AppLanguageScope.of(context);
-    final foreground = dark ? Colors.white : const Color(0xFF30578F);
+    final foreground = dark ? Colors.white : const Color(0xFF1B1B1B);
     final background = dark
         ? Colors.white.withValues(alpha: 0.12)
         : Colors.white.withValues(alpha: 0.86);

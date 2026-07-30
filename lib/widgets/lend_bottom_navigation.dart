@@ -7,10 +7,12 @@ class LendBottomNavigation extends StatelessWidget {
     super.key,
     required this.currentIndex,
     required this.onSelected,
+    required this.onAddListing,
   });
 
   final int currentIndex;
   final ValueChanged<int> onSelected;
+  final VoidCallback onAddListing;
 
   @override
   Widget build(BuildContext context) {
@@ -35,22 +37,55 @@ class LendBottomNavigation extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final selectedIndex = currentIndex.clamp(0, items.length - 1);
-              final itemWidth = constraints.maxWidth / items.length;
+              final itemWidth = constraints.maxWidth / 5;
 
               return Stack(
+                clipBehavior: Clip.none,
                 children: [
                   Positioned.fill(
                     child: Row(
                       children: [
-                        for (var index = 0; index < items.length; index++)
-                          Expanded(
-                            child: _LendNavigationButton(
-                              item: items[index],
-                              selected: selectedIndex == index,
-                              onPressed: () => onSelected(index),
-                            ),
+                        Expanded(
+                          child: _LendNavigationButton(
+                            item: items[0],
+                            selected: selectedIndex == 0,
+                            onPressed: () => onSelected(0),
                           ),
+                        ),
+                        Expanded(
+                          child: _LendNavigationButton(
+                            item: items[1],
+                            selected: selectedIndex == 1,
+                            onPressed: () => onSelected(1),
+                          ),
+                        ),
+                        SizedBox(width: itemWidth),
+                        Expanded(
+                          child: _LendNavigationButton(
+                            item: items[2],
+                            selected: selectedIndex == 2,
+                            onPressed: () => onSelected(2),
+                          ),
+                        ),
+                        Expanded(
+                          child: _LendNavigationButton(
+                            item: items[3],
+                            selected: selectedIndex == 3,
+                            onPressed: () => onSelected(3),
+                          ),
+                        ),
                       ],
+                    ),
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    top: -8,
+                    child: Center(
+                      child: _AddListingNavigationButton(
+                        onPressed: onAddListing,
+                        label: strings.choose('Adauga anunt', 'Add listing'),
+                      ),
                     ),
                   ),
                   Positioned(
@@ -63,7 +98,7 @@ class LendBottomNavigation extends StatelessWidget {
                         duration: const Duration(milliseconds: 380),
                         curve: Curves.easeInOutCubicEmphasized,
                         alignment: Alignment(
-                          _indicatorAlignment(selectedIndex, items.length),
+                          _indicatorAlignment(selectedIndex),
                           0,
                         ),
                         child: SizedBox(
@@ -82,12 +117,13 @@ class LendBottomNavigation extends StatelessWidget {
     );
   }
 
-  double _indicatorAlignment(int selectedIndex, int itemCount) {
-    if (itemCount <= 1) {
-      return 0;
-    }
-
-    return -1 + (2 * selectedIndex / (itemCount - 1));
+  double _indicatorAlignment(int selectedIndex) {
+    return switch (selectedIndex) {
+      0 => -1,
+      1 => -0.5,
+      2 => 0.5,
+      _ => 1,
+    };
   }
 }
 
@@ -179,6 +215,38 @@ class _SlidingIndicator extends StatelessWidget {
         ],
       ),
       child: const SizedBox(width: 54, height: 3),
+    );
+  }
+}
+
+class _AddListingNavigationButton extends StatelessWidget {
+  const _AddListingNavigationButton({
+    required this.onPressed,
+    required this.label,
+  });
+
+  final VoidCallback onPressed;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(999),
+          splashColor: Colors.white.withValues(alpha: 0.08),
+          highlightColor: Colors.white.withValues(alpha: 0.05),
+          child: const SizedBox(
+            width: 64,
+            height: 64,
+            child: Icon(Icons.add_rounded, color: Colors.white, size: 42),
+          ),
+        ),
+      ),
     );
   }
 }

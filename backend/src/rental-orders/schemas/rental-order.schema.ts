@@ -19,6 +19,7 @@ export type RentalProductSnapshot = {
   categorySlug: string;
   city: string;
   ownerName: string;
+  imageKey?: string;
   imageUrl?: string;
 };
 
@@ -38,6 +39,7 @@ export class RentalOrder {
       categorySlug: { type: String, required: true },
       city: { type: String, required: true },
       ownerName: { type: String, required: true },
+      imageKey: { type: String },
       imageUrl: { type: String },
     },
     required: true,

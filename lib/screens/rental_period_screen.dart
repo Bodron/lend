@@ -16,7 +16,7 @@ class RentalPeriodScreen extends StatefulWidget {
 class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   static const _primary = Color(0xFF30578F);
   static const _secondary = Color(0xFF446085);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _surface = Color(0xFFF9F9F9);
   static const _surfaceHighest = Color(0xFFE2E2E2);
   static const _text = Color(0xFF1B1B1B);
@@ -201,7 +201,7 @@ class _PeriodTopBar extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.arrow_back_rounded),
-            color: _RentalPeriodScreenState._primary,
+            color: _RentalPeriodScreenState._text,
           ),
           const SizedBox(width: 4),
           Expanded(
@@ -212,7 +212,7 @@ class _PeriodTopBar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: _RentalPeriodScreenState._primary,
+                color: _RentalPeriodScreenState._text,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -262,7 +262,7 @@ class _ProductContextCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: _RentalPeriodScreenState._primary,
+                      color: _RentalPeriodScreenState._text,
                       fontSize: 14,
                       height: 1.35,
                       fontWeight: FontWeight.w800,
@@ -455,7 +455,7 @@ class _DayCell extends StatelessWidget {
     } else if (unavailable) {
       textColor = const Color(0x66737781);
     } else if (inRange) {
-      textColor = const Color(0xFF1C477D);
+      textColor = _RentalPeriodScreenState._text;
       background = _RentalPeriodScreenState._primaryFixed;
     }
 
@@ -598,7 +598,7 @@ class _SummaryCard extends StatelessWidget {
               label.toUpperCase(),
               style: TextStyle(
                 color: highlighted
-                    ? _RentalPeriodScreenState._primary
+                    ? _RentalPeriodScreenState._text
                     : const Color(0xFF737781),
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
@@ -608,7 +608,7 @@ class _SummaryCard extends StatelessWidget {
             Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: _RentalPeriodScreenState._primary),
+                  Icon(icon, color: _RentalPeriodScreenState._text),
                   const SizedBox(width: 12),
                 ],
                 Expanded(
@@ -618,7 +618,7 @@ class _SummaryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: highlighted
-                          ? _RentalPeriodScreenState._primary
+                          ? _RentalPeriodScreenState._text
                           : _RentalPeriodScreenState._text,
                       fontSize: highlighted ? 24 : 14,
                       fontWeight: FontWeight.w800,
@@ -652,7 +652,7 @@ class _TrustInfoCard extends StatelessWidget {
             const CircleAvatar(
               radius: 20,
               backgroundColor: Color(0xFFB7D3FE),
-              foregroundColor: Color(0xFF3F5B80),
+              foregroundColor: _RentalPeriodScreenState._text,
               child: Icon(Icons.shield_rounded),
             ),
             const SizedBox(width: 24),

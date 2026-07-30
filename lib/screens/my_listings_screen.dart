@@ -24,8 +24,7 @@ class MyListingsScreen extends StatefulWidget {
 
 class _MyListingsScreenState extends State<MyListingsScreen> {
   static const _primary = Color(0xFF30578F);
-  static const _primaryContainer = Color(0xFF4A70A9);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
   static const _outlineVariant = Color(0xFFC3C6D1);
@@ -109,25 +108,13 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             ),
           ],
         ),
-        Positioned(
-          right: 24,
-          bottom: widget.showChrome ? 116 : 24,
-          child: _AddListingButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const AddListingScreen(),
-                ),
-              );
-            },
-          ),
-        ),
         if (widget.showChrome)
           Align(
             alignment: Alignment.bottomCenter,
             child: LendBottomNavigation(
               currentIndex: 1,
               onSelected: _handleNavigation,
+              onAddListing: _openAddListing,
             ),
           ),
       ],
@@ -164,6 +151,12 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         MaterialPageRoute<void>(builder: (_) => const ProfileScreen()),
       );
     }
+  }
+
+  void _openAddListing() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
   }
 }
 
@@ -290,7 +283,7 @@ class _StatCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   const Icon(
                     Icons.star_rounded,
-                    color: _MyListingsScreenState._primary,
+                    color: _MyListingsScreenState._text,
                     size: 18,
                   ),
                 ],
@@ -390,7 +383,7 @@ class _ListingCard extends StatelessWidget {
                     Text(
                       item.pricePerDayLabel,
                       style: const TextStyle(
-                        color: _MyListingsScreenState._primary,
+                        color: _MyListingsScreenState._text,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -550,7 +543,7 @@ class _ListingsLoading extends StatelessWidget {
       height: 260,
       child: Center(
         child: CircularProgressIndicator(
-          color: _MyListingsScreenState._primary,
+          color: _MyListingsScreenState._text,
         ),
       ),
     );
@@ -623,7 +616,7 @@ class _MessagePanel extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(icon, size: 42, color: _MyListingsScreenState._primary),
+            Icon(icon, size: 42, color: _MyListingsScreenState._text),
             const SizedBox(height: 12),
             Text(
               title,
@@ -658,27 +651,6 @@ class _MessagePanel extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _AddListingButton extends StatelessWidget {
-  const _AddListingButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FloatingActionButton.extended(
-      onPressed: onPressed,
-      backgroundColor: _MyListingsScreenState._primaryContainer,
-      foregroundColor: Colors.white,
-      elevation: 8,
-      icon: const Icon(Icons.add_rounded),
-      label: Text(
-        AppLocalizations.of(context).choose('Adauga anunt', 'Add listing'),
-        style: const TextStyle(fontWeight: FontWeight.w800),
       ),
     );
   }

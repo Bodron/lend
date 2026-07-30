@@ -7,6 +7,7 @@ import '../services/products_api.dart';
 import '../widgets/product_media_preview.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
+import 'add_listing_screen.dart';
 import 'my_listings_screen.dart';
 import 'product_details_screen.dart';
 import 'profile_screen.dart';
@@ -24,7 +25,7 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   static const _primary = Color(0xFF30578F);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
 
@@ -44,7 +45,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     final content = RefreshIndicator(
-      color: _primary,
+      color: _text,
       onRefresh: () async {
         setState(() {
           _exploreFuture = _loadExploreData();
@@ -141,6 +142,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   child: LendBottomNavigation(
                     currentIndex: _selectedNavIndex,
                     onSelected: _handleNavigation,
+                    onAddListing: _openAddListing,
                   ),
                 ),
               ],
@@ -181,6 +183,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
     setState(() {
       _selectedNavIndex = index;
     });
+  }
+
+  void _openAddListing() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
   }
 
   void _reloadProducts() {
@@ -268,7 +276,7 @@ class _ExploreHeader extends StatelessWidget {
               ),
             ),
             Material(
-              color: _ExploreScreenState._primary,
+              color: _ExploreScreenState._text,
               shape: const CircleBorder(),
               elevation: 8,
               shadowColor: Colors.black26,
@@ -300,7 +308,7 @@ class _ExploreHeader extends StatelessWidget {
                   0xFF446085,
                 ).withValues(alpha: 0.15),
                 labelStyle: TextStyle(
-                  color: selected ? Colors.white : _ExploreScreenState._primary,
+                  color: selected ? Colors.white : _ExploreScreenState._text,
                   fontWeight: FontWeight.w700,
                 ),
                 side: BorderSide.none,
@@ -433,7 +441,7 @@ class _SectionHeader extends StatelessWidget {
         TextButton(
           onPressed: onAction,
           style: TextButton.styleFrom(
-            foregroundColor: _ExploreScreenState._primary,
+            foregroundColor: _ExploreScreenState._text,
             minimumSize: Size.zero,
             padding: EdgeInsets.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -597,7 +605,7 @@ class _NearbyCard extends StatelessWidget {
                         child: Text(
                           product.pricePerDayLabel,
                           style: const TextStyle(
-                            color: _ExploreScreenState._primary,
+                            color: _ExploreScreenState._text,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -654,7 +662,7 @@ class _Badge extends StatelessWidget {
         child: Text(
           text,
           style: const TextStyle(
-            color: _ExploreScreenState._primary,
+            color: _ExploreScreenState._text,
             fontSize: 12,
             fontWeight: FontWeight.w800,
           ),
@@ -717,7 +725,7 @@ class _PriceText extends StatelessWidget {
         ],
       ),
       style: const TextStyle(
-        color: _ExploreScreenState._primary,
+        color: _ExploreScreenState._text,
         fontSize: 16,
         fontWeight: FontWeight.w800,
       ),
@@ -733,7 +741,7 @@ class _ProductsLoadingState extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.fromLTRB(20, 40, 20, 116),
       child: Center(
-        child: CircularProgressIndicator(color: _ExploreScreenState._primary),
+        child: CircularProgressIndicator(color: _ExploreScreenState._text),
       ),
     );
   }

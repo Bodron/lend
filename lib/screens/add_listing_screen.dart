@@ -389,6 +389,7 @@ class _AddListingTopBar extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.arrow_back_rounded),
+            color: _AddListingScreenState._text,
           ),
           Expanded(
             child: Text(
@@ -398,7 +399,7 @@ class _AddListingTopBar extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: _AddListingScreenState._primary,
+                color: _AddListingScreenState._text,
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
@@ -434,14 +435,14 @@ class _SecurePill extends StatelessWidget {
           children: [
             const Icon(
               Icons.verified_user_rounded,
-              color: _AddListingScreenState._primary,
+              color: _AddListingScreenState._text,
               size: 18,
             ),
             const SizedBox(width: 5),
             Text(
               label,
               style: const TextStyle(
-                color: _AddListingScreenState._primary,
+                color: _AddListingScreenState._text,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -573,7 +574,7 @@ class _PhotosSection extends StatelessWidget {
                         backgroundColor: _AddListingScreenState._primaryFixed,
                         child: Icon(
                           Icons.camera_enhance_rounded,
-                          color: _AddListingScreenState._primary,
+                          color: _AddListingScreenState._text,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -828,7 +829,7 @@ class _VideoFallbackPreview extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: _AddListingScreenState._primary,
+                    color: _AddListingScreenState._text,
                     fontSize: 12,
                     height: 1.2,
                     fontWeight: FontWeight.w800,
@@ -862,14 +863,14 @@ class _VideoBadge extends StatelessWidget {
           children: [
             Icon(
               Icons.videocam_rounded,
-              color: _AddListingScreenState._primary,
+              color: _AddListingScreenState._text,
               size: 14,
             ),
             SizedBox(width: 4),
             Text(
               'VIDEO',
               style: TextStyle(
-                color: _AddListingScreenState._primary,
+                color: _AddListingScreenState._text,
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
               ),
@@ -902,7 +903,7 @@ class _PlayOverlay extends StatelessWidget {
       ),
       child: const Icon(
         Icons.play_arrow_rounded,
-        color: _AddListingScreenState._primary,
+        color: _AddListingScreenState._text,
         size: 34,
       ),
     );
@@ -1070,7 +1071,7 @@ class _SuggestionChip extends StatelessWidget {
           children: [
             const Icon(
               Icons.lightbulb_outline_rounded,
-              color: _AddListingScreenState._primary,
+              color: _AddListingScreenState._text,
               size: 20,
             ),
             const SizedBox(width: 8),
@@ -1081,7 +1082,7 @@ class _SuggestionChip extends StatelessWidget {
                   'Users often prefer a lower price for rentals longer than 3 days.',
                 ),
                 style: const TextStyle(
-                  color: _AddListingScreenState._primary,
+                  color: _AddListingScreenState._text,
                   fontSize: 12,
                   height: 1.35,
                   fontWeight: FontWeight.w700,
@@ -1158,7 +1159,7 @@ class _TitledFormSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, color: _AddListingScreenState._primary),
+            Icon(icon, color: _AddListingScreenState._text),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -1456,7 +1457,7 @@ InputDecoration _inputDecoration(String hint) {
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: const BorderSide(
-        color: _AddListingScreenState._primary,
+        color: _AddListingScreenState._text,
         width: 1.4,
       ),
     ),

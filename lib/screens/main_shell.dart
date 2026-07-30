@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
+import 'add_listing_screen.dart';
 import 'explore_screen.dart';
 import 'my_listings_screen.dart';
 import 'profile_screen.dart';
@@ -19,7 +20,7 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _avatarUrl =
       'https://lh3.googleusercontent.com/aida-public/AB6AXuAjckt39yhGH_YNEWoUmbXYYMQMctYpenv4ao2wyvCqeIUeKvR_KLOZ2ICz2VXNFVBoWxN3Tk3Y95Eg_PbtaBhRH8vX_vZ4HtStk-hQiK-xTgYACenslrsS991egJa7dNNA21VSeZYxwr6eC9bd1mcpjvb13V7JeJ9DH2YWlHFFMYoGLdsewDMPaYY36MgZ-5ctsmYioywxLYl5q_-pxR5zE3v4A_fnVaDTGQCU2CLBpYxMQ9xhXdfKEtFQuchnrja44C5pVFpxxII';
 
@@ -33,6 +34,12 @@ class _MainShellState extends State<MainShell> {
     setState(() {
       _currentIndex = index;
     });
+  }
+
+  void _openAddListing() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
   }
 
   @override
@@ -91,6 +98,7 @@ class _MainShellState extends State<MainShell> {
                   child: LendBottomNavigation(
                     currentIndex: _currentIndex,
                     onSelected: _selectTab,
+                    onAddListing: _openAddListing,
                   ),
                 ),
               ],

@@ -15,7 +15,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   static const _primary = Color(0xFF30578F);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _surfaceLow = Color(0xFFF3F3F3);
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
@@ -218,7 +218,7 @@ class _RegisterHeader extends StatelessWidget {
           Text(
             strings.appName,
             style: const TextStyle(
-              color: _RegisterScreenState._primary,
+              color: _RegisterScreenState._text,
               fontSize: 24,
               fontWeight: FontWeight.w800,
             ),
@@ -229,7 +229,7 @@ class _RegisterHeader extends StatelessWidget {
           TextButton(
             onPressed: () {},
             style: TextButton.styleFrom(
-              foregroundColor: _RegisterScreenState._primary,
+              foregroundColor: _RegisterScreenState._text,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
             child: Text(
@@ -298,7 +298,7 @@ class _RegisterColumn extends StatelessWidget {
               Text(
                 strings.choose('Creeaza cont', 'Create account'),
                 style: const TextStyle(
-                  color: _RegisterScreenState._primary,
+                  color: _RegisterScreenState._text,
                   fontSize: 28,
                   height: 1.2,
                   fontWeight: FontWeight.w800,
@@ -418,7 +418,7 @@ class _RegisterColumn extends StatelessWidget {
                   TextButton(
                     onPressed: onOpenLogin,
                     style: TextButton.styleFrom(
-                      foregroundColor: _RegisterScreenState._primary,
+                      foregroundColor: _RegisterScreenState._text,
                       minimumSize: Size.zero,
                       padding: EdgeInsets.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -577,7 +577,7 @@ class _TermsCheckbox extends StatelessWidget {
                     'Terms and Conditions',
                   ),
                   style: const TextStyle(
-                    color: _RegisterScreenState._primary,
+                    color: _RegisterScreenState._text,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -588,7 +588,7 @@ class _TermsCheckbox extends StatelessWidget {
                     'Privacy Policy',
                   ),
                   style: const TextStyle(
-                    color: _RegisterScreenState._primary,
+                    color: _RegisterScreenState._text,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -691,7 +691,7 @@ class _VisualPanel extends StatelessWidget {
                 backgroundColor: Color(0xFFD3E3FF),
                 child: Icon(
                   Icons.verified_user_outlined,
-                  color: _RegisterScreenState._primary,
+                  color: _RegisterScreenState._text,
                 ),
               ),
               const SizedBox(width: 24),
@@ -750,7 +750,7 @@ class _BorrowTrustBadge extends StatelessWidget {
           children: [
             const Icon(
               Icons.shield_outlined,
-              color: Color(0xFF446085),
+              color: _RegisterScreenState._text,
               size: 18,
             ),
             const SizedBox(width: 8),
@@ -759,7 +759,7 @@ class _BorrowTrustBadge extends StatelessWidget {
                 context,
               ).choose('Securizat prin BorrowTrust', 'Secured by BorrowTrust'),
               style: const TextStyle(
-                color: Color(0xFF446085),
+                color: _RegisterScreenState._text,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),

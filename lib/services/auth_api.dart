@@ -75,6 +75,32 @@ class AuthApi {
     return AuthUser.fromJson(payload);
   }
 
+  Future<AuthUser> updateAvatar({
+    required String accessToken,
+    required String avatarUrl,
+    String? avatarKey,
+  }) async {
+    final response = await _client.patch(
+      Uri.parse('$baseUrl/auth/me/avatar'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'avatarUrl': avatarUrl,
+        if (avatarKey != null && avatarKey.isNotEmpty) 'avatarKey': avatarKey,
+      }),
+    );
+
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AuthApiException(_extractMessage(payload));
+    }
+
+    return AuthUser.fromJson(payload);
+  }
+
   Future<AuthSession> _postAuth(String path, Map<String, String> body) async {
     final response = await _client.post(
       Uri.parse('$baseUrl$path'),
@@ -137,12 +163,16 @@ class AuthUser {
     required this.fullName,
     required this.email,
     required this.phone,
+    this.avatarUrl,
+    this.avatarKey,
   });
 
   final String id;
   final String fullName;
   final String email;
   final String phone;
+  final String? avatarUrl;
+  final String? avatarKey;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
@@ -150,7 +180,14 @@ class AuthUser {
       fullName: json['fullName'] as String,
       email: json['email'] as String,
       phone: json['phone'] as String,
+      avatarUrl: _optionalString(json['avatarUrl']),
+      avatarKey: _optionalString(json['avatarKey']),
     );
+  }
+
+  static String? _optionalString(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
   }
 }
 

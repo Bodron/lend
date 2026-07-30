@@ -4,6 +4,7 @@ import { compare, hash } from "bcryptjs";
 import { SafeUser, UsersService } from "../users/users.service";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
+import { UpdateAvatarDto } from "./dto/update-avatar.dto";
 
 type AuthResponse = {
   accessToken: string;
@@ -48,6 +49,23 @@ export class AuthService {
 
   async getProfile(userId: string): Promise<SafeUser> {
     const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException("Token invalid.");
+    }
+
+    return user;
+  }
+
+  async updateAvatar(
+    userId: string,
+    updateAvatarDto: UpdateAvatarDto,
+  ): Promise<SafeUser> {
+    const user = await this.usersService.updateAvatar({
+      userId,
+      avatarUrl: updateAvatarDto.avatarUrl,
+      avatarKey: updateAvatarDto.avatarKey,
+    });
 
     if (!user) {
       throw new UnauthorizedException("Token invalid.");

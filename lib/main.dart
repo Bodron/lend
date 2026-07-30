@@ -51,6 +51,7 @@ class _LendAppState extends State<LendApp> {
               GlobalWidgetsLocalizations.delegate,
             ],
             theme: ThemeData(
+              scaffoldBackgroundColor: const Color(0xFFF5F5F7),
               colorScheme: ColorScheme.fromSeed(
                 seedColor: const Color(0xFF4A70A9),
                 primary: const Color(0xFF4A70A9),
@@ -115,7 +116,7 @@ class _SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFFEFECE3),
+      backgroundColor: Color(0xFFF5F5F7),
       body: Center(child: CircularProgressIndicator(color: Color(0xFF30578F))),
     );
   }

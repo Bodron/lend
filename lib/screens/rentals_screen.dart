@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'add_listing_screen.dart';
 import 'explore_screen.dart';
 import 'my_listings_screen.dart';
 import 'profile_screen.dart';
@@ -22,7 +23,7 @@ class RentalsScreen extends StatefulWidget {
 
 class _RentalsScreenState extends State<RentalsScreen> {
   static const _primary = Color(0xFF30578F);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
   static const _error = Color(0xFFBA1A1A);
@@ -160,7 +161,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                               height: 260,
                               child: Center(
                                 child: CircularProgressIndicator(
-                                  color: _RentalsScreenState._primary,
+                                  color: _RentalsScreenState._text,
                                 ),
                               ),
                             );
@@ -244,6 +245,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                 child: LendBottomNavigation(
                   currentIndex: 2,
                   onSelected: _handleNavigation,
+                  onAddListing: _openAddListing,
                 ),
               ),
           ],
@@ -274,6 +276,12 @@ class _RentalsScreenState extends State<RentalsScreen> {
       );
     }
   }
+
+  void _openAddListing() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
+  }
 }
 
 class _RentalsMessage extends StatelessWidget {
@@ -299,7 +307,7 @@ class _RentalsMessage extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(icon, color: _RentalsScreenState._primary, size: 42),
+            Icon(icon, color: _RentalsScreenState._text, size: 42),
             const SizedBox(height: 12),
             Text(
               title,
@@ -397,7 +405,7 @@ class _RentalTab extends StatelessWidget {
               label,
               style: TextStyle(
                 color: selected
-                    ? _RentalsScreenState._primary
+                    ? _RentalsScreenState._text
                     : _RentalsScreenState._muted,
                 fontSize: 14,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
@@ -696,7 +704,7 @@ class _HistoryRentalCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.check_circle_rounded,
-                          color: _RentalsScreenState._primary,
+                          color: _RentalsScreenState._text,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
@@ -706,7 +714,7 @@ class _HistoryRentalCard extends StatelessWidget {
                             'Returned successfully',
                           ),
                           style: const TextStyle(
-                            color: _RentalsScreenState._primary,
+                            color: _RentalsScreenState._text,
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                           ),

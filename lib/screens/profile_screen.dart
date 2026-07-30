@@ -1,12 +1,17 @@
+import 'dart:io' show File;
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
+import '../services/storage_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
-import '../widgets/product_media_preview.dart';
+import 'add_listing_screen.dart';
 import 'explore_screen.dart';
 import 'my_listings_screen.dart';
 import 'rentals_screen.dart';
@@ -24,7 +29,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   static const _primary = Color(0xFF30578F);
   static const _primaryContainer = Color(0xFF4A70A9);
-  static const _background = Color(0xFFEFECE3);
+  static const _background = Color(0xFFF5F5F7);
   static const _card = Colors.white;
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
@@ -37,6 +42,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _authApi = AuthApi();
   final _productsApi = ProductsApi();
   final _rentalOrdersApi = RentalOrdersApi();
+  final _storageApi = StorageApi();
+  bool _uploadingAvatar = false;
   late Future<_ProfileData> _profileFuture = _loadProfileData();
 
   Future<_ProfileData> _loadProfileData() async {
@@ -57,6 +64,125 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       _profileFuture = _loadProfileData();
     });
+  }
+
+  Future<void> _uploadAvatar() async {
+    if (_uploadingAvatar) {
+      return;
+    }
+
+    final result = await FilePicker.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: true,
+    );
+
+    final file = result?.files.single;
+    final bytes = file?.bytes ?? await _readPickedFileBytes(file);
+
+    if (file == null || bytes == null) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).choose(
+              'Nu am putut citi imaginea aleasa.',
+              'Could not read the selected image.',
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    final contentType = _avatarContentType(file.extension);
+    if (contentType == null) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).choose(
+              'Alege o imagine JPG, PNG sau WebP.',
+              'Choose a JPG, PNG, or WebP image.',
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _uploadingAvatar = true;
+    });
+
+    try {
+      final token = await AuthSessionStore.getToken();
+
+      if (token == null) {
+        throw AuthApiException('Trebuie sa fii autentificat.');
+      }
+
+      final uploaded = await _storageApi.uploadMedia(
+        accessToken: token,
+        fileName: file.name,
+        contentType: contentType,
+        bytes: bytes,
+        alt: 'Profile avatar',
+      );
+
+      await _authApi.updateAvatar(
+        accessToken: token,
+        avatarUrl: uploaded.url,
+        avatarKey: uploaded.key,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _profileFuture = _loadProfileData();
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _uploadingAvatar = false;
+        });
+      }
+    }
+  }
+
+  String? _avatarContentType(String? extension) {
+    return switch (extension?.toLowerCase()) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      'webp' => 'image/webp',
+      _ => null,
+    };
+  }
+
+  Future<Uint8List?> _readPickedFileBytes(PlatformFile? file) async {
+    final path = file?.path;
+
+    if (path == null || path.isEmpty) {
+      return null;
+    }
+
+    return File(path).readAsBytes();
   }
 
   @override
@@ -94,7 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             height: 320,
                             child: Center(
                               child: CircularProgressIndicator(
-                                color: _ProfileScreenState._primary,
+                                color: _ProfileScreenState._text,
                               ),
                             ),
                           );
@@ -120,37 +246,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         return Column(
                           children: [
-                            _ProfileHeader(data: data),
-                            const SizedBox(height: 32),
-                            LayoutBuilder(
-                              builder: (context, constraints) {
-                                final wide = constraints.maxWidth >= 760;
-
-                                if (!wide) {
-                                  return Column(
-                                    children: [
-                                      const _ProfileSidebar(),
-                                      const SizedBox(height: 20),
-                                      _ProfileDashboard(data: data),
-                                    ],
-                                  );
-                                }
-
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(
-                                      width: 300,
-                                      child: _ProfileSidebar(),
-                                    ),
-                                    const SizedBox(width: 20),
-                                    Expanded(
-                                      child: _ProfileDashboard(data: data),
-                                    ),
-                                  ],
-                                );
-                              },
+                            _ProfileHeader(
+                              data: data,
+                              uploadingAvatar: _uploadingAvatar,
+                              onAvatarPressed: _uploadAvatar,
                             ),
+                            const SizedBox(height: 32),
+                            const _ProfileSidebar(),
                           ],
                         );
                       },
@@ -165,6 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: LendBottomNavigation(
                   currentIndex: 3,
                   onSelected: _handleNavigation,
+                  onAddListing: _openAddListing,
                 ),
               ),
           ],
@@ -190,6 +293,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _openAddListing() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
+  }
+
   static void _replaceWith(BuildContext context, Widget screen) {
     Navigator.of(
       context,
@@ -207,15 +316,6 @@ class _ProfileData {
   final AuthUser user;
   final List<LendProduct> listings;
   final List<RentalOrder> rentals;
-
-  List<RentalOrder> get activeRentals => rentals
-      .where(
-        (order) =>
-            order.status != 'completed' &&
-            order.status != 'cancelled' &&
-            order.status != 'rejected',
-      )
-      .toList();
 
   int get earnedTotal {
     return rentals
@@ -236,26 +336,48 @@ class _ProfileData {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.data});
+  const _ProfileHeader({
+    required this.data,
+    required this.uploadingAvatar,
+    required this.onAvatarPressed,
+  });
 
   final _ProfileData data;
+  final bool uploadingAvatar;
+  final VoidCallback onAvatarPressed;
 
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
+    final avatarUrl = data.user.avatarUrl ?? _ProfileScreenState._avatarUrl;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          strings.choose('Profilul meu', 'My profile'),
-          style: const TextStyle(
-            color: _ProfileScreenState._text,
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _EditableProfileAvatar(
+              imageUrl: avatarUrl,
+              uploading: uploadingAvatar,
+              onPressed: onAvatarPressed,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                strings.choose('Profilul meu', 'My profile'),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _ProfileScreenState._text,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 14),
         Wrap(
           spacing: 12,
           runSpacing: 10,
@@ -328,6 +450,96 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
+class _EditableProfileAvatar extends StatelessWidget {
+  const _EditableProfileAvatar({
+    required this.imageUrl,
+    required this.uploading,
+    required this.onPressed,
+  });
+
+  final String imageUrl;
+  final bool uploading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+
+    return Semantics(
+      button: true,
+      label: strings.choose('Schimba poza de profil', 'Change profile photo'),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: uploading ? null : onPressed,
+          borderRadius: BorderRadius.circular(999),
+          child: SizedBox(
+            width: 82,
+            height: 82,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: ClipOval(
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const ColoredBox(
+                          color: Color(0xFFE2E2E2),
+                          child: Icon(
+                            Icons.person_rounded,
+                            color: _ProfileScreenState._muted,
+                            size: 42,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -2,
+                  bottom: -2,
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: _ProfileScreenState._text,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 8,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: SizedBox(
+                      width: 34,
+                      height: 34,
+                      child: uploading
+                          ? const Padding(
+                              padding: EdgeInsets.all(9),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.photo_camera_rounded,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MetricCard extends StatelessWidget {
   const _MetricCard({required this.label, required this.value});
 
@@ -359,7 +571,7 @@ class _MetricCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                color: _ProfileScreenState._primary,
+                color: _ProfileScreenState._text,
                 fontSize: 24,
                 fontWeight: FontWeight.w800,
               ),
@@ -521,312 +733,6 @@ class _TrustBadge extends StatelessWidget {
   }
 }
 
-class _ProfileDashboard extends StatelessWidget {
-  const _ProfileDashboard({required this.data});
-
-  final _ProfileData data;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ProfileListingsSection(items: data.listings),
-        const SizedBox(height: 40),
-        _ActiveRentalSummary(items: data.activeRentals),
-      ],
-    );
-  }
-}
-
-class _ProfileListingsSection extends StatelessWidget {
-  const _ProfileListingsSection({required this.items});
-
-  final List<LendProduct> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                AppLocalizations.of(
-                  context,
-                ).choose('Anunturile mele', 'My listings'),
-                style: const TextStyle(
-                  color: _ProfileScreenState._text,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const MyListingsScreen(),
-                  ),
-                );
-              },
-              child: Text(
-                AppLocalizations.of(context).choose('Vezi tot', 'See all'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (items.isEmpty)
-          _InlineEmptyState(
-            text: AppLocalizations.of(context).choose(
-              'Nu ai anunturi publicate.',
-              'You have no published listings.',
-            ),
-          )
-        else
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final visibleItems = items.take(4).toList();
-              final crossAxisCount = constraints.maxWidth >= 520 ? 2 : 1;
-
-              return GridView.builder(
-                itemCount: visibleItems.length,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  mainAxisExtent: 262,
-                ),
-                itemBuilder: (context, index) {
-                  return _ProfileListingCard(item: visibleItems[index]);
-                },
-              );
-            },
-          ),
-      ],
-    );
-  }
-}
-
-class _ProfileListingCard extends StatelessWidget {
-  const _ProfileListingCard({required this.item});
-
-  final LendProduct item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          height: 160,
-          decoration: _profileCardDecoration,
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ProductMediaPreview(product: item),
-              Positioned(
-                top: 8,
-                left: 8,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: _ProfileScreenState._primary.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    child: Text(
-                      item.isAvailable ? 'ACTIV' : 'INCHIRIAT',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: _profileCardDecoration,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _ProfileScreenState._text,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      item.pricePerDayLabel,
-                      style: const TextStyle(
-                        color: _ProfileScreenState._primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.category,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _ProfileScreenState._muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActiveRentalSummary extends StatelessWidget {
-  const _ActiveRentalSummary({required this.items});
-
-  final List<RentalOrder> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final order = items.isEmpty ? null : items.first;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppLocalizations.of(
-            context,
-          ).choose('Inchirieri active', 'Active rentals'),
-          style: const TextStyle(
-            color: _ProfileScreenState._text,
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (order == null)
-          _InlineEmptyState(
-            text: AppLocalizations.of(
-              context,
-            ).choose('Nu ai inchirieri active.', 'You have no active rentals.'),
-          )
-        else
-          DecoratedBox(
-            decoration: _profileCardDecoration,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: 80,
-                            height: 80,
-                            child: _ProfileImage(url: order.productImageUrl),
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                order.productTitle.isEmpty
-                                    ? 'Produs inchiriat'
-                                    : order.productTitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: _ProfileScreenState._text,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.schedule_rounded,
-                                    color: Color(0xFF737781),
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      order.endDate == null
-                                          ? order.status
-                                          : AppLocalizations.of(context).choose(
-                                              'Returnare: ${_formatShortDate(order.endDate!)}',
-                                              'Return: ${_formatShortDate(order.endDate!)}',
-                                            ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: _ProfileScreenState._muted,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: MediaQuery.sizeOf(context).width * 0.22,
-                    bottom: 0,
-                    child: Container(
-                      height: 4,
-                      color: _ProfileScreenState._primaryContainer,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _ProfileMessage extends StatelessWidget {
   const _ProfileMessage({
     required this.icon,
@@ -850,7 +756,7 @@ class _ProfileMessage extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(icon, size: 42, color: _ProfileScreenState._primary),
+            Icon(icon, size: 42, color: _ProfileScreenState._text),
             const SizedBox(height: 12),
             Text(
               title,
@@ -886,81 +792,6 @@ class _ProfileMessage extends StatelessWidget {
       ),
     );
   }
-}
-
-class _InlineEmptyState extends StatelessWidget {
-  const _InlineEmptyState({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: _profileCardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.info_outline_rounded,
-              color: _ProfileScreenState._primary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                text,
-                style: const TextStyle(
-                  color: _ProfileScreenState._muted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileImage extends StatelessWidget {
-  const _ProfileImage({required this.url});
-
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    if (url.isEmpty) {
-      return const ColoredBox(color: Color(0xFFE2E2E2));
-    }
-
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return const ColoredBox(color: Color(0xFFE2E2E2));
-      },
-    );
-  }
-}
-
-String _formatShortDate(DateTime date) {
-  const months = [
-    'Ian',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mai',
-    'Iun',
-    'Iul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Noi',
-    'Dec',
-  ];
-
-  return '${date.day} ${months[date.month - 1]}';
 }
 
 final _profileCardDecoration = BoxDecoration(
