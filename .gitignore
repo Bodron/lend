@@ -41,6 +41,9 @@ migrate_working_dir/
 # Local backups for nested Git repositories
 .nested-git-backups/
 
+# Separate repository
+/backend/
+
 # Symbolication related
 app.*.symbols
 
