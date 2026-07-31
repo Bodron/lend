@@ -13,14 +13,21 @@ import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
 import 'explore_screen.dart';
+import 'home_screen.dart';
 import 'my_listings_screen.dart';
 import 'rentals_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, this.showChrome = true, this.onNavigate});
+  const ProfileScreen({
+    super.key,
+    this.showChrome = true,
+    this.onNavigate,
+    this.onAvatarChanged,
+  });
 
   final bool showChrome;
   final ValueChanged<int>? onNavigate;
+  final VoidCallback? onAvatarChanged;
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -149,6 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _profileFuture = _loadProfileData();
       });
+      widget.onAvatarChanged?.call();
     } catch (error) {
       if (!mounted) {
         return;
@@ -252,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               onAvatarPressed: _uploadAvatar,
                             ),
                             const SizedBox(height: 32),
-                            const _ProfileSidebar(),
+                            _ProfileSidebar(onLogout: _logout),
                           ],
                         );
                       },
@@ -297,6 +305,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
+  }
+
+  Future<void> _logout() async {
+    await AuthSessionStore.clear();
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
   }
 
   static void _replaceWith(BuildContext context, Widget screen) {
@@ -584,18 +605,26 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _ProfileSidebar extends StatelessWidget {
-  const _ProfileSidebar();
+  const _ProfileSidebar({required this.onLogout});
+
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [_AccountCard(), SizedBox(height: 20), _TrustBadge()],
+    return Column(
+      children: [
+        _AccountCard(onLogout: onLogout),
+        const SizedBox(height: 20),
+        const _TrustBadge(),
+      ],
     );
   }
 }
 
 class _AccountCard extends StatelessWidget {
-  const _AccountCard();
+  const _AccountCard({required this.onLogout});
+
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -630,6 +659,13 @@ class _AccountCard extends StatelessWidget {
               icon: Icons.contact_support_outlined,
               label: strings.choose('Suport', 'Support'),
             ),
+            const Divider(height: 24, color: _ProfileScreenState._outline),
+            _ActionRow(
+              icon: Icons.logout_rounded,
+              label: strings.choose('Deconectare', 'Sign out'),
+              color: const Color(0xFFBA1A1A),
+              onTap: onLogout,
+            ),
           ],
         ),
       ),
@@ -638,35 +674,44 @@ class _AccountCard extends StatelessWidget {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.icon, required this.label});
+  const _ActionRow({
+    required this.icon,
+    required this.label,
+    this.color = _ProfileScreenState._text,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final Color color;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: onTap ?? () {},
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: _ProfileScreenState._secondary, size: 24),
+            Icon(icon, color: color, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: _ProfileScreenState._text,
+                style: TextStyle(
+                  color: color,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: _ProfileScreenState._outline,
+              color: color == _ProfileScreenState._text
+                  ? _ProfileScreenState._outline
+                  : color,
             ),
           ],
         ),

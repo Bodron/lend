@@ -395,7 +395,7 @@ class _AddListingTopBar extends StatelessWidget {
             child: Text(
               isEditing
                   ? strings.choose('Editeaza anuntul', 'Edit listing')
-                  : strings.choose('Pune ceva la inchiriat', 'List an item'),
+                  : strings.choose('Adauga anunt', 'Add listing'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(

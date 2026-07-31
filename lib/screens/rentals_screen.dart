@@ -5,11 +5,14 @@ import 'explore_screen.dart';
 import 'my_listings_screen.dart';
 import 'profile_screen.dart';
 import 'return_qr_screen.dart';
+import 'return_scan_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
+import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
+import '../widgets/product_media_preview.dart';
 
 class RentalsScreen extends StatefulWidget {
   const RentalsScreen({super.key, this.showChrome = true, this.onNavigate});
@@ -33,18 +36,24 @@ class _RentalsScreenState extends State<RentalsScreen> {
   static const _avatarUrl =
       'https://lh3.googleusercontent.com/aida-public/AB6AXuAnLFvkG7ua6sGaejlIx0m1PZMxtqm6qBOtKTKoAtpLGpxra9RYBL_Sh3BY_wyZaDUmQf250BMCPmFnVKbyOE2DNXNwkBCaOEd8MOZt468-N9dMGrZhXn1unw24d2b3AjNO6mU1qc0gFoGPzeOoQpAASY3IsJwbXq4GXC6TnoBRgEYW39NJUjL_m9wpT7NPj1nm6nTzRghMMl9uKvooV2P5Fthp5BuU-G3b0u2jVTO1zM8kkk6SReSl4Y0QceQTdFqFRKQfnAh9l88';
 
+  _RentalPerspective _perspective = _RentalPerspective.renting;
   bool _showHistory = false;
   final _rentalOrdersApi = RentalOrdersApi();
-  late Future<List<RentalOrder>> _orders = _loadOrders();
+  late Future<_RentalsData> _orders = _loadOrders();
 
-  Future<List<RentalOrder>> _loadOrders() async {
+  Future<_RentalsData> _loadOrders() async {
     final token = await AuthSessionStore.getToken();
 
     if (token == null) {
       throw RentalOrdersApiException('Trebuie sa fii autentificat.');
     }
 
-    return _rentalOrdersApi.findMine(token);
+    final results = await Future.wait([
+      _rentalOrdersApi.findMine(token),
+      _rentalOrdersApi.findOwned(token),
+    ]);
+
+    return _RentalsData(renting: results[0], lending: results[1]);
   }
 
   void _reloadOrders() {
@@ -59,10 +68,18 @@ class _RentalsScreenState extends State<RentalsScreen> {
         order.status == 'rejected';
   }
 
-  static _RentalItem _rentalItemFromOrder(RentalOrder order) {
+  static _RentalItem _rentalItemFromOrder(
+    RentalOrder order,
+    _RentalPerspective perspective,
+  ) {
     final expiring = order.endDate != null && _isToday(order.endDate!);
+    final ownerName = order.productOwnerName.isEmpty
+        ? 'Proprietar'
+        : order.productOwnerName;
+    final renterName = order.renterName.isEmpty ? 'Chirias' : order.renterName;
 
     return _RentalItem(
+      id: order.id,
       title: order.productTitle.isEmpty
           ? 'Produs inchiriat'
           : order.productTitle,
@@ -70,6 +87,11 @@ class _RentalsScreenState extends State<RentalsScreen> {
           ? 'Comanda trimisa'
           : 'Pana la ${_formatShortDate(order.endDate!)}',
       imageUrl: order.productImageUrl,
+      imageContentType: order.productImageContentType,
+      imageType: order.productImageType,
+      detailText: perspective == _RentalPerspective.renting
+          ? 'De la $ownerName'
+          : 'Chirias: $renterName',
       status: expiring ? _RentalStatus.expiring : _RentalStatus.active,
     );
   }
@@ -86,6 +108,8 @@ class _RentalsScreenState extends State<RentalsScreen> {
           ? 'Inchiriere finalizata'
           : 'Inchiriat: ${_formatShortDate(start)} - ${_formatShortDate(end)}',
       imageUrl: order.productImageUrl,
+      imageContentType: order.productImageContentType,
+      imageType: order.productImageType,
     );
   }
 
@@ -143,6 +167,16 @@ class _RentalsScreenState extends State<RentalsScreen> {
                   ),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
+                      _PerspectiveTabs(
+                        selected: _perspective,
+                        onChanged: (value) {
+                          setState(() {
+                            _perspective = value;
+                            _showHistory = false;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 14),
                       _RentalTabs(
                         showHistory: _showHistory,
                         onChanged: (value) {
@@ -152,7 +186,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
-                      FutureBuilder<List<RentalOrder>>(
+                      FutureBuilder<_RentalsData>(
                         future: _orders,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState !=
@@ -183,10 +217,16 @@ class _RentalsScreenState extends State<RentalsScreen> {
                             );
                           }
 
-                          final orders = snapshot.data ?? const [];
+                          final data = snapshot.data!;
+                          final orders = _perspective == _RentalPerspective.renting
+                              ? data.renting
+                              : data.lending;
                           final activeItems = orders
                               .where((order) => !_isHistoryOrder(order))
-                              .map(_rentalItemFromOrder)
+                              .map(
+                                (order) =>
+                                    _rentalItemFromOrder(order, _perspective),
+                              )
                               .toList();
                           final historyItems = orders
                               .where(_isHistoryOrder)
@@ -201,8 +241,12 @@ class _RentalsScreenState extends State<RentalsScreen> {
                                 'No active rentals',
                               ),
                               body: AppLocalizations.of(context).choose(
-                                'Comenzile trimise pentru inchiriere vor aparea aici.',
-                                'Submitted rental orders will appear here.',
+                                _perspective == _RentalPerspective.renting
+                                    ? 'Comenzile trimise pentru inchiriere vor aparea aici.'
+                                    : 'Comenzile primite pe produsele tale vor aparea aici.',
+                                _perspective == _RentalPerspective.renting
+                                    ? 'Submitted rental orders will appear here.'
+                                    : 'Orders received for your items will appear here.',
                               ),
                             );
                           }
@@ -230,6 +274,8 @@ class _RentalsScreenState extends State<RentalsScreen> {
                                 : _ActiveRentalsGrid(
                                     key: const ValueKey('active-rentals'),
                                     items: activeItems,
+                                    perspective: _perspective,
+                                    onScanReturn: _openReturnScanner,
                                   ),
                           );
                         },
@@ -281,6 +327,25 @@ class _RentalsScreenState extends State<RentalsScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
+  }
+
+  Future<void> _openReturnScanner() async {
+    final completed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const ReturnScanScreen()),
+    );
+
+    if (completed == true && mounted) {
+      _reloadOrders();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            ).choose('Retur confirmat.', 'Return confirmed.'),
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -340,6 +405,106 @@ class _RentalsMessage extends StatelessWidget {
                 child: Text(actionLabel!),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PerspectiveTabs extends StatelessWidget {
+  const _PerspectiveTabs({
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final _RentalPerspective selected;
+  final ValueChanged<_RentalPerspective> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFC3C6D1)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            Expanded(
+              child: _PerspectiveTab(
+                icon: Icons.shopping_bag_outlined,
+                label: strings.choose('Eu inchiriez', 'I rent'),
+                selected: selected == _RentalPerspective.renting,
+                onTap: () => onChanged(_RentalPerspective.renting),
+              ),
+            ),
+            Expanded(
+              child: _PerspectiveTab(
+                icon: Icons.storefront_rounded,
+                label: strings.choose('De la mine', 'From me'),
+                selected: selected == _RentalPerspective.lending,
+                onTap: () => onChanged(_RentalPerspective.lending),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PerspectiveTab extends StatelessWidget {
+  const _PerspectiveTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: selected ? _RentalsScreenState._text : Colors.white,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: selected ? Colors.white : _RentalsScreenState._muted,
+              size: 18,
+            ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: selected ? Colors.white : _RentalsScreenState._muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -431,9 +596,16 @@ class _RentalTab extends StatelessWidget {
 }
 
 class _ActiveRentalsGrid extends StatelessWidget {
-  const _ActiveRentalsGrid({super.key, required this.items});
+  const _ActiveRentalsGrid({
+    super.key,
+    required this.items,
+    required this.perspective,
+    required this.onScanReturn,
+  });
 
   final List<_RentalItem> items;
+  final _RentalPerspective perspective;
+  final VoidCallback onScanReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -456,7 +628,11 @@ class _ActiveRentalsGrid extends StatelessWidget {
             mainAxisExtent: 390,
           ),
           itemBuilder: (context, index) {
-            return _ActiveRentalCard(item: items[index]);
+            return _ActiveRentalCard(
+              item: items[index],
+              perspective: perspective,
+              onScanReturn: onScanReturn,
+            );
           },
         );
       },
@@ -465,9 +641,15 @@ class _ActiveRentalsGrid extends StatelessWidget {
 }
 
 class _ActiveRentalCard extends StatelessWidget {
-  const _ActiveRentalCard({required this.item});
+  const _ActiveRentalCard({
+    required this.item,
+    required this.perspective,
+    required this.onScanReturn,
+  });
 
   final _RentalItem item;
+  final _RentalPerspective perspective;
+  final VoidCallback onScanReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -485,12 +667,11 @@ class _ActiveRentalCard extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(
-                    item.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const ColoredBox(color: Color(0xFFE2E2E2));
-                    },
+                  _RentalMediaPreview(
+                    title: item.title,
+                    imageUrl: item.imageUrl,
+                    imageContentType: item.imageContentType,
+                    imageType: item.imageType,
                   ),
                   Positioned(
                     top: 16,
@@ -534,6 +715,31 @@ class _ActiveRentalCard extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
+                          perspective == _RentalPerspective.renting
+                              ? Icons.storefront_rounded
+                              : Icons.person_outline_rounded,
+                          color: _RentalsScreenState._muted,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.detailText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _RentalsScreenState._muted,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
                           expiring
                               ? Icons.schedule_rounded
                               : Icons.calendar_today_rounded,
@@ -566,13 +772,17 @@ class _ActiveRentalCard extends StatelessWidget {
                       height: 44,
                       child: FilledButton(
                         onPressed: () {
+                          if (perspective == _RentalPerspective.lending) {
+                            onScanReturn();
+                            return;
+                          }
+
                           Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) => ReturnQrScreen(
                                 itemTitle: item.title,
                                 itemImageUrl: item.imageUrl,
-                                returnCode:
-                                    'borrowit:return:${item.title}:${item.dateText}',
+                                returnCode: 'borrowit:return:${item.id}',
                               ),
                             ),
                           );
@@ -587,7 +797,14 @@ class _ActiveRentalCard extends StatelessWidget {
                         child: Text(
                           AppLocalizations.of(
                             context,
-                          ).choose('Finalizeaza returul', 'Complete return'),
+                          ).choose(
+                            perspective == _RentalPerspective.renting
+                                ? 'Finalizeaza returul'
+                                : 'Scaneaza cod retur',
+                            perspective == _RentalPerspective.renting
+                                ? 'Complete return'
+                                : 'Scan return code',
+                          ),
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
@@ -637,6 +854,38 @@ class _HistoryRentalsGrid extends StatelessWidget {
   }
 }
 
+class _RentalMediaPreview extends StatelessWidget {
+  const _RentalMediaPreview({
+    required this.title,
+    required this.imageUrl,
+    required this.imageContentType,
+    required this.imageType,
+  });
+
+  final String title;
+  final String imageUrl;
+  final String imageContentType;
+  final String imageType;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return const ColoredBox(color: Color(0xFFE2E2E2));
+    }
+
+    return ProductMediaPreview(
+      product: _emptyProduct,
+      media: LendProductImage(
+        url: imageUrl,
+        key: '',
+        alt: title,
+        contentType: imageContentType,
+        type: imageType.isEmpty ? 'image' : imageType,
+      ),
+    );
+  }
+}
+
 class _HistoryRentalCard extends StatelessWidget {
   const _HistoryRentalCard({required this.item});
 
@@ -662,12 +911,11 @@ class _HistoryRentalCard extends StatelessWidget {
                     Color(0xFFE2E2E2),
                     BlendMode.saturation,
                   ),
-                  child: Image.network(
-                    item.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const ColoredBox(color: Color(0xFFE2E2E2));
-                    },
+                  child: _RentalMediaPreview(
+                    title: item.title,
+                    imageUrl: item.imageUrl,
+                    imageContentType: item.imageContentType,
+                    imageType: item.imageType,
                   ),
                 ),
               ),
@@ -816,15 +1064,23 @@ class _VerifiedBadge extends StatelessWidget {
 
 class _RentalItem {
   const _RentalItem({
+    required this.id,
     required this.title,
     required this.dateText,
     required this.imageUrl,
+    required this.imageContentType,
+    required this.imageType,
+    required this.detailText,
     required this.status,
   });
 
+  final String id;
   final String title;
   final String dateText;
   final String imageUrl;
+  final String imageContentType;
+  final String imageType;
+  final String detailText;
   final _RentalStatus status;
 }
 
@@ -833,14 +1089,43 @@ class _RentalHistoryItem {
     required this.title,
     required this.dateText,
     required this.imageUrl,
+    required this.imageContentType,
+    required this.imageType,
   });
 
   final String title;
   final String dateText;
   final String imageUrl;
+  final String imageContentType;
+  final String imageType;
 }
 
 enum _RentalStatus { active, expiring }
+
+enum _RentalPerspective { renting, lending }
+
+class _RentalsData {
+  const _RentalsData({required this.renting, required this.lending});
+
+  final List<RentalOrder> renting;
+  final List<RentalOrder> lending;
+}
+
+const _emptyProduct = LendProduct(
+  id: '',
+  slug: '',
+  title: '',
+  category: '',
+  categorySlug: '',
+  description: '',
+  pricePerDay: 0,
+  deposit: 0,
+  city: '',
+  ownerName: '',
+  rating: 0,
+  isAvailable: true,
+  images: [],
+);
 
 final _rentalCardDecoration = BoxDecoration(
   color: Colors.white,

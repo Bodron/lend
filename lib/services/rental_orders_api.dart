@@ -63,6 +63,66 @@ class RentalOrdersApi {
         .toList();
   }
 
+  Future<List<RentalOrder>> findOwned(String accessToken) async {
+    final response = await _client.get(
+      Uri.parse('${AuthApi.baseUrl}/rental-orders/owned'),
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+
+    final payload = jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
+
+    if (payload is! List) {
+      throw RentalOrdersApiException('Raspuns invalid pentru inchirieri.');
+    }
+
+    return payload
+        .whereType<Map<String, dynamic>>()
+        .map(RentalOrder.fromJson)
+        .toList();
+  }
+
+  Future<RentalOrder> updateStatus({
+    required String accessToken,
+    required String orderId,
+    required String status,
+  }) async {
+    final response = await _client.patch(
+      Uri.parse('${AuthApi.baseUrl}/rental-orders/$orderId/status'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'status': status}),
+    );
+
+    final payload = jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
+
+    if (payload is! Map<String, dynamic>) {
+      throw RentalOrdersApiException('Raspuns invalid pentru retur.');
+    }
+
+    return RentalOrder.fromJson(payload);
+  }
+
+  Future<RentalOrder> completeReturn({
+    required String accessToken,
+    required String orderId,
+  }) {
+    return updateStatus(
+      accessToken: accessToken,
+      orderId: orderId,
+      status: 'completed',
+    );
+  }
+
   String _extractMessage(Object? payload) {
     if (payload is Map<String, dynamic>) {
       final message = payload['message'];
@@ -91,7 +151,12 @@ class RentalOrder {
     required this.id,
     required this.status,
     required this.productTitle,
+    required this.productOwnerName,
     required this.productImageUrl,
+    required this.productImageContentType,
+    required this.productImageType,
+    required this.renterName,
+    required this.renterEmail,
     required this.startDate,
     required this.endDate,
     required this.rentalDays,
@@ -104,7 +169,12 @@ class RentalOrder {
   final String id;
   final String status;
   final String productTitle;
+  final String productOwnerName;
   final String productImageUrl;
+  final String productImageContentType;
+  final String productImageType;
+  final String renterName;
+  final String renterEmail;
   final DateTime? startDate;
   final DateTime? endDate;
   final int rentalDays;
@@ -118,12 +188,22 @@ class RentalOrder {
     final productSnapshot = snapshot is Map<String, dynamic>
         ? snapshot
         : const <String, dynamic>{};
+    final renterPayload = json['renter'];
+    final renter = renterPayload is Map<String, dynamic>
+        ? renterPayload
+        : const <String, dynamic>{};
 
     return RentalOrder(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
       productTitle: (productSnapshot['title'] ?? '').toString(),
+      productOwnerName: (productSnapshot['ownerName'] ?? '').toString(),
       productImageUrl: (productSnapshot['imageUrl'] ?? '').toString(),
+      productImageContentType: (productSnapshot['imageContentType'] ?? '')
+          .toString(),
+      productImageType: (productSnapshot['imageType'] ?? '').toString(),
+      renterName: (renter['fullName'] ?? '').toString(),
+      renterEmail: (renter['email'] ?? '').toString(),
       startDate: DateTime.tryParse((json['startDate'] ?? '').toString()),
       endDate: DateTime.tryParse((json['endDate'] ?? '').toString()),
       rentalDays: _toInt(json['rentalDays']),

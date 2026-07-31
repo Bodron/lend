@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../l10n/app_localizations.dart';
 import '../widgets/lend_bottom_navigation.dart';
@@ -324,7 +325,19 @@ class _QrShell extends StatelessWidget {
           ),
           child: SizedBox.square(
             dimension: qrSize.toDouble(),
-            child: CustomPaint(painter: _QrCodePainter(returnCode)),
+            child: QrImageView(
+              data: returnCode,
+              backgroundColor: Colors.white,
+              eyeStyle: const QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: ReturnQrScreen._primary,
+              ),
+              dataModuleStyle: const QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: ReturnQrScreen._primary,
+              ),
+              padding: EdgeInsets.zero,
+            ),
           ),
         ),
         Container(
@@ -548,71 +561,3 @@ class _SecurityNote extends StatelessWidget {
   }
 }
 
-class _QrCodePainter extends CustomPainter {
-  const _QrCodePainter(this.payload);
-
-  final String payload;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const modules = 29;
-    final cell = size.width / modules;
-    final paint = Paint()..color = ReturnQrScreen._primary;
-
-    void drawModule(int x, int y) {
-      final rect = Rect.fromLTWH(x * cell, y * cell, cell, cell).deflate(1);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, Radius.circular(cell * 0.18)),
-        paint,
-      );
-    }
-
-    void drawFinder(int startX, int startY) {
-      for (var y = 0; y < 7; y++) {
-        for (var x = 0; x < 7; x++) {
-          final border = x == 0 || x == 6 || y == 0 || y == 6;
-          final center = x >= 2 && x <= 4 && y >= 2 && y <= 4;
-          if (border || center) {
-            drawModule(startX + x, startY + y);
-          }
-        }
-      }
-    }
-
-    drawFinder(0, 0);
-    drawFinder(modules - 7, 0);
-    drawFinder(0, modules - 7);
-
-    var hash = 0;
-    for (final codeUnit in payload.codeUnits) {
-      hash = 0x1fffffff & (hash + codeUnit);
-      hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
-      hash ^= hash >> 6;
-    }
-
-    bool inFinderArea(int x, int y) {
-      final topLeft = x < 8 && y < 8;
-      final topRight = x >= modules - 8 && y < 8;
-      final bottomLeft = x < 8 && y >= modules - 8;
-      return topLeft || topRight || bottomLeft;
-    }
-
-    for (var y = 0; y < modules; y++) {
-      for (var x = 0; x < modules; x++) {
-        if (inFinderArea(x, y)) {
-          continue;
-        }
-
-        final value = (x * 31 + y * 17 + hash + (x * y)) % 9;
-        if (value == 0 || value == 2 || value == 5) {
-          drawModule(x, y);
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _QrCodePainter oldDelegate) {
-    return oldDelegate.payload != payload;
-  }
-}

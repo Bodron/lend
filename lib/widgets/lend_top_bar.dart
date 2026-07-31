@@ -9,11 +9,13 @@ class LendTopBar extends StatelessWidget {
     required this.title,
     required this.avatarUrl,
     this.onNotificationPressed,
+    this.hasUnreadNotifications = false,
   });
 
   final String title;
   final String avatarUrl;
   final VoidCallback? onNotificationPressed;
+  final bool hasUnreadNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +60,29 @@ class LendTopBar extends StatelessWidget {
               ),
               IconButton(
                 onPressed: onNotificationPressed ?? () {},
-                icon: const Icon(Icons.notifications_none_rounded),
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.notifications_none_rounded),
+                    if (hasUnreadNotifications)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF38BDF8),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF050505),
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 color: Colors.white,
               ),
               const SizedBox(width: 4),
