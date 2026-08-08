@@ -336,15 +336,6 @@ class _RentalsScreenState extends State<RentalsScreen> {
 
     if (completed == true && mounted) {
       _reloadOrders();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(
-              context,
-            ).choose('Retur confirmat.', 'Return confirmed.'),
-          ),
-        ),
-      );
     }
   }
 }
@@ -625,7 +616,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 20,
             mainAxisSpacing: 20,
-            mainAxisExtent: 390,
+            mainAxisExtent: 430,
           ),
           itemBuilder: (context, index) {
             return _ActiveRentalCard(
@@ -663,7 +654,7 @@ class _ActiveRentalCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             SizedBox(
-              height: 224,
+              height: 206,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -698,7 +689,7 @@ class _ActiveRentalCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             item.title,
-                            maxLines: 2,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: _RentalsScreenState._text,
@@ -711,7 +702,7 @@ class _ActiveRentalCard extends StatelessWidget {
                         const _VerifiedBadge(),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Icon(
@@ -736,7 +727,7 @@ class _ActiveRentalCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(
@@ -769,7 +760,7 @@ class _ActiveRentalCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     SizedBox(
-                      height: 44,
+                      height: 42,
                       child: FilledButton(
                         onPressed: () {
                           if (perspective == _RentalPerspective.lending) {

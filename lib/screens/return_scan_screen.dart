@@ -4,6 +4,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/rental_orders_api.dart';
+import '../widgets/lend_toast.dart';
+import 'return_success_screen.dart';
 
 class ReturnScanScreen extends StatefulWidget {
   const ReturnScanScreen({super.key});
@@ -24,6 +26,8 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
   );
 
   bool _isCompleting = false;
+  bool _isConfirming = false;
+  DateTime? _lastInvalidScanAt;
 
   @override
   void dispose() {
@@ -32,7 +36,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
   }
 
   Future<void> _handleDetection(BarcodeCapture capture) async {
-    if (_isCompleting) {
+    if (_isCompleting || _isConfirming) {
       return;
     }
 
@@ -45,15 +49,34 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
     final orderId = _orderIdFromCode(code);
 
     if (orderId == null) {
+      _showInvalidCodeMessage(code);
       return;
     }
 
-    setState(() {
-      _isCompleting = true;
-    });
-
     try {
+      setState(() {
+        _isConfirming = true;
+      });
       await _scannerController.stop();
+
+      final shouldComplete = await _showReturnConfirmationDialog();
+      if (!mounted) {
+        return;
+      }
+
+      if (shouldComplete != true) {
+        setState(() {
+          _isConfirming = false;
+        });
+        await _scannerController.start();
+        return;
+      }
+
+      setState(() {
+        _isConfirming = false;
+        _isCompleting = true;
+      });
+
       final token = await AuthSessionStore.getToken();
 
       if (token == null) {
@@ -69,20 +92,86 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
         return;
       }
 
-      Navigator.of(context).pop(true);
+      final acknowledged = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(builder: (_) => const ReturnSuccessScreen()),
+      );
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(acknowledged == true);
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      LendToast.error(context, message: error.toString());
       setState(() {
+        _isConfirming = false;
         _isCompleting = false;
       });
       await _scannerController.start();
     }
+  }
+
+  Future<bool?> _showReturnConfirmationDialog() {
+    final strings = AppLocalizations.of(context);
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          icon: const Icon(
+            Icons.qr_code_scanner_rounded,
+            color: _primary,
+            size: 34,
+          ),
+          title: Text(
+            strings.choose('Confirmi returul?', 'Confirm return?'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          content: Text(
+            strings.choose(
+              'Esti sigur ca vrei sa confirmi acest cod QR? Inchirierea va fi marcata ca finalizata.',
+              'Are you sure you want to confirm this QR code? The rental will be marked as completed.',
+            ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(height: 1.4, fontWeight: FontWeight.w600),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _text,
+                side: const BorderSide(color: Color(0xFFC3C6D1)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(strings.choose('Decline', 'Decline')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: Text(strings.choose('Accept', 'Accept')),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String? _orderIdFromCode(String? code) {
@@ -94,6 +183,27 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
 
     final orderId = code.substring(prefix.length).trim();
     return RegExp(r'^[a-fA-F0-9]{24}$').hasMatch(orderId) ? orderId : null;
+  }
+
+  void _showInvalidCodeMessage(String? code) {
+    if (code == null || !mounted) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final lastShown = _lastInvalidScanAt;
+    if (lastShown != null && now.difference(lastShown).inSeconds < 3) {
+      return;
+    }
+
+    _lastInvalidScanAt = now;
+    LendToast.warning(
+      context,
+      message: AppLocalizations.of(context).choose(
+        'Codul QR nu este un cod de retur valid. Deschide din nou QR-ul din inchirierea activa.',
+        'This QR code is not a valid return code. Open the QR again from the active rental.',
+      ),
+    );
   }
 
   @override
@@ -169,10 +279,14 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _isCompleting
+                        _isCompleting || _isConfirming
                             ? strings.choose(
-                                'Confirm returul...',
-                                'Confirming return...',
+                                _isConfirming
+                                    ? 'Astept confirmarea...'
+                                    : 'Confirm returul...',
+                                _isConfirming
+                                    ? 'Waiting for confirmation...'
+                                    : 'Confirming return...',
                               )
                             : strings.choose(
                                 'Scaneaza codul QR afisat de chirias.',

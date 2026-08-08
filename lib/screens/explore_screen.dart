@@ -8,6 +8,7 @@ import '../widgets/product_media_preview.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
+import 'explore_map_screen.dart';
 import 'my_listings_screen.dart';
 import 'product_details_screen.dart';
 import 'profile_screen.dart';
@@ -107,7 +108,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     const SizedBox(height: 28),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
-                      child: _NearbyGrid(products: visibleProducts),
+                      child: _NearbyGrid(
+                        products: visibleProducts,
+                        onOpenMap: () => _openMap(visibleProducts),
+                      ),
                     ),
                   ],
                 ]),
@@ -189,6 +193,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
+  }
+
+  void _openMap(List<LendProduct> products) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExploreMapScreen(products: products),
+      ),
+    );
   }
 
   void _reloadProducts() {
@@ -366,9 +378,10 @@ class _RecommendedSection extends StatelessWidget {
 }
 
 class _NearbyGrid extends StatelessWidget {
-  const _NearbyGrid({required this.products});
+  const _NearbyGrid({required this.products, required this.onOpenMap});
 
   final List<LendProduct> products;
+  final VoidCallback onOpenMap;
 
   @override
   Widget build(BuildContext context) {
@@ -379,7 +392,7 @@ class _NearbyGrid extends StatelessWidget {
         _SectionHeader(
           title: strings.nearYou,
           action: strings.map,
-          onAction: () {},
+          onAction: onOpenMap,
         ),
         const SizedBox(height: 12),
         LayoutBuilder(

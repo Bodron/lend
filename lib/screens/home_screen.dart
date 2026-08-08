@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
-import '../widgets/language_toggle_button.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
@@ -31,8 +30,6 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  const SizedBox(height: 12),
-                  const _Header(),
                   const Spacer(),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 576),
@@ -61,66 +58,6 @@ void _openRegister(BuildContext context) {
   Navigator.of(
     context,
   ).push(MaterialPageRoute<void>(builder: (_) => const RegisterScreen()));
-}
-
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          strings.appName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0,
-            shadows: [
-              Shadow(
-                color: Color(0x33000000),
-                blurRadius: 2,
-                offset: Offset(0, 1),
-              ),
-            ],
-          ),
-        ),
-        Row(
-          children: [
-            const LanguageToggleButton(),
-            const SizedBox(width: 10),
-            FilledButton(
-              onPressed: () => _openRegister(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: HomeScreen._primary,
-                foregroundColor: Colors.white,
-                elevation: 6,
-                shadowColor: Colors.black.withValues(alpha: 0.18),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: Text(
-                strings.newAccount,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 }
 
 class _HeroContent extends StatelessWidget {

@@ -10,6 +10,7 @@ import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
 import '../services/storage_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
+import '../widgets/lend_toast.dart';
 import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
 import 'explore_screen.dart';
@@ -92,14 +93,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).choose(
-              'Nu am putut citi imaginea aleasa.',
-              'Could not read the selected image.',
-            ),
-          ),
+      LendToast.error(
+        context,
+        message: AppLocalizations.of(context).choose(
+          'Nu am putut citi imaginea aleasa.',
+          'Could not read the selected image.',
         ),
       );
       return;
@@ -111,14 +109,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context).choose(
-              'Alege o imagine JPG, PNG sau WebP.',
-              'Choose a JPG, PNG, or WebP image.',
-            ),
-          ),
+      LendToast.warning(
+        context,
+        message: AppLocalizations.of(context).choose(
+          'Alege o imagine JPG, PNG sau WebP.',
+          'Choose a JPG, PNG, or WebP image.',
         ),
       );
       return;
@@ -162,9 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      LendToast.error(context, message: error.toString());
     } finally {
       if (mounted) {
         setState(() {

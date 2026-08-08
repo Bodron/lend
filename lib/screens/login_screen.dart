@@ -1,8 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
 import '../widgets/language_toggle_button.dart';
+import '../widgets/lend_logo.dart';
+import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
 import 'register_screen.dart';
 
@@ -20,10 +26,21 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  static const _googleIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+  );
+  static const _googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
+
   final _authApi = AuthApi();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _googleSignIn = GoogleSignIn.instance;
   bool _isSubmitting = false;
+  bool _isGoogleSubmitting = false;
+  bool _isAppleSubmitting = false;
+  bool _isGoogleInitialized = false;
 
   @override
   void dispose() {
@@ -47,12 +64,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      LendToast.success(
+        context,
+        message:
             '${strings.choose('Bine ai revenit', 'Welcome back')}, ${session.user.fullName}!',
-          ),
-        ),
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const MainShell()),
@@ -60,19 +75,14 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } on AuthApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      LendToast.error(context, message: error.message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            strings.choose(
-              'Nu se poate conecta la server.',
-              'Cannot connect to the server.',
-            ),
-          ),
+      LendToast.error(
+        context,
+        message: strings.choose(
+          'Nu se poate conecta la server.',
+          'Cannot connect to the server.',
         ),
       );
     } finally {
@@ -82,6 +92,187 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     }
+  }
+
+  Future<void> _loginWithApple() async {
+    final strings = AppLocalizations.of(context);
+
+    setState(() {
+      _isAppleSubmitting = true;
+    });
+
+    try {
+      final nonce = _randomNonce();
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+      );
+
+      final identityToken = credential.identityToken;
+      if (identityToken == null || identityToken.isEmpty) {
+        throw AuthApiException(
+          strings.choose(
+            'Apple nu a returnat un token de autentificare.',
+            'Apple did not return an authentication token.',
+          ),
+        );
+      }
+
+      final session = await _authApi.loginWithApple(
+        identityToken: identityToken,
+        fullName: _appleFullName(
+          credential.givenName,
+          credential.familyName,
+        ),
+        nonce: nonce,
+      );
+
+      if (!mounted) return;
+
+      LendToast.success(
+        context,
+        message:
+            '${strings.choose('Bine ai revenit', 'Welcome back')}, ${session.user.fullName}!',
+      );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const MainShell()),
+        (_) => false,
+      );
+    } on SignInWithAppleAuthorizationException catch (error) {
+      if (!mounted) return;
+      if (error.code == AuthorizationErrorCode.canceled) {
+        return;
+      }
+
+      LendToast.error(
+        context,
+        message: strings.choose(
+          'Autentificarea cu Apple nu a reusit.',
+          'Apple sign-in failed.',
+        ),
+      );
+    } on AuthApiException catch (error) {
+      if (!mounted) return;
+      LendToast.error(context, message: error.message);
+    } catch (_) {
+      if (!mounted) return;
+      LendToast.error(
+        context,
+        message: strings.choose(
+          'Nu se poate conecta la server.',
+          'Cannot connect to the server.',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAppleSubmitting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loginWithGoogle() async {
+    final strings = AppLocalizations.of(context);
+
+    setState(() {
+      _isGoogleSubmitting = true;
+    });
+
+    try {
+      if (!_isGoogleInitialized) {
+        await _googleSignIn.initialize(
+          clientId: _googleIosClientId.isEmpty ? null : _googleIosClientId,
+          serverClientId: _googleServerClientId.isEmpty
+              ? null
+              : _googleServerClientId,
+        );
+        _isGoogleInitialized = true;
+      }
+
+      final account = await _googleSignIn.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw AuthApiException(
+          strings.choose(
+            'Google nu a returnat un token de autentificare.',
+            'Google did not return an authentication token.',
+          ),
+        );
+      }
+
+      final session = await _authApi.loginWithGoogle(
+        idToken: idToken,
+        fullName: account.displayName,
+      );
+
+      if (!mounted) return;
+
+      LendToast.success(
+        context,
+        message:
+            '${strings.choose('Bine ai revenit', 'Welcome back')}, ${session.user.fullName}!',
+      );
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const MainShell()),
+        (_) => false,
+      );
+    } on GoogleSignInException catch (error) {
+      if (!mounted) return;
+      if (error.code == GoogleSignInExceptionCode.canceled) {
+        return;
+      }
+
+      LendToast.error(
+        context,
+        message: strings.choose(
+          'Autentificarea cu Google nu a reusit.',
+          'Google sign-in failed.',
+        ),
+      );
+    } on AuthApiException catch (error) {
+      if (!mounted) return;
+      LendToast.error(context, message: error.message);
+    } catch (_) {
+      if (!mounted) return;
+      LendToast.error(
+        context,
+        message: strings.choose(
+          'Nu se poate conecta la server.',
+          'Cannot connect to the server.',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGoogleSubmitting = false;
+        });
+      }
+    }
+  }
+
+  String? _appleFullName(String? givenName, String? familyName) {
+    final parts = [givenName, familyName]
+        .map((value) => value?.trim())
+        .whereType<String>()
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    return parts.isEmpty ? null : parts.join(' ');
+  }
+
+  String _randomNonce() {
+    const chars =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+
+    return List.generate(
+      32,
+      (_) => chars[random.nextInt(chars.length)],
+    ).join();
   }
 
   @override
@@ -110,7 +301,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           emailController: _emailController,
                           passwordController: _passwordController,
                           isSubmitting: _isSubmitting,
+                          isGoogleSubmitting: _isGoogleSubmitting,
+                          isAppleSubmitting: _isAppleSubmitting,
                           onSubmit: _login,
+                          onGoogleSubmit: _loginWithGoogle,
+                          onAppleSubmit: _loginWithApple,
                         ),
                       ),
                     ),
@@ -136,8 +331,6 @@ class _LoginHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
-
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -158,31 +351,9 @@ class _LoginHeader extends StatelessWidget {
             constraints: const BoxConstraints.tightFor(width: 36, height: 36),
           ),
           const SizedBox(width: 8),
-          Text(
-            strings.appName,
-            style: const TextStyle(
-              color: LoginScreen._text,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          const LendLogo(),
           const Spacer(),
           const LanguageToggleButton(),
-          const SizedBox(width: 8),
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE7EDF6),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFD1D9E8)),
-            ),
-            child: const Icon(
-              Icons.account_circle_outlined,
-              color: LoginScreen._text,
-              size: 28,
-            ),
-          ),
         ],
       ),
     );
@@ -195,14 +366,22 @@ class _LoginCard extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.isSubmitting,
+    required this.isGoogleSubmitting,
+    required this.isAppleSubmitting,
     required this.onSubmit,
+    required this.onGoogleSubmit,
+    required this.onAppleSubmit,
   });
 
   final bool isCompact;
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final bool isSubmitting;
+  final bool isGoogleSubmitting;
+  final bool isAppleSubmitting;
   final VoidCallback onSubmit;
+  final VoidCallback onGoogleSubmit;
+  final VoidCallback onAppleSubmit;
 
   @override
   Widget build(BuildContext context) {
@@ -324,19 +503,31 @@ class _LoginCard extends StatelessWidget {
           SizedBox(height: isCompact ? 34 : 48),
           const _DividerLabel(),
           SizedBox(height: isCompact ? 26 : 36),
-          const Row(
+          Row(
             children: [
               Expanded(
                 child: _SocialButton(
                   assetPath: 'assets/auth/google_g.png',
                   label: 'Google',
+                  isLoading: isGoogleSubmitting,
+                  onPressed: isSubmitting ||
+                          isGoogleSubmitting ||
+                          isAppleSubmitting
+                      ? null
+                      : onGoogleSubmit,
                 ),
               ),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: _SocialButton(
                   assetPath: 'assets/auth/apple_logo.png',
                   label: 'Apple',
+                  isLoading: isAppleSubmitting,
+                  onPressed: isSubmitting ||
+                          isGoogleSubmitting ||
+                          isAppleSubmitting
+                      ? null
+                      : onAppleSubmit,
                 ),
               ),
             ],
@@ -466,23 +657,36 @@ class _DividerLabel extends StatelessWidget {
 }
 
 class _SocialButton extends StatelessWidget {
-  const _SocialButton({required this.assetPath, required this.label});
+  const _SocialButton({
+    required this.assetPath,
+    required this.label,
+    required this.onPressed,
+    this.isLoading = false,
+  });
 
   final String assetPath;
   final String label;
+  final VoidCallback? onPressed;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 46,
       child: OutlinedButton.icon(
-        onPressed: () {},
-        icon: Image.asset(
-          assetPath,
-          width: 18,
-          height: 18,
-          fit: BoxFit.contain,
-        ),
+        onPressed: onPressed,
+        icon: isLoading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Image.asset(
+                assetPath,
+                width: 18,
+                height: 18,
+                fit: BoxFit.contain,
+              ),
         label: Text(
           label,
           overflow: TextOverflow.ellipsis,

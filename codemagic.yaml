@@ -30,6 +30,9 @@ workflows:
             echo "APP_BASE_URL or APP_BASE_URL_DEV must be set in Codemagic environment."
             exit 1
           fi
+          if [ -n "$GOOGLE_MAPS_IOS_API_KEY" ]; then
+            echo "GOOGLE_MAPS_IOS_API_KEY=$GOOGLE_MAPS_IOS_API_KEY" > ios/Flutter/MapsKeys.xcconfig
+          fi
           flutter build ipa --release --export-options-plist=$CM_EXPORT_OPTIONS_PLIST --dart-define=APP_BASE_URL="$APP_BUILD_BASE_URL"
     artifacts:
       - build/ios/ipa/*.ipa

@@ -327,6 +327,8 @@ class _QrShell extends StatelessWidget {
             dimension: qrSize.toDouble(),
             child: QrImageView(
               data: returnCode,
+              version: QrVersions.auto,
+              errorCorrectionLevel: QrErrorCorrectLevel.H,
               backgroundColor: Colors.white,
               eyeStyle: const QrEyeStyle(
                 eyeShape: QrEyeShape.square,
@@ -336,29 +338,8 @@ class _QrShell extends StatelessWidget {
                 dataModuleShape: QrDataModuleShape.square,
                 color: ReturnQrScreen._primary,
               ),
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.all(8),
             ),
-          ),
-        ),
-        Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: ReturnQrScreen._outlineVariant),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: const Icon(
-            Icons.qr_code_2_rounded,
-            color: ReturnQrScreen._text,
-            size: 32,
           ),
         ),
       ],

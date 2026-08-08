@@ -16,7 +16,6 @@ class LendBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final strings = AppLocalizations.of(context);
     final items = [
       LendBottomNavigationItem(Icons.search_rounded, strings.navExplore),
@@ -29,11 +28,11 @@ class LendBottomNavigation extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 110 + bottomPadding,
+      height: 86,
       child: CustomPaint(
         painter: _LendBottomNavigationPainter(),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(14, 20, 14, bottomPadding + 8),
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final selectedIndex = currentIndex.clamp(0, items.length - 1);
@@ -80,7 +79,7 @@ class LendBottomNavigation extends StatelessWidget {
                   Positioned(
                     left: 0,
                     right: 0,
-                    top: -8,
+                    top: 0,
                     child: Center(
                       child: _AddListingNavigationButton(
                         onPressed: onAddListing,
@@ -91,7 +90,7 @@ class LendBottomNavigation extends StatelessWidget {
                   Positioned(
                     left: 0,
                     right: 0,
-                    top: 47,
+                    top: 43,
                     child: SizedBox(
                       height: 14,
                       child: AnimatedAlign(
@@ -125,6 +124,25 @@ class LendBottomNavigation extends StatelessWidget {
       _ => 1,
     };
   }
+}
+
+class _LendBottomNavigationPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final background = Paint()..color = const Color(0xFF050505);
+
+    final path = Path()
+      ..moveTo(0, 14)
+      ..quadraticBezierTo(size.width / 2, 0, size.width, 14)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(path, background);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class LendBottomNavigationItem {
@@ -241,9 +259,9 @@ class _AddListingNavigationButton extends StatelessWidget {
           splashColor: Colors.white.withValues(alpha: 0.08),
           highlightColor: Colors.white.withValues(alpha: 0.05),
           child: const SizedBox(
-            width: 64,
-            height: 64,
-            child: Icon(Icons.add_rounded, color: Colors.white, size: 42),
+            width: 58,
+            height: 58,
+            child: Icon(Icons.add_rounded, color: Colors.white, size: 40),
           ),
         ),
       ),
@@ -251,21 +269,3 @@ class _AddListingNavigationButton extends StatelessWidget {
   }
 }
 
-class _LendBottomNavigationPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final background = Paint()..color = const Color(0xFF050505);
-
-    final path = Path()
-      ..moveTo(0, 34)
-      ..quadraticBezierTo(size.width / 2, 6, size.width, 34)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    canvas.drawPath(path, background);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

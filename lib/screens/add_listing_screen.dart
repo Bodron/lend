@@ -10,6 +10,7 @@ import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/storage_api.dart';
 import '../widgets/language_toggle_button.dart';
+import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
 
 class AddListingScreen extends StatefulWidget {
@@ -247,9 +248,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    LendToast.info(context, message: message);
   }
 
   String _categoryLabel(String value) {

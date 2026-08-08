@@ -60,6 +60,30 @@ class AuthApi {
     return _postAuth('/auth/login', {'email': email, 'password': password});
   }
 
+  Future<AuthSession> loginWithApple({
+    required String identityToken,
+    String? fullName,
+    String? nonce,
+  }) async {
+    return _postAuth('/auth/apple', {
+      'identityToken': identityToken,
+      if (fullName != null && fullName.trim().isNotEmpty)
+        'fullName': fullName.trim(),
+      if (nonce != null && nonce.trim().isNotEmpty) 'nonce': nonce.trim(),
+    });
+  }
+
+  Future<AuthSession> loginWithGoogle({
+    required String idToken,
+    String? fullName,
+  }) async {
+    return _postAuth('/auth/google', {
+      'idToken': idToken,
+      if (fullName != null && fullName.trim().isNotEmpty)
+        'fullName': fullName.trim(),
+    });
+  }
+
   Future<AuthUser> me(String accessToken) async {
     final response = await _client.get(
       Uri.parse('$baseUrl/auth/me'),

@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
+import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
 
 class RentalContractScreen extends StatefulWidget {
@@ -102,8 +103,9 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Comanda #${order.id} a fost trimisa.')),
+      LendToast.success(
+        context,
+        message: 'Comanda #${order.id} a fost trimisa.',
       );
 
       Navigator.of(context).pushAndRemoveUntil(
@@ -117,9 +119,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      LendToast.error(context, message: error.toString());
     } finally {
       if (mounted) {
         setState(() {

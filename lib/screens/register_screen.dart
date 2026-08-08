@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
 import '../widgets/language_toggle_button.dart';
+import '../widgets/lend_logo.dart';
+import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
 import 'login_screen.dart';
 
@@ -45,14 +47,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final strings = AppLocalizations.of(context);
 
     if (!_acceptedTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            strings.choose(
-              'Trebuie sa accepti termenii pentru a continua.',
-              'You must accept the terms to continue.',
-            ),
-          ),
+      LendToast.warning(
+        context,
+        message: strings.choose(
+          'Trebuie sa accepti termenii pentru a continua.',
+          'You must accept the terms to continue.',
         ),
       );
       return;
@@ -72,12 +71,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      LendToast.success(
+        context,
+        message:
             '${strings.choose('Cont creat pentru', 'Account created for')} ${session.user.fullName}.',
-          ),
-        ),
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const MainShell()),
@@ -85,19 +82,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     } on AuthApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      LendToast.error(context, message: error.message);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            strings.choose(
-              'Nu se poate conecta la server.',
-              'Cannot connect to the server.',
-            ),
-          ),
+      LendToast.error(
+        context,
+        message: strings.choose(
+          'Nu se poate conecta la server.',
+          'Cannot connect to the server.',
         ),
       );
     } finally {
@@ -215,14 +207,7 @@ class _RegisterHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            strings.appName,
-            style: const TextStyle(
-              color: _RegisterScreenState._text,
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          const LendLogo(),
           const Spacer(),
           const LanguageToggleButton(),
           const SizedBox(width: 8),
