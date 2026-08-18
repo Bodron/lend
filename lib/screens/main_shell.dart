@@ -82,6 +82,8 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomNavHeight = 86 + MediaQuery.paddingOf(context).bottom;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.black,
@@ -98,7 +100,7 @@ class _MainShellState extends State<MainShell> {
               children: [
                 Positioned.fill(
                   child: Padding(
-                    padding: const EdgeInsets.only(bottom: 86),
+                    padding: EdgeInsets.only(bottom: bottomNavHeight),
                     child: IndexedStack(
                       index: _currentIndex,
                       children: [

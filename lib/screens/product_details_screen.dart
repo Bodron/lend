@@ -1,4 +1,10 @@
+import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/gestures.dart'
+    show EagerGestureRecognizer, OneSequenceGestureRecognizer;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/products_api.dart';
@@ -22,11 +28,31 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
   static const _outlineVariant = Color(0xFFC3C6D1);
+  static const _bucharest = LatLng(44.4268, 26.1025);
 
   static const _ownerImageUrl =
       'https://lh3.googleusercontent.com/aida-public/AB6AXuAPgnU0_oFZ2TNOVbJqPytTt9gv2-H01VfNzs_FAujLByHdiiBrMuNQb5Z_Q_i5FDCmkBYt_se57sFT0HqRoSzbXvCti7x7DFSSFJZUvKb3Ql6bL1TxgtpdljGgWDu5IBUzPpxd_Ztl_yo1BYfrflbQliDHNGXA_to7j5gVKZIg-3uChyuKHD91dtGJCrbTFpklvdKBYW8JGFWu8BN24WPGtdALpY7eDL37sXVZv6fCl588rBrLOjl3Vr_Zz5d-ORanOp_Yu-c9tkg';
 
   bool _perHour = true;
+  String? _mapStyle;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMapStyle();
+  }
+
+  Future<void> _loadMapStyle() async {
+    final mapStyle = await rootBundle.loadString(
+      'assets/maps/altus_map_3.json',
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _mapStyle = mapStyle;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +77,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       _DetailsInfoCard(
                         product: product,
                         perHour: _perHour,
+                        mapStyle: _mapStyle,
                         onPriceModeChanged: (value) {
                           setState(() {
                             _perHour = value;
@@ -239,11 +266,13 @@ class _DetailsInfoCard extends StatelessWidget {
   const _DetailsInfoCard({
     required this.product,
     required this.perHour,
+    required this.mapStyle,
     required this.onPriceModeChanged,
   });
 
   final LendProduct product;
   final bool perHour;
+  final String? mapStyle;
   final ValueChanged<bool> onPriceModeChanged;
 
   @override
@@ -260,7 +289,9 @@ class _DetailsInfoCard extends StatelessWidget {
             _TitleBlock(product: product),
             const SizedBox(height: 16),
             _StatusBadges(product: product),
-            const SizedBox(height: 24),
+            const SizedBox(height: 18),
+            _ProductLocationMap(product: product, mapStyle: mapStyle),
+            const SizedBox(height: 18),
             _PriceSwitcher(perHour: perHour, onChanged: onPriceModeChanged),
             const SizedBox(height: 24),
             _DescriptionSection(product: product),
@@ -346,11 +377,6 @@ class _StatusBadges extends StatelessWidget {
           ).choose('Disponibil acum', 'Available now'),
           color: Color(0xFF575750),
         ),
-        _StatusBadge(
-          icon: Icons.near_me_outlined,
-          label: product.city,
-          color: _ProductDetailsScreenState._secondary,
-        ),
       ],
     );
   }
@@ -393,6 +419,166 @@ class _StatusBadge extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ProductLocationMap extends StatelessWidget {
+  const _ProductLocationMap({required this.product, required this.mapStyle});
+
+  final LendProduct product;
+  final String? mapStyle;
+
+  LatLng get _position {
+    if (product.latitude != null && product.longitude != null) {
+      return LatLng(product.latitude!, product.longitude!);
+    }
+
+    return _productCityCoordinates[_normalizeCity(product.city)] ??
+        _ProductDetailsScreenState._bucharest;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final position = _position;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        height: 156,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            GoogleMap(
+              style: mapStyle,
+              initialCameraPosition: CameraPosition(
+                target: position,
+                zoom: product.latitude == null ? 12 : 15,
+              ),
+              markers: {
+                Marker(
+                  markerId: const MarkerId('product-location'),
+                  position: position,
+                  onTap: () => _showDirectionsSheet(context, position),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueAzure,
+                  ),
+                ),
+              },
+              myLocationButtonEnabled: false,
+              mapToolbarEnabled: false,
+              zoomControlsEnabled: false,
+              compassEnabled: false,
+              rotateGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              onTap: (_) => _showDirectionsSheet(context, position),
+              gestureRecognizers: {
+                Factory<OneSequenceGestureRecognizer>(
+                  EagerGestureRecognizer.new,
+                ),
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDirectionsSheet(BuildContext context, LatLng position) {
+    final parentContext = context;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) {
+        final strings = AppLocalizations.of(sheetContext);
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  strings.choose('Deschide traseul', 'Open directions'),
+                  style: const TextStyle(
+                    color: _ProductDetailsScreenState._text,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  strings.choose(
+                    'Porneste navigarea catre locatia produsului in Google Maps.',
+                    'Start navigation to this item location in Google Maps.',
+                  ),
+                  style: const TextStyle(
+                    color: _ProductDetailsScreenState._muted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.of(sheetContext).pop();
+                      _openGoogleMapsDirections(parentContext, position);
+                    },
+                    icon: const Icon(Icons.directions_rounded),
+                    label: Text(
+                      strings.choose(
+                        'Deschide in Google Maps',
+                        'Open in Google Maps',
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _ProductDetailsScreenState._primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openGoogleMapsDirections(
+    BuildContext context,
+    LatLng position,
+  ) async {
+    final uri = Uri.https('www.google.com', '/maps/dir/', {
+      'api': '1',
+      'destination': '${position.latitude},${position.longitude}',
+      'travelmode': 'driving',
+    });
+
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context).choose(
+              'Nu am putut deschide Google Maps.',
+              'Could not open Google Maps.',
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -521,8 +707,10 @@ class _SpecsGrid extends StatelessWidget {
       ),
       (
         Icons.location_on_rounded,
-        AppLocalizations.of(context).choose('Oras', 'City'),
-        product.city,
+        AppLocalizations.of(context).choose('Locatie', 'Location'),
+        product.address.isEmpty
+            ? product.city
+            : '${product.address}\n${product.city}',
       ),
       (
         Icons.account_balance_wallet_rounded,
@@ -891,7 +1079,7 @@ class _ProtectCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'BorrowIt Protect',
+                    'Lend Protect',
                     style: TextStyle(
                       color: _ProductDetailsScreenState._secondary,
                       fontSize: 14,
@@ -960,6 +1148,7 @@ class _BottomActionBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
+            flex: 4,
             child: Text.rich(
               TextSpan(
                 text: price,
@@ -981,8 +1170,9 @@ class _BottomActionBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
+            flex: 5,
             child: SizedBox(
               height: 56,
               child: FilledButton(
@@ -1003,22 +1193,36 @@ class _BottomActionBar extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        AppLocalizations.of(
-                          context,
-                        ).choose('Inchiriaza acum', 'Rent now'),
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded, size: 20),
-                  ],
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final strings = AppLocalizations.of(context);
+                    final label = constraints.maxWidth < 150
+                        ? strings.choose('Inchiriaza', 'Rent')
+                        : strings.choose('Inchiriaza acum', 'Rent now');
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward_rounded, size: 20),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -1028,6 +1232,44 @@ class _BottomActionBar extends StatelessWidget {
     );
   }
 }
+
+String _normalizeCity(String city) {
+  return city
+      .trim()
+      .toLowerCase()
+      .replaceAll('ă', 'a')
+      .replaceAll('â', 'a')
+      .replaceAll('î', 'i')
+      .replaceAll('ș', 's')
+      .replaceAll('ş', 's')
+      .replaceAll('ț', 't')
+      .replaceAll('ţ', 't')
+      .replaceAll('Äƒ', 'a')
+      .replaceAll('Ã¢', 'a')
+      .replaceAll('Ã®', 'i')
+      .replaceAll('È™', 's')
+      .replaceAll('ÅŸ', 's')
+      .replaceAll('È›', 't')
+      .replaceAll('Å£', 't');
+}
+
+const _productCityCoordinates = <String, LatLng>{
+  'bucuresti': LatLng(44.4268, 26.1025),
+  'bucharest': LatLng(44.4268, 26.1025),
+  'cluj-napoca': LatLng(46.7712, 23.6236),
+  'cluj napoca': LatLng(46.7712, 23.6236),
+  'brasov': LatLng(45.6427, 25.5887),
+  'timisoara': LatLng(45.7489, 21.2087),
+  'iasi': LatLng(47.1585, 27.6014),
+  'constanta': LatLng(44.1598, 28.6348),
+  'sibiu': LatLng(45.7983, 24.1256),
+  'oradea': LatLng(47.0465, 21.9189),
+  'craiova': LatLng(44.3302, 23.7949),
+  'galati': LatLng(45.4353, 28.0080),
+  'ploiesti': LatLng(44.9367, 26.0129),
+  'pitesti': LatLng(44.8565, 24.8692),
+  'arad': LatLng(46.1866, 21.3123),
+};
 
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.text);

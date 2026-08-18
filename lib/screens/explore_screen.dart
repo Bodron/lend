@@ -13,6 +13,7 @@ import 'my_listings_screen.dart';
 import 'product_details_screen.dart';
 import 'profile_screen.dart';
 import 'rentals_screen.dart';
+import 'search_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key, this.showChrome = true, this.onNavigate});
@@ -87,6 +88,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     child: _ExploreHeader(
                       categories: categories,
                       selectedIndex: selectedIndex,
+                      onSearch: () => _openSearch(products),
                       onSelected: (index) {
                         setState(() {
                           _selectedCategoryIndex = index;
@@ -203,6 +205,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  void _openSearch(List<LendProduct> products) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SearchScreen(initialProducts: products),
+      ),
+    );
+  }
+
   void _reloadProducts() {
     setState(() {
       _exploreFuture = _loadExploreData();
@@ -261,11 +271,13 @@ class _ExploreHeader extends StatelessWidget {
   const _ExploreHeader({
     required this.categories,
     required this.selectedIndex,
+    required this.onSearch,
     required this.onSelected,
   });
 
   final List<_CategoryFilter> categories;
   final int selectedIndex;
+  final VoidCallback onSearch;
   final ValueChanged<int> onSelected;
 
   @override
@@ -293,7 +305,7 @@ class _ExploreHeader extends StatelessWidget {
               elevation: 8,
               shadowColor: Colors.black26,
               child: IconButton(
-                onPressed: () {},
+                onPressed: onSearch,
                 icon: const Icon(Icons.search_rounded),
                 color: Colors.white,
               ),

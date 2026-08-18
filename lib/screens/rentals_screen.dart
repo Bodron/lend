@@ -102,11 +102,11 @@ class _RentalsScreenState extends State<RentalsScreen> {
 
     return _RentalHistoryItem(
       title: order.productTitle.isEmpty
-          ? 'Produs inchiriat'
+          ? 'Produs închiriat'
           : order.productTitle,
       dateText: start == null || end == null
-          ? 'Inchiriere finalizata'
-          : 'Inchiriat: ${_formatShortDate(start)} - ${_formatShortDate(end)}',
+          ? 'Închiriere finalizată'
+          : 'Închiriat: ${_formatShortDate(start)} - ${_formatShortDate(end)}',
       imageUrl: order.productImageUrl,
       imageContentType: order.productImageContentType,
       imageType: order.productImageType,
@@ -218,7 +218,8 @@ class _RentalsScreenState extends State<RentalsScreen> {
                           }
 
                           final data = snapshot.data!;
-                          final orders = _perspective == _RentalPerspective.renting
+                          final orders =
+                              _perspective == _RentalPerspective.renting
                               ? data.renting
                               : data.lending;
                           final activeItems = orders
@@ -404,10 +405,7 @@ class _RentalsMessage extends StatelessWidget {
 }
 
 class _PerspectiveTabs extends StatelessWidget {
-  const _PerspectiveTabs({
-    required this.selected,
-    required this.onChanged,
-  });
+  const _PerspectiveTabs({required this.selected, required this.onChanged});
 
   final _RentalPerspective selected;
   final ValueChanged<_RentalPerspective> onChanged;
@@ -786,9 +784,7 @@ class _ActiveRentalCard extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          AppLocalizations.of(
-                            context,
-                          ).choose(
+                          AppLocalizations.of(context).choose(
                             perspective == _RentalPerspective.renting
                                 ? 'Finalizeaza returul'
                                 : 'Scaneaza cod retur',
@@ -1112,6 +1108,9 @@ const _emptyProduct = LendProduct(
   pricePerDay: 0,
   deposit: 0,
   city: '',
+  address: '',
+  latitude: null,
+  longitude: null,
   ownerName: '',
   rating: 0,
   isAvailable: true,

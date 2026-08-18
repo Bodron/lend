@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:video_player/video_player.dart';
 
 import '../l10n/app_localizations.dart';
@@ -35,6 +37,9 @@ class ListingFormData {
     this.categoryLabel = '',
     this.deposit = '0',
     this.city = '',
+    this.address = '',
+    this.latitude,
+    this.longitude,
     this.media = const [],
     this.pricePerHour = '',
   });
@@ -49,6 +54,9 @@ class ListingFormData {
   final String categoryLabel;
   final String deposit;
   final String city;
+  final String address;
+  final double? latitude;
+  final double? longitude;
   final List<UploadedMedia> media;
 }
 
@@ -62,6 +70,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
   static const _secondary = Color(0xFF446085);
   static const _secondaryContainer = Color(0xFFB7D3FE);
   static const _primaryFixed = Color(0xFFD5E3FF);
+  static const _bucharest = LatLng(44.4268, 26.1025);
 
   bool _insuranceEnabled = true;
   String _category = 'choose';
@@ -71,9 +80,12 @@ class _AddListingScreenState extends State<AddListingScreen> {
   late final TextEditingController _pricePerHourController;
   late final TextEditingController _depositController;
   late final TextEditingController _cityController;
+  late final TextEditingController _addressController;
   final _productsApi = ProductsApi();
   final _storageApi = StorageApi();
   final List<_SelectedMedia> _selectedMedia = [];
+  LatLng _selectedLocation = _bucharest;
+  String? _mapStyle;
   bool _submitting = false;
 
   @override
@@ -99,6 +111,18 @@ class _AddListingScreenState extends State<AddListingScreen> {
           ? initialData!.city
           : 'Bucuresti',
     );
+    _addressController = TextEditingController(
+      text: initialData?.address ?? '',
+    );
+    if (initialData?.latitude != null && initialData?.longitude != null) {
+      _selectedLocation = LatLng(
+        initialData!.latitude!,
+        initialData.longitude!,
+      );
+    } else {
+      _selectedLocation = _cityCenterFor(_cityController.text);
+    }
+    _loadMapStyle();
   }
 
   @override
@@ -109,7 +133,20 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _pricePerHourController.dispose();
     _depositController.dispose();
     _cityController.dispose();
+    _addressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMapStyle() async {
+    final mapStyle = await rootBundle.loadString(
+      'assets/maps/altus_map_3.json',
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _mapStyle = mapStyle;
+    });
   }
 
   Future<void> _pickMedia() async {
@@ -152,17 +189,19 @@ class _AddListingScreenState extends State<AddListingScreen> {
     final pricePerDay = int.tryParse(_pricePerDayController.text.trim()) ?? 0;
     final deposit = int.tryParse(_depositController.text.trim()) ?? 0;
     final city = _cityController.text.trim();
+    final address = _addressController.text.trim();
     final category = _categoryLabel(_category);
 
     if (title.isEmpty ||
         description.isEmpty ||
         pricePerDay <= 0 ||
         city.isEmpty ||
+        address.isEmpty ||
         _category == 'choose') {
       _showMessage(
         AppLocalizations.of(context).choose(
-          'Completeaza titlul, categoria, descrierea, orasul si pretul.',
-          'Complete title, category, description, city, and price.',
+          'Completeaza titlul, categoria, descrierea, orasul, adresa si pretul.',
+          'Complete title, category, description, city, address, and price.',
         ),
       );
       return;
@@ -202,6 +241,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
         pricePerDay: pricePerDay,
         deposit: deposit,
         city: city,
+        address: address,
+        latitude: _selectedLocation.latitude,
+        longitude: _selectedLocation.longitude,
         media: uploadedMedia,
       );
 
@@ -290,73 +332,115 @@ class _AddListingScreenState extends State<AddListingScreen> {
     return supported.contains(value) ? value : 'choose';
   }
 
+  void _selectLocation(LatLng location) {
+    setState(() {
+      _selectedLocation = location;
+    });
+  }
+
+  void _centerPinOnCity() {
+    setState(() {
+      _selectedLocation = _cityCenterFor(_cityController.text);
+    });
+  }
+
+  static LatLng _cityCenterFor(String city) {
+    final normalizedCity = city
+        .trim()
+        .toLowerCase()
+        .replaceAll('ă', 'a')
+        .replaceAll('â', 'a')
+        .replaceAll('î', 'i')
+        .replaceAll('ș', 's')
+        .replaceAll('ş', 's')
+        .replaceAll('ț', 't')
+        .replaceAll('ţ', 't');
+
+    return _listingCityCoordinates[normalizedCity] ?? _bucharest;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: _AddListingTopBar(isEditing: widget.isEditing),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          bottom: false,
+          child: ColoredBox(
+            color: _background,
+            child: Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _AddListingTopBar(isEditing: widget.isEditing),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 24, 20, 144),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          const _TrustBanner(),
+                          const SizedBox(height: 32),
+                          _PhotosSection(
+                            imageUrl: widget.initialData?.imageUrl,
+                            selectedMedia: _selectedMedia,
+                            onPickMedia: _pickMedia,
+                            onRemoveMedia: _removeMedia,
+                          ),
+                          const SizedBox(height: 32),
+                          _BasicInfoSection(
+                            category: _category,
+                            titleController: _titleController,
+                            descriptionController: _descriptionController,
+                            cityController: _cityController,
+                            addressController: _addressController,
+                            selectedLocation: _selectedLocation,
+                            mapStyle: _mapStyle,
+                            onCategoryChanged: (value) {
+                              if (value == null) return;
+                              setState(() {
+                                _category = value;
+                              });
+                            },
+                            onLocationChanged: _selectLocation,
+                            onCenterPinOnCity: _centerPinOnCity,
+                          ),
+                          const SizedBox(height: 32),
+                          _RatesSection(
+                            pricePerHourController: _pricePerHourController,
+                            pricePerDayController: _pricePerDayController,
+                            depositController: _depositController,
+                          ),
+                          const SizedBox(height: 24),
+                          _InsuranceCard(
+                            enabled: _insuranceEnabled,
+                            onChanged: (value) {
+                              setState(() {
+                                _insuranceEnabled = value;
+                              });
+                            },
+                          ),
+                        ]),
+                      ),
+                    ),
+                  ],
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 144),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      const _TrustBanner(),
-                      const SizedBox(height: 32),
-                      _PhotosSection(
-                        imageUrl: widget.initialData?.imageUrl,
-                        selectedMedia: _selectedMedia,
-                        onPickMedia: _pickMedia,
-                        onRemoveMedia: _removeMedia,
-                      ),
-                      const SizedBox(height: 32),
-                      _BasicInfoSection(
-                        category: _category,
-                        titleController: _titleController,
-                        descriptionController: _descriptionController,
-                        cityController: _cityController,
-                        onCategoryChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _category = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 32),
-                      _RatesSection(
-                        pricePerHourController: _pricePerHourController,
-                        pricePerDayController: _pricePerDayController,
-                        depositController: _depositController,
-                      ),
-                      const SizedBox(height: 24),
-                      _InsuranceCard(
-                        enabled: _insuranceEnabled,
-                        onChanged: (value) {
-                          setState(() {
-                            _insuranceEnabled = value;
-                          });
-                        },
-                      ),
-                    ]),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: _BottomActions(
+                    isEditing: widget.isEditing,
+                    submitting: _submitting,
+                    onSubmit: _submitListing,
                   ),
                 ),
               ],
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _BottomActions(
-                isEditing: widget.isEditing,
-                submitting: _submitting,
-                onSubmit: _submitListing,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -915,14 +999,24 @@ class _BasicInfoSection extends StatelessWidget {
     required this.titleController,
     required this.descriptionController,
     required this.cityController,
+    required this.addressController,
+    required this.selectedLocation,
+    required this.mapStyle,
     required this.onCategoryChanged,
+    required this.onLocationChanged,
+    required this.onCenterPinOnCity,
   });
 
   final String category;
   final TextEditingController titleController;
   final TextEditingController descriptionController;
   final TextEditingController cityController;
+  final TextEditingController addressController;
+  final LatLng selectedLocation;
+  final String? mapStyle;
   final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<LatLng> onLocationChanged;
+  final VoidCallback onCenterPinOnCity;
 
   @override
   Widget build(BuildContext context) {
@@ -983,6 +1077,20 @@ class _BasicInfoSection extends StatelessWidget {
           hint: strings.choose('Ex: Bucuresti', 'Ex: Bucharest'),
         ),
         _LabeledField(
+          controller: addressController,
+          label: strings.choose('Adresa', 'Address'),
+          hint: strings.choose(
+            'Ex: Strada Exemplu 10, Sector 3',
+            'Ex: 10 Example Street',
+          ),
+        ),
+        _LocationPicker(
+          selectedLocation: selectedLocation,
+          mapStyle: mapStyle,
+          onLocationChanged: onLocationChanged,
+          onCenterPinOnCity: onCenterPinOnCity,
+        ),
+        _LabeledField(
           controller: descriptionController,
           label: strings.choose('Descriere', 'Description'),
           hint: strings.choose(
@@ -990,6 +1098,112 @@ class _BasicInfoSection extends StatelessWidget {
             'Describe the item condition and what is included...',
           ),
           maxLines: 4,
+        ),
+      ],
+    );
+  }
+}
+
+class _LocationPicker extends StatefulWidget {
+  const _LocationPicker({
+    required this.selectedLocation,
+    required this.mapStyle,
+    required this.onLocationChanged,
+    required this.onCenterPinOnCity,
+  });
+
+  final LatLng selectedLocation;
+  final String? mapStyle;
+  final ValueChanged<LatLng> onLocationChanged;
+  final VoidCallback onCenterPinOnCity;
+
+  @override
+  State<_LocationPicker> createState() => _LocationPickerState();
+}
+
+class _LocationPickerState extends State<_LocationPicker> {
+  GoogleMapController? _controller;
+
+  @override
+  void didUpdateWidget(covariant _LocationPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedLocation != widget.selectedLocation) {
+      _controller?.animateCamera(
+        CameraUpdate.newLatLng(widget.selectedLocation),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _FieldLabel(strings.choose('Pin pe harta', 'Map pin')),
+            ),
+            TextButton.icon(
+              onPressed: widget.onCenterPinOnCity,
+              icon: const Icon(Icons.my_location_rounded, size: 18),
+              label: Text(
+                strings.choose('Centreaza pe oras', 'Center on city'),
+              ),
+            ),
+          ],
+        ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            height: 220,
+            child: GoogleMap(
+              style: widget.mapStyle,
+              initialCameraPosition: CameraPosition(
+                target: widget.selectedLocation,
+                zoom: 13,
+              ),
+              markers: {
+                Marker(
+                  markerId: const MarkerId('listing-location'),
+                  position: widget.selectedLocation,
+                  draggable: true,
+                  onDragEnd: widget.onLocationChanged,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueAzure,
+                  ),
+                ),
+              },
+              onMapCreated: (controller) {
+                _controller = controller;
+              },
+              onTap: widget.onLocationChanged,
+              myLocationButtonEnabled: false,
+              mapToolbarEnabled: false,
+              zoomControlsEnabled: false,
+              compassEnabled: false,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          strings.choose(
+            'Atinge harta sau trage pinul pentru locatia exacta.',
+            'Tap the map or drag the pin for the exact location.',
+          ),
+          style: const TextStyle(
+            color: _AddListingScreenState._muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );
@@ -1462,6 +1676,24 @@ InputDecoration _inputDecoration(String hint) {
     ),
   );
 }
+
+const _listingCityCoordinates = <String, LatLng>{
+  'bucuresti': LatLng(44.4268, 26.1025),
+  'bucharest': LatLng(44.4268, 26.1025),
+  'cluj-napoca': LatLng(46.7712, 23.6236),
+  'cluj napoca': LatLng(46.7712, 23.6236),
+  'brasov': LatLng(45.6427, 25.5887),
+  'timisoara': LatLng(45.7489, 21.2087),
+  'iasi': LatLng(47.1585, 27.6014),
+  'constanta': LatLng(44.1598, 28.6348),
+  'sibiu': LatLng(45.7983, 24.1256),
+  'oradea': LatLng(47.0465, 21.9189),
+  'craiova': LatLng(44.3302, 23.7949),
+  'galati': LatLng(45.4353, 28.0080),
+  'ploiesti': LatLng(44.9367, 26.0129),
+  'pitesti': LatLng(44.8565, 24.8692),
+  'arad': LatLng(46.1866, 21.3123),
+};
 
 final _addListingCardDecoration = BoxDecoration(
   color: _AddListingScreenState._card,

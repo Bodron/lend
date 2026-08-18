@@ -17,6 +17,8 @@ class LendBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final bottomPadding = bottomInset > 0 ? 14.0 : 8.0;
     final items = [
       LendBottomNavigationItem(Icons.search_rounded, strings.navExplore),
       LendBottomNavigationItem(Icons.list_alt_rounded, strings.navListings),
@@ -28,11 +30,11 @@ class LendBottomNavigation extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 86,
+      height: 86 + bottomInset,
       child: CustomPaint(
         painter: _LendBottomNavigationPainter(),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
+          padding: EdgeInsets.fromLTRB(14, 8, 14, bottomPadding),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final selectedIndex = currentIndex.clamp(0, items.length - 1);

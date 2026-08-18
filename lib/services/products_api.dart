@@ -124,6 +124,9 @@ class ProductSaveInput {
     required this.pricePerDay,
     required this.deposit,
     required this.city,
+    required this.address,
+    required this.latitude,
+    required this.longitude,
     required this.media,
   });
 
@@ -134,6 +137,9 @@ class ProductSaveInput {
   final int pricePerDay;
   final int deposit;
   final String city;
+  final String address;
+  final double? latitude;
+  final double? longitude;
   final List<UploadedMedia> media;
 
   Map<String, dynamic> toJson() {
@@ -145,6 +151,9 @@ class ProductSaveInput {
       'pricePerDay': pricePerDay,
       'deposit': deposit,
       'city': city,
+      'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
       'media': media.map((item) => item.toJson()).toList(),
     };
   }
@@ -170,6 +179,9 @@ class LendProduct {
     required this.pricePerDay,
     required this.deposit,
     required this.city,
+    required this.address,
+    required this.latitude,
+    required this.longitude,
     required this.ownerName,
     required this.rating,
     required this.isAvailable,
@@ -185,6 +197,9 @@ class LendProduct {
   final int pricePerDay;
   final int deposit;
   final String city;
+  final String address;
+  final double? latitude;
+  final double? longitude;
   final String ownerName;
   final double rating;
   final bool isAvailable;
@@ -221,6 +236,9 @@ class LendProduct {
       pricePerDay: _toInt(json['pricePerDay']),
       deposit: _toInt(json['deposit']),
       city: (json['city'] ?? '').toString(),
+      address: (json['address'] ?? '').toString(),
+      latitude: _toNullableDouble(json['latitude']),
+      longitude: _toNullableDouble(json['longitude']),
       ownerName: (json['ownerName'] ?? '').toString(),
       rating: _toDouble(json['rating']),
       isAvailable: json['isAvailable'] != false,
@@ -255,6 +273,18 @@ class LendProduct {
     }
 
     return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static double? _toNullableDouble(Object? value) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value.toString());
   }
 }
 

@@ -163,8 +163,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 AppLocalizations.of(context).choose(
-                  '© 2024 BorrowIt. Economie colaborativa pentru un viitor mai bun.',
-                  '© 2024 BorrowIt. Shared economy for a better future.',
+                  '© 2024 Lend. Economie colaborativa pentru un viitor mai bun.',
+                  '© 2024 Lend. Shared economy for a better future.',
                 ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
@@ -577,7 +577,7 @@ class _TermsCheckbox extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const TextSpan(text: ' BorrowIt.'),
+                const TextSpan(text: ' Lend.'),
               ],
             ),
           ),

@@ -199,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (widget.showChrome)
                   const SliverToBoxAdapter(
                     child: LendTopBar(
-                      title: 'BorrowIt',
+                      title: 'Lend',
                       avatarUrl: _ProfileScreenState._avatarUrl,
                     ),
                   )

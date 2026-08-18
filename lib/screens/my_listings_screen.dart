@@ -63,9 +63,11 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
         CustomScrollView(
           slivers: [
             if (widget.showChrome)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: LendTopBar(
-                  title: 'Anunturile Mele',
+                  title: AppLocalizations.of(
+                    context,
+                  ).choose('Anunturile mele', 'My listings'),
                   avatarUrl: _MyListingsScreenState._avatarUrl,
                 ),
               )
@@ -421,6 +423,9 @@ class _ListingCard extends StatelessWidget {
                                     categoryLabel: item.category,
                                     deposit: item.deposit.toString(),
                                     city: item.city,
+                                    address: item.address,
+                                    latitude: item.latitude,
+                                    longitude: item.longitude,
                                     imageUrl: item.imageUrl,
                                     media: item.images
                                         .map(
@@ -542,9 +547,7 @@ class _ListingsLoading extends StatelessWidget {
     return const SizedBox(
       height: 260,
       child: Center(
-        child: CircularProgressIndicator(
-          color: _MyListingsScreenState._text,
-        ),
+        child: CircularProgressIndicator(color: _MyListingsScreenState._text),
       ),
     );
   }

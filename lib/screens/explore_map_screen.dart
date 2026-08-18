@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../l10n/app_localizations.dart';
@@ -23,12 +24,31 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
   static const _bucharest = LatLng(44.4268, 26.1025);
 
   GoogleMapController? _mapController;
+  String? _mapStyle;
   late final List<_ProductMarker> _productMarkers = _buildProductMarkers();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMapStyle();
+  }
 
   @override
   void dispose() {
     _mapController?.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMapStyle() async {
+    final mapStyle = await rootBundle.loadString(
+      'assets/maps/altus_map_3.json',
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _mapStyle = mapStyle;
+    });
   }
 
   @override
@@ -53,77 +73,89 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
         )
         .toSet();
 
-    return Scaffold(
-      backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: _initialTarget,
-                zoom: widget.products.isEmpty ? 6 : 11.5,
-              ),
-              markers: markers,
-              myLocationButtonEnabled: false,
-              mapToolbarEnabled: false,
-              zoomControlsEnabled: false,
-              compassEnabled: false,
-              onMapCreated: (controller) {
-                _mapController = controller;
-                _fitMarkers();
-              },
-            ),
-            Positioned(
-              left: 16,
-              right: 16,
-              top: 12,
-              child: _MapTopBar(
-                title: strings.map,
-                subtitle: strings.choose(
-                  '${widget.products.length} produse disponibile',
-                  '${widget.products.length} available items',
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          bottom: false,
+          child: ColoredBox(
+            color: _background,
+            child: Stack(
+              children: [
+                GoogleMap(
+                  style: _mapStyle,
+                  initialCameraPosition: CameraPosition(
+                    target: _initialTarget,
+                    zoom: widget.products.isEmpty ? 6 : 11.5,
+                  ),
+                  markers: markers,
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
+                  zoomControlsEnabled: false,
+                  compassEnabled: false,
+                  onMapCreated: (controller) {
+                    _mapController = controller;
+                    _fitMarkers();
+                  },
                 ),
-              ),
-            ),
-            if (widget.products.isEmpty)
-              Center(
-                child: _EmptyMapMessage(
-                  text: strings.choose(
-                    'Nu exista produse de afisat pe harta.',
-                    'There are no items to show on the map.',
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  top: 12,
+                  child: _MapTopBar(
+                    title: strings.map,
+                    subtitle: strings.choose(
+                      '${widget.products.length} produse disponibile',
+                      '${widget.products.length} available items',
+                    ),
                   ),
                 ),
-              )
-            else
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: bottomPadding + 16,
-                child: SizedBox(
-                  height: 132,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _productMarkers.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
-                    itemBuilder: (context, index) {
-                      final item = _productMarkers[index];
-                      return _MapProductCard(
-                        product: item.product,
-                        onTap: () => _focusProduct(item),
-                        onOpen: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) =>
-                                ProductDetailsScreen(product: item.product),
-                          ),
-                        ),
-                      );
-                    },
+                if (widget.products.isEmpty)
+                  Center(
+                    child: _EmptyMapMessage(
+                      text: strings.choose(
+                        'Nu exista produse de afisat pe harta.',
+                        'There are no items to show on the map.',
+                      ),
+                    ),
+                  )
+                else
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: bottomPadding + 16,
+                    child: SizedBox(
+                      height: 132,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _productMarkers.length,
+                        separatorBuilder: (_, _) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          final item = _productMarkers[index];
+                          return _MapProductCard(
+                            product: item.product,
+                            onTap: () => _focusProduct(item),
+                            onOpen: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => ProductDetailsScreen(
+                                  product: item.product,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ),
-              ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -141,6 +173,13 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
     final cityCounts = <String, int>{};
 
     return widget.products.map((product) {
+      if (product.latitude != null && product.longitude != null) {
+        return _ProductMarker(
+          product: product,
+          position: LatLng(product.latitude!, product.longitude!),
+        );
+      }
+
       final normalizedCity = _normalizeCity(product.city);
       final cityIndex = cityCounts.update(
         normalizedCity,

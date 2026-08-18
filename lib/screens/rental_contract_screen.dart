@@ -534,7 +534,7 @@ class _OwnerSignatureCard extends StatelessWidget {
                   height: 96,
                   child: Center(
                     child: Text(
-                      ownerName.isEmpty ? 'Proprietar BorrowIt' : ownerName,
+                      ownerName.isEmpty ? 'Proprietar Lend' : ownerName,
                       style: const TextStyle(
                         color: Color(0x6630578F),
                         fontSize: 32,
@@ -869,10 +869,7 @@ class _PricingBar extends StatelessWidget {
 }
 
 class _TotalMetric extends StatelessWidget {
-  const _TotalMetric({
-    required this.label,
-    required this.value,
-  });
+  const _TotalMetric({required this.label, required this.value});
 
   final String label;
   final String value;
