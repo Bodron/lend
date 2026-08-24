@@ -11,6 +11,8 @@ import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
+import '../widgets/lend_screen_frame.dart';
+import '../widgets/lend_toast.dart';
 import '../widgets/lend_top_bar.dart';
 import '../widgets/product_media_preview.dart';
 
@@ -86,12 +88,19 @@ class _RentalsScreenState extends State<RentalsScreen> {
       dateText: order.endDate == null
           ? 'Comanda trimisa'
           : 'Pana la ${_formatShortDate(order.endDate!)}',
+      scheduleText: order.startDate == null || order.endDate == null
+          ? 'Program: ${order.pickupTime} - ${order.returnTime}'
+          : 'Ridicare ${_formatShortDate(order.startDate!)} ${order.pickupTime} - retur ${_formatShortDate(order.endDate!)} ${order.returnTime}',
+      pickupTime: order.pickupTime,
+      returnTime: order.returnTime,
       imageUrl: order.productImageUrl,
       imageContentType: order.productImageContentType,
       imageType: order.productImageType,
       detailText: perspective == _RentalPerspective.renting
           ? 'De la $ownerName'
           : 'Chirias: $renterName',
+      statusRaw: order.status,
+      paymentStatus: order.paymentStatus,
       status: expiring ? _RentalStatus.expiring : _RentalStatus.active,
     );
   }
@@ -141,164 +150,165 @@ class _RentalsScreenState extends State<RentalsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                if (widget.showChrome)
-                  const SliverToBoxAdapter(
-                    child: LendTopBar(
-                      title: 'Închirierile Mele',
-                      avatarUrl: _RentalsScreenState._avatarUrl,
-                    ),
-                  )
-                else
-                  const SliverToBoxAdapter(child: SizedBox(height: 110)),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    widget.showChrome ? 28 : 0,
-                    20,
-                    widget.showChrome ? 128 : 6,
-                  ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _PerspectiveTabs(
-                        selected: _perspective,
-                        onChanged: (value) {
-                          setState(() {
-                            _perspective = value;
-                            _showHistory = false;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      _RentalTabs(
-                        showHistory: _showHistory,
-                        onChanged: (value) {
-                          setState(() {
-                            _showHistory = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      FutureBuilder<_RentalsData>(
-                        future: _orders,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState !=
-                              ConnectionState.done) {
-                            return const SizedBox(
-                              height: 260,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: _RentalsScreenState._text,
-                                ),
-                              ),
-                            );
-                          }
-
-                          if (snapshot.hasError) {
-                            return _RentalsMessage(
-                              icon: Icons.cloud_off_rounded,
-                              title: AppLocalizations.of(context).choose(
-                                'Nu am putut incarca inchirierile',
-                                'Could not load rentals',
-                              ),
-                              body: AppLocalizations.of(context).choose(
-                                'Verifica backendul si incearca din nou.',
-                                'Check the backend and try again.',
-                              ),
-                              actionLabel: AppLocalizations.of(context).retry,
-                              onAction: _reloadOrders,
-                            );
-                          }
-
-                          final data = snapshot.data!;
-                          final orders =
-                              _perspective == _RentalPerspective.renting
-                              ? data.renting
-                              : data.lending;
-                          final activeItems = orders
-                              .where((order) => !_isHistoryOrder(order))
-                              .map(
-                                (order) =>
-                                    _rentalItemFromOrder(order, _perspective),
-                              )
-                              .toList();
-                          final historyItems = orders
-                              .where(_isHistoryOrder)
-                              .map(_historyItemFromOrder)
-                              .toList();
-
-                          if (!_showHistory && activeItems.isEmpty) {
-                            return _RentalsMessage(
-                              icon: Icons.handshake_outlined,
-                              title: AppLocalizations.of(context).choose(
-                                'Nu ai inchirieri active',
-                                'No active rentals',
-                              ),
-                              body: AppLocalizations.of(context).choose(
-                                _perspective == _RentalPerspective.renting
-                                    ? 'Comenzile trimise pentru inchiriere vor aparea aici.'
-                                    : 'Comenzile primite pe produsele tale vor aparea aici.',
-                                _perspective == _RentalPerspective.renting
-                                    ? 'Submitted rental orders will appear here.'
-                                    : 'Orders received for your items will appear here.',
-                              ),
-                            );
-                          }
-
-                          if (_showHistory && historyItems.isEmpty) {
-                            return _RentalsMessage(
-                              icon: Icons.history_rounded,
-                              title: AppLocalizations.of(
-                                context,
-                              ).choose('Nu ai istoric inca', 'No history yet'),
-                              body: AppLocalizations.of(context).choose(
-                                'Inchirierile finalizate vor aparea aici.',
-                                'Completed rentals will appear here.',
-                              ),
-                            );
-                          }
-
-                          return AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 220),
-                            child: _showHistory
-                                ? _HistoryRentalsGrid(
-                                    key: const ValueKey('history-rentals'),
-                                    items: historyItems,
-                                  )
-                                : _ActiveRentalsGrid(
-                                    key: const ValueKey('active-rentals'),
-                                    items: activeItems,
-                                    perspective: _perspective,
-                                    onScanReturn: _openReturnScanner,
-                                  ),
-                          );
-                        },
-                      ),
-                    ]),
-                  ),
-                ),
-              ],
-            ),
+    final content = Stack(
+      children: [
+        CustomScrollView(
+          slivers: [
             if (widget.showChrome)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: LendBottomNavigation(
-                  currentIndex: 2,
-                  onSelected: _handleNavigation,
-                  onAddListing: _openAddListing,
+              const SliverToBoxAdapter(
+                child: LendTopBar(
+                  title: 'Închirierile Mele',
+                  avatarUrl: _RentalsScreenState._avatarUrl,
                 ),
+              )
+            else
+              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                widget.showChrome ? 28 : 0,
+                20,
+                widget.showChrome ? 128 : 6,
               ),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _PerspectiveTabs(
+                    selected: _perspective,
+                    onChanged: (value) {
+                      setState(() {
+                        _perspective = value;
+                        _showHistory = false;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  _RentalTabs(
+                    showHistory: _showHistory,
+                    onChanged: (value) {
+                      setState(() {
+                        _showHistory = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  FutureBuilder<_RentalsData>(
+                    future: _orders,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState != ConnectionState.done) {
+                        return const SizedBox(
+                          height: 260,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: _RentalsScreenState._text,
+                            ),
+                          ),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return _RentalsMessage(
+                          icon: Icons.cloud_off_rounded,
+                          title: AppLocalizations.of(context).choose(
+                            'Nu am putut incarca inchirierile',
+                            'Could not load rentals',
+                          ),
+                          body: AppLocalizations.of(context).choose(
+                            'Verifica backendul si incearca din nou.',
+                            'Check the backend and try again.',
+                          ),
+                          actionLabel: AppLocalizations.of(context).retry,
+                          onAction: _reloadOrders,
+                        );
+                      }
+
+                      final data = snapshot.data!;
+                      final orders = _perspective == _RentalPerspective.renting
+                          ? data.renting
+                          : data.lending;
+                      final activeItems = orders
+                          .where((order) => !_isHistoryOrder(order))
+                          .map(
+                            (order) =>
+                                _rentalItemFromOrder(order, _perspective),
+                          )
+                          .toList();
+                      final historyItems = orders
+                          .where(_isHistoryOrder)
+                          .map(_historyItemFromOrder)
+                          .toList();
+
+                      if (!_showHistory && activeItems.isEmpty) {
+                        return _RentalsMessage(
+                          icon: Icons.handshake_outlined,
+                          title: AppLocalizations.of(context).choose(
+                            'Nu ai inchirieri active',
+                            'No active rentals',
+                          ),
+                          body: AppLocalizations.of(context).choose(
+                            _perspective == _RentalPerspective.renting
+                                ? 'Comenzile trimise pentru inchiriere vor aparea aici.'
+                                : 'Comenzile primite pe produsele tale vor aparea aici.',
+                            _perspective == _RentalPerspective.renting
+                                ? 'Submitted rental orders will appear here.'
+                                : 'Orders received for your items will appear here.',
+                          ),
+                        );
+                      }
+
+                      if (_showHistory && historyItems.isEmpty) {
+                        return _RentalsMessage(
+                          icon: Icons.history_rounded,
+                          title: AppLocalizations.of(
+                            context,
+                          ).choose('Nu ai istoric inca', 'No history yet'),
+                          body: AppLocalizations.of(context).choose(
+                            'Inchirierile finalizate vor aparea aici.',
+                            'Completed rentals will appear here.',
+                          ),
+                        );
+                      }
+
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: _showHistory
+                            ? _HistoryRentalsGrid(
+                                key: const ValueKey('history-rentals'),
+                                items: historyItems,
+                              )
+                            : _ActiveRentalsGrid(
+                                key: const ValueKey('active-rentals'),
+                                items: activeItems,
+                                perspective: _perspective,
+                                onScanReturn: _openReturnScanner,
+                                onEditSchedule: _openScheduleEditor,
+                                onAccept: _acceptRentalRequest,
+                                onReject: _rejectRentalRequest,
+                              ),
+                      );
+                    },
+                  ),
+                ]),
+              ),
+            ),
           ],
         ),
-      ),
+        if (widget.showChrome)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: LendBottomNavigation(
+              currentIndex: 2,
+              onSelected: _handleNavigation,
+              onAddListing: _openAddListing,
+            ),
+          ),
+      ],
     );
+
+    if (!widget.showChrome) {
+      return content;
+    }
+
+    return LendScreenFrame(backgroundColor: _background, child: content);
   }
 
   void _handleNavigation(int index) {
@@ -338,6 +348,276 @@ class _RentalsScreenState extends State<RentalsScreen> {
     if (completed == true && mounted) {
       _reloadOrders();
     }
+  }
+
+  Future<void> _acceptRentalRequest(_RentalItem item) async {
+    await _updateRentalRequest(
+      item,
+      action: (token) =>
+          _rentalOrdersApi.accept(accessToken: token, orderId: item.id),
+      successMessage: 'Cererea a fost acceptata.',
+    );
+  }
+
+  Future<void> _rejectRentalRequest(_RentalItem item) async {
+    await _updateRentalRequest(
+      item,
+      action: (token) =>
+          _rentalOrdersApi.reject(accessToken: token, orderId: item.id),
+      successMessage: 'Cererea a fost refuzata.',
+    );
+  }
+
+  Future<void> _updateRentalRequest(
+    _RentalItem item, {
+    required Future<RentalOrder> Function(String token) action,
+    required String successMessage,
+  }) async {
+    try {
+      final token = await AuthSessionStore.getToken();
+
+      if (token == null) {
+        throw RentalOrdersApiException('Trebuie sa fii autentificat.');
+      }
+
+      await action(token);
+
+      if (!mounted) {
+        return;
+      }
+
+      _reloadOrders();
+      LendToast.info(context, message: successMessage);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      LendToast.info(context, message: error.toString());
+    }
+  }
+
+  Future<void> _openScheduleEditor(_RentalItem item) async {
+    final pickupController = TextEditingController(text: item.pickupTime);
+    final returnController = TextEditingController(text: item.returnTime);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        var saving = false;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            Future<void> save() async {
+              final pickupTime = pickupController.text.trim();
+              final returnTime = returnController.text.trim();
+
+              if (!_isValidTime(pickupTime) || !_isValidTime(returnTime)) {
+                LendToast.info(
+                  context,
+                  message: 'Foloseste ore de forma 10:00.',
+                );
+                return;
+              }
+
+              setModalState(() {
+                saving = true;
+              });
+
+              var shouldResetSaving = true;
+              try {
+                final token = await AuthSessionStore.getToken();
+
+                if (token == null) {
+                  throw RentalOrdersApiException(
+                    'Trebuie sa fii autentificat.',
+                  );
+                }
+
+                await _rentalOrdersApi.updateSchedule(
+                  accessToken: token,
+                  orderId: item.id,
+                  pickupTime: pickupTime,
+                  returnTime: returnTime,
+                );
+
+                if (!context.mounted || !mounted) {
+                  return;
+                }
+
+                Navigator.of(context).pop();
+                shouldResetSaving = false;
+                _reloadOrders();
+                LendToast.info(context, message: 'Program actualizat.');
+              } catch (error) {
+                if (!context.mounted) {
+                  return;
+                }
+
+                LendToast.info(context, message: error.toString());
+              } finally {
+                if (shouldResetSaving && context.mounted) {
+                  setModalState(() {
+                    saving = false;
+                  });
+                }
+              }
+            }
+
+            final bottomPadding = MediaQuery.viewInsetsOf(context).bottom;
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding + 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _RentalsScreenState._text,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: saving
+                            ? null
+                            : () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ScheduleTextField(
+                          controller: pickupController,
+                          label: 'Ridicare',
+                          hint: '10:00',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ScheduleTextField(
+                          controller: returnController,
+                          label: 'Retur',
+                          hint: '18:00',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: saving ? null : save,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _RentalsScreenState._primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Salveaza programul',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    pickupController.dispose();
+    returnController.dispose();
+  }
+
+  static bool _isValidTime(String value) {
+    return RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(value);
+  }
+}
+
+class _ScheduleTextField extends StatelessWidget {
+  const _ScheduleTextField({
+    required this.controller,
+    required this.label,
+    required this.hint,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: _RentalsScreenState._muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.datetime,
+          decoration: InputDecoration(
+            hintText: hint,
+            filled: true,
+            fillColor: const Color(0xFFF5F5F7),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFC3C6D1)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFC3C6D1)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: _RentalsScreenState._primary,
+                width: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -590,11 +870,17 @@ class _ActiveRentalsGrid extends StatelessWidget {
     required this.items,
     required this.perspective,
     required this.onScanReturn,
+    required this.onEditSchedule,
+    required this.onAccept,
+    required this.onReject,
   });
 
   final List<_RentalItem> items;
   final _RentalPerspective perspective;
   final VoidCallback onScanReturn;
+  final ValueChanged<_RentalItem> onEditSchedule;
+  final ValueChanged<_RentalItem> onAccept;
+  final ValueChanged<_RentalItem> onReject;
 
   @override
   Widget build(BuildContext context) {
@@ -614,13 +900,18 @@ class _ActiveRentalsGrid extends StatelessWidget {
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: 20,
             mainAxisSpacing: 20,
-            mainAxisExtent: 430,
+            mainAxisExtent: perspective == _RentalPerspective.lending
+                ? 526
+                : 452,
           ),
           itemBuilder: (context, index) {
             return _ActiveRentalCard(
               item: items[index],
               perspective: perspective,
               onScanReturn: onScanReturn,
+              onEditSchedule: onEditSchedule,
+              onAccept: onAccept,
+              onReject: onReject,
             );
           },
         );
@@ -634,15 +925,23 @@ class _ActiveRentalCard extends StatelessWidget {
     required this.item,
     required this.perspective,
     required this.onScanReturn,
+    required this.onEditSchedule,
+    required this.onAccept,
+    required this.onReject,
   });
 
   final _RentalItem item;
   final _RentalPerspective perspective;
   final VoidCallback onScanReturn;
+  final ValueChanged<_RentalItem> onEditSchedule;
+  final ValueChanged<_RentalItem> onAccept;
+  final ValueChanged<_RentalItem> onReject;
 
   @override
   Widget build(BuildContext context) {
     final expiring = item.status == _RentalStatus.expiring;
+    final isPendingRequest = item.statusRaw == 'pending';
+    final hasAuthorizedPayment = item.paymentStatus == 'authorized';
 
     return DecoratedBox(
       decoration: _rentalCardDecoration,
@@ -666,7 +965,11 @@ class _ActiveRentalCard extends StatelessWidget {
                     top: 16,
                     left: 16,
                     child: _StatusBadge(
-                      text: expiring ? 'Expiră azi' : 'În Curs',
+                      text: isPendingRequest
+                          ? 'Cerere'
+                          : expiring
+                          ? 'Expira azi'
+                          : 'In curs',
                       color: expiring
                           ? _RentalsScreenState._error
                           : _RentalsScreenState._primary,
@@ -756,46 +1059,161 @@ class _ActiveRentalCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.access_time_rounded,
+                          color: _RentalsScreenState._muted,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            item.scheduleText,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _RentalsScreenState._muted,
+                              fontSize: 13,
+                              height: 1.25,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const Spacer(),
-                    SizedBox(
-                      height: 42,
-                      child: FilledButton(
-                        onPressed: () {
-                          if (perspective == _RentalPerspective.lending) {
-                            onScanReturn();
-                            return;
-                          }
-
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => ReturnQrScreen(
-                                itemTitle: item.title,
-                                itemImageUrl: item.imageUrl,
-                                returnCode: 'borrowit:return:${item.id}',
+                    if (perspective == _RentalPerspective.lending) ...[
+                      if (isPendingRequest && hasAuthorizedPayment) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 40,
+                                child: OutlinedButton(
+                                  onPressed: () => onReject(item),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: _RentalsScreenState._error,
+                                    side: const BorderSide(
+                                      color: _RentalsScreenState._error,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  child: const Text('Refuza'),
+                                ),
                               ),
                             ),
-                          );
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _RentalsScreenState._primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: SizedBox(
+                                height: 40,
+                                child: FilledButton(
+                                  onPressed: () => onAccept(item),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor:
+                                        _RentalsScreenState._primary,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                  ),
+                                  child: const Text('Accepta'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ] else if (isPendingRequest) ...[
+                        const Text(
+                          'Asteapta autorizarea platii',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _RentalsScreenState._muted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        child: Text(
-                          AppLocalizations.of(context).choose(
-                            perspective == _RentalPerspective.renting
-                                ? 'Finalizeaza returul'
-                                : 'Scaneaza cod retur',
-                            perspective == _RentalPerspective.renting
-                                ? 'Complete return'
-                                : 'Scan return code',
+                        const SizedBox(height: 8),
+                      ],
+                      if (!isPendingRequest) ...[
+                        SizedBox(
+                          height: 40,
+                          child: OutlinedButton.icon(
+                            onPressed: () => onEditSchedule(item),
+                            icon: const Icon(Icons.schedule_rounded, size: 18),
+                            label: const Text('Modifica ora'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _RentalsScreenState._text,
+                              side: const BorderSide(color: Color(0xFFC3C6D1)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                            ),
                           ),
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ],
+                    if (!(perspective == _RentalPerspective.lending &&
+                        isPendingRequest))
+                      SizedBox(
+                        height: 42,
+                        child: FilledButton(
+                          onPressed:
+                              perspective == _RentalPerspective.renting &&
+                                  isPendingRequest
+                              ? null
+                              : () {
+                                  if (perspective ==
+                                      _RentalPerspective.lending) {
+                                    onScanReturn();
+                                    return;
+                                  }
+
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => ReturnQrScreen(
+                                        itemTitle: item.title,
+                                        itemImageUrl: item.imageUrl,
+                                        returnCode:
+                                            'borrowit:return:${item.id}',
+                                      ),
+                                    ),
+                                  );
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: _RentalsScreenState._primary,
+                            disabledBackgroundColor: const Color(0xFFC3C6D1),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context).choose(
+                              perspective == _RentalPerspective.renting
+                                  ? isPendingRequest
+                                        ? 'Asteapta acceptul'
+                                        : 'Finalizeaza returul'
+                                  : 'Scaneaza cod retur',
+                              perspective == _RentalPerspective.renting
+                                  ? isPendingRequest
+                                        ? 'Waiting for approval'
+                                        : 'Complete return'
+                                  : 'Scan return code',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -1054,20 +1472,30 @@ class _RentalItem {
     required this.id,
     required this.title,
     required this.dateText,
+    required this.scheduleText,
+    required this.pickupTime,
+    required this.returnTime,
     required this.imageUrl,
     required this.imageContentType,
     required this.imageType,
     required this.detailText,
+    required this.statusRaw,
+    required this.paymentStatus,
     required this.status,
   });
 
   final String id;
   final String title;
   final String dateText;
+  final String scheduleText;
+  final String pickupTime;
+  final String returnTime;
   final String imageUrl;
   final String imageContentType;
   final String imageType;
   final String detailText;
+  final String statusRaw;
+  final String paymentStatus;
   final _RentalStatus status;
 }
 
@@ -1111,6 +1539,8 @@ const _emptyProduct = LendProduct(
   address: '',
   latitude: null,
   longitude: null,
+  pickupTime: '10:00',
+  returnTime: '18:00',
   ownerName: '',
   rating: 0,
   isAvailable: true,

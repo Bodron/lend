@@ -42,6 +42,8 @@ class ListingFormData {
     this.longitude,
     this.media = const [],
     this.pricePerHour = '',
+    this.pickupTime = '10:00',
+    this.returnTime = '18:00',
   });
 
   final String? productId;
@@ -58,6 +60,8 @@ class ListingFormData {
   final double? latitude;
   final double? longitude;
   final List<UploadedMedia> media;
+  final String pickupTime;
+  final String returnTime;
 }
 
 class _AddListingScreenState extends State<AddListingScreen> {
@@ -81,6 +85,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
   late final TextEditingController _depositController;
   late final TextEditingController _cityController;
   late final TextEditingController _addressController;
+  late final TextEditingController _pickupTimeController;
+  late final TextEditingController _returnTimeController;
   final _productsApi = ProductsApi();
   final _storageApi = StorageApi();
   final List<_SelectedMedia> _selectedMedia = [];
@@ -114,6 +120,12 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _addressController = TextEditingController(
       text: initialData?.address ?? '',
     );
+    _pickupTimeController = TextEditingController(
+      text: initialData?.pickupTime ?? '10:00',
+    );
+    _returnTimeController = TextEditingController(
+      text: initialData?.returnTime ?? '18:00',
+    );
     if (initialData?.latitude != null && initialData?.longitude != null) {
       _selectedLocation = LatLng(
         initialData!.latitude!,
@@ -134,6 +146,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _depositController.dispose();
     _cityController.dispose();
     _addressController.dispose();
+    _pickupTimeController.dispose();
+    _returnTimeController.dispose();
     super.dispose();
   }
 
@@ -190,6 +204,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
     final deposit = int.tryParse(_depositController.text.trim()) ?? 0;
     final city = _cityController.text.trim();
     final address = _addressController.text.trim();
+    final pickupTime = _pickupTimeController.text.trim();
+    final returnTime = _returnTimeController.text.trim();
     final category = _categoryLabel(_category);
 
     if (title.isEmpty ||
@@ -197,11 +213,13 @@ class _AddListingScreenState extends State<AddListingScreen> {
         pricePerDay <= 0 ||
         city.isEmpty ||
         address.isEmpty ||
-        _category == 'choose') {
+        _category == 'choose' ||
+        !_isValidTime(pickupTime) ||
+        !_isValidTime(returnTime)) {
       _showMessage(
         AppLocalizations.of(context).choose(
-          'Completeaza titlul, categoria, descrierea, orasul, adresa si pretul.',
-          'Complete title, category, description, city, address, and price.',
+          'Completeaza datele anuntului si foloseste ore de forma 10:00.',
+          'Complete the listing and use times like 10:00.',
         ),
       );
       return;
@@ -244,6 +262,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
         address: address,
         latitude: _selectedLocation.latitude,
         longitude: _selectedLocation.longitude,
+        pickupTime: pickupTime,
+        returnTime: returnTime,
         media: uploadedMedia,
       );
 
@@ -291,6 +311,10 @@ class _AddListingScreenState extends State<AddListingScreen> {
     }
 
     LendToast.info(context, message: message);
+  }
+
+  bool _isValidTime(String value) {
+    return RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(value);
   }
 
   String _categoryLabel(String value) {
@@ -415,6 +439,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
                             pricePerHourController: _pricePerHourController,
                             pricePerDayController: _pricePerDayController,
                             depositController: _depositController,
+                            pickupTimeController: _pickupTimeController,
+                            returnTimeController: _returnTimeController,
                           ),
                           const SizedBox(height: 24),
                           _InsuranceCard(
@@ -1215,11 +1241,15 @@ class _RatesSection extends StatelessWidget {
     required this.pricePerHourController,
     required this.pricePerDayController,
     required this.depositController,
+    required this.pickupTimeController,
+    required this.returnTimeController,
   });
 
   final TextEditingController pricePerHourController;
   final TextEditingController pricePerDayController;
   final TextEditingController depositController;
+  final TextEditingController pickupTimeController;
+  final TextEditingController returnTimeController;
 
   @override
   Widget build(BuildContext context) {
@@ -1258,6 +1288,27 @@ class _RatesSection extends StatelessWidget {
           hint: '0.00',
           suffix: 'RON',
           keyboardType: TextInputType.number,
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _LabeledField(
+                controller: pickupTimeController,
+                label: strings.choose('Predare dupa', 'Pickup after'),
+                hint: '10:00',
+                keyboardType: TextInputType.datetime,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: _LabeledField(
+                controller: returnTimeController,
+                label: strings.choose('Retur pana la', 'Return by'),
+                hint: '18:00',
+                keyboardType: TextInputType.datetime,
+              ),
+            ),
+          ],
         ),
         const _SuggestionChip(),
       ],

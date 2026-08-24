@@ -6,6 +6,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
+import '../widgets/lend_screen_frame.dart';
 import '../widgets/language_toggle_button.dart';
 import '../widgets/lend_logo.dart';
 import '../widgets/lend_toast.dart';
@@ -123,10 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final session = await _authApi.loginWithApple(
         identityToken: identityToken,
-        fullName: _appleFullName(
-          credential.givenName,
-          credential.familyName,
-        ),
+        fullName: _appleFullName(credential.givenName, credential.familyName),
         nonce: nonce,
       );
 
@@ -269,10 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final random = Random.secure();
 
-    return List.generate(
-      32,
-      (_) => chars[random.nextInt(chars.length)],
-    ).join();
+    return List.generate(32, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
   @override
@@ -280,47 +275,44 @@ class _LoginScreenState extends State<LoginScreen> {
     final screenHeight = MediaQuery.sizeOf(context).height;
     final isCompact = screenHeight < 850;
 
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: LoginScreen._background,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const _LoginHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(top: isCompact ? 16 : 28),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 390),
-                        child: _LoginCard(
-                          isCompact: isCompact,
-                          emailController: _emailController,
-                          passwordController: _passwordController,
-                          isSubmitting: _isSubmitting,
-                          isGoogleSubmitting: _isGoogleSubmitting,
-                          isAppleSubmitting: _isAppleSubmitting,
-                          onSubmit: _login,
-                          onGoogleSubmit: _loginWithGoogle,
-                          onAppleSubmit: _loginWithApple,
-                        ),
+      child: Column(
+        children: [
+          const _LoginHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(top: isCompact ? 16 : 28),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 390),
+                      child: _LoginCard(
+                        isCompact: isCompact,
+                        emailController: _emailController,
+                        passwordController: _passwordController,
+                        isSubmitting: _isSubmitting,
+                        isGoogleSubmitting: _isGoogleSubmitting,
+                        isAppleSubmitting: _isAppleSubmitting,
+                        onSubmit: _login,
+                        onGoogleSubmit: _loginWithGoogle,
+                        onAppleSubmit: _loginWithApple,
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: _TrustBadge(),
-                    ),
-                    const SizedBox(height: 48),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: _TrustBadge(),
+                  ),
+                  const SizedBox(height: 48),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -510,9 +502,8 @@ class _LoginCard extends StatelessWidget {
                   assetPath: 'assets/auth/google_g.png',
                   label: 'Google',
                   isLoading: isGoogleSubmitting,
-                  onPressed: isSubmitting ||
-                          isGoogleSubmitting ||
-                          isAppleSubmitting
+                  onPressed:
+                      isSubmitting || isGoogleSubmitting || isAppleSubmitting
                       ? null
                       : onGoogleSubmit,
                 ),
@@ -523,9 +514,8 @@ class _LoginCard extends StatelessWidget {
                   assetPath: 'assets/auth/apple_logo.png',
                   label: 'Apple',
                   isLoading: isAppleSubmitting,
-                  onPressed: isSubmitting ||
-                          isGoogleSubmitting ||
-                          isAppleSubmitting
+                  onPressed:
+                      isSubmitting || isGoogleSubmitting || isAppleSubmitting
                       ? null
                       : onAppleSubmit,
                 ),

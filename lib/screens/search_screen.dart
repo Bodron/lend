@@ -52,77 +52,80 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        backgroundColor: _background,
+        backgroundColor: Colors.black,
         body: SafeArea(
           bottom: false,
-          child: FutureBuilder<List<LendProduct>>(
-            future: _productsFuture,
-            builder: (context, snapshot) {
-              final products = snapshot.data ?? widget.initialProducts;
-              final results = _matchingProducts(products);
-              final suggestions = _suggestionsFor(products);
-              final Widget searchBody;
+          child: ColoredBox(
+            color: _background,
+            child: FutureBuilder<List<LendProduct>>(
+              future: _productsFuture,
+              builder: (context, snapshot) {
+                final products = snapshot.data ?? widget.initialProducts;
+                final results = _matchingProducts(products);
+                final suggestions = _suggestionsFor(products);
+                final Widget searchBody;
 
-              if (_query.trim().isEmpty) {
-                searchBody = const SizedBox.expand();
-              } else if (_hasSubmitted) {
-                searchBody = _SearchResults(
-                  query: _query,
-                  products: results,
-                  isLoading:
-                      snapshot.connectionState == ConnectionState.waiting,
-                  onSelected: _openProduct,
-                );
-              } else {
-                searchBody = _SuggestionList(
-                  suggestions: suggestions,
-                  onSelected: _selectSuggestion,
-                );
-              }
+                if (_query.trim().isEmpty) {
+                  searchBody = const SizedBox.expand();
+                } else if (_hasSubmitted) {
+                  searchBody = _SearchResults(
+                    query: _query,
+                    products: results,
+                    isLoading:
+                        snapshot.connectionState == ConnectionState.waiting,
+                    onSelected: _openProduct,
+                  );
+                } else {
+                  searchBody = _SuggestionList(
+                    suggestions: suggestions,
+                    onSelected: _selectSuggestion,
+                  );
+                }
 
-              return Stack(
-                children: [
-                  Column(
-                    children: [
-                      _SearchHeader(
-                        controller: _controller,
-                        focusNode: _focusNode,
-                        hasText: _query.trim().isNotEmpty,
-                        onClear: _controller.clear,
-                        onClose: () => Navigator.of(context).pop(),
-                        onSubmitted: _submitSearch,
-                      ),
-                      Expanded(child: searchBody),
-                    ],
-                  ),
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-                    child: _VisualSearchActions(
-                      onCamera: () => _showUnavailable(
-                        AppLocalizations.of(context).choose(
-                          'Cautarea cu camera va fi disponibila curand.',
-                          'Camera search will be available soon.',
+                return Stack(
+                  children: [
+                    Column(
+                      children: [
+                        _SearchHeader(
+                          controller: _controller,
+                          focusNode: _focusNode,
+                          hasText: _query.trim().isNotEmpty,
+                          onClear: _controller.clear,
+                          onClose: () => Navigator.of(context).pop(),
+                          onSubmitted: _submitSearch,
                         ),
-                      ),
-                      onImage: () => _showUnavailable(
-                        AppLocalizations.of(context).choose(
-                          'Cautarea cu imagine va fi disponibila curand.',
-                          'Image search will be available soon.',
+                        Expanded(child: searchBody),
+                      ],
+                    ),
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
+                      child: _VisualSearchActions(
+                        onCamera: () => _showUnavailable(
+                          AppLocalizations.of(context).choose(
+                            'Cautarea cu camera va fi disponibila curand.',
+                            'Camera search will be available soon.',
+                          ),
+                        ),
+                        onImage: () => _showUnavailable(
+                          AppLocalizations.of(context).choose(
+                            'Cautarea cu imagine va fi disponibila curand.',
+                            'Image search will be available soon.',
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -638,7 +641,7 @@ class _VisualSearchButton extends StatelessWidget {
                 shaderCallback: (rect) => const LinearGradient(
                   colors: [Color(0xFF2787E8), Color(0xFFB84CDC)],
                 ).createShader(rect),
-                  child: Icon(icon, color: Colors.white, size: 22),
+                child: Icon(icon, color: Colors.white, size: 22),
               ),
               const SizedBox(width: 10),
               Flexible(

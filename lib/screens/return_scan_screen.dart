@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../l10n/app_localizations.dart';
@@ -210,115 +211,122 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: MobileScanner(
-                controller: _scannerController,
-                onDetect: _handleDetection,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: MobileScanner(
+                  controller: _scannerController,
+                  onDetect: _handleDetection,
+                ),
               ),
-            ),
-            Positioned.fill(
-              child: IgnorePointer(
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.72),
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.82),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _ScannerTopBar(
+                  title: strings.choose('Scaneaza returul', 'Scan return'),
+                ),
+              ),
+              Center(
+                child: Container(
+                  width: 236,
+                  height: 236,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.white, width: 3),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 34,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.72),
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.82),
+                    color: _background,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _isCompleting
+                              ? Icons.hourglass_top_rounded
+                              : Icons.qr_code_scanner_rounded,
+                          color: _primary,
+                          size: 30,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _isCompleting || _isConfirming
+                              ? strings.choose(
+                                  _isConfirming
+                                      ? 'Astept confirmarea...'
+                                      : 'Confirm returul...',
+                                  _isConfirming
+                                      ? 'Waiting for confirmation...'
+                                      : 'Confirming return...',
+                                )
+                              : strings.choose(
+                                  'Scaneaza codul QR afisat de chirias.',
+                                  'Scan the QR code shown by the renter.',
+                                ),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _text,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          strings.choose(
+                            'Dupa scanare, inchirierea este marcata ca finalizata.',
+                            'After scanning, the rental is marked completed.',
+                          ),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: _muted,
+                            fontSize: 12,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _ScannerTopBar(
-                title: strings.choose('Scaneaza returul', 'Scan return'),
-              ),
-            ),
-            Center(
-              child: Container(
-                width: 236,
-                height: 236,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white, width: 3),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 24,
-              right: 24,
-              bottom: 34,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: _background,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isCompleting
-                            ? Icons.hourglass_top_rounded
-                            : Icons.qr_code_scanner_rounded,
-                        color: _primary,
-                        size: 30,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isCompleting || _isConfirming
-                            ? strings.choose(
-                                _isConfirming
-                                    ? 'Astept confirmarea...'
-                                    : 'Confirm returul...',
-                                _isConfirming
-                                    ? 'Waiting for confirmation...'
-                                    : 'Confirming return...',
-                              )
-                            : strings.choose(
-                                'Scaneaza codul QR afisat de chirias.',
-                                'Scan the QR code shown by the renter.',
-                              ),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: _text,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        strings.choose(
-                          'Dupa scanare, inchirierea este marcata ca finalizata.',
-                          'After scanning, the rental is marked completed.',
-                        ),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: _muted,
-                          fontSize: 12,
-                          height: 1.35,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

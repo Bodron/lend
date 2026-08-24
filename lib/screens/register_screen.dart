@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
 import '../widgets/language_toggle_button.dart';
 import '../widgets/lend_logo.dart';
+import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
 import 'login_screen.dart';
@@ -103,79 +104,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const _RegisterHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isWide = constraints.maxWidth >= 900;
-                        final form = _RegisterColumn(
-                          acceptedTerms: _acceptedTerms,
-                          showPassword: _showPassword,
-                          isSubmitting: _isSubmitting,
-                          fullNameController: _fullNameController,
-                          emailController: _emailController,
-                          phoneController: _phoneController,
-                          passwordController: _passwordController,
-                          onTermsChanged: (value) {
-                            setState(() {
-                              _acceptedTerms = value ?? false;
-                            });
-                          },
-                          onTogglePassword: () {
-                            setState(() {
-                              _showPassword = !_showPassword;
-                            });
-                          },
-                          onOpenLogin: _openLogin,
-                          onSubmit: _register,
-                        );
+      child: Column(
+        children: [
+          const _RegisterHeader(),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth >= 900;
+                      final form = _RegisterColumn(
+                        acceptedTerms: _acceptedTerms,
+                        showPassword: _showPassword,
+                        isSubmitting: _isSubmitting,
+                        fullNameController: _fullNameController,
+                        emailController: _emailController,
+                        phoneController: _phoneController,
+                        passwordController: _passwordController,
+                        onTermsChanged: (value) {
+                          setState(() {
+                            _acceptedTerms = value ?? false;
+                          });
+                        },
+                        onTogglePassword: () {
+                          setState(() {
+                            _showPassword = !_showPassword;
+                          });
+                        },
+                        onOpenLogin: _openLogin,
+                        onSubmit: _register,
+                      );
 
-                        if (!isWide) {
-                          return form;
-                        }
+                      if (!isWide) {
+                        return form;
+                      }
 
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Expanded(child: _VisualPanel()),
-                            const SizedBox(width: 80),
-                            SizedBox(width: 448, child: form),
-                          ],
-                        );
-                      },
-                    ),
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Expanded(child: _VisualPanel()),
+                          const SizedBox(width: 80),
+                          SizedBox(width: 448, child: form),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                AppLocalizations.of(context).choose(
-                  '© 2024 Lend. Economie colaborativa pentru un viitor mai bun.',
-                  '© 2024 Lend. Shared economy for a better future.',
-                ),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0x99737781),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              AppLocalizations.of(context).choose(
+                '© 2024 Lend. Economie colaborativa pentru un viitor mai bun.',
+                '© 2024 Lend. Shared economy for a better future.',
+              ),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0x99737781),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

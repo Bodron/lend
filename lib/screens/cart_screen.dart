@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/rental_mode.dart';
 import '../services/products_api.dart';
+import '../widgets/lend_screen_frame.dart';
 import '../widgets/product_media_preview.dart';
 import 'rental_contract_screen.dart';
 
@@ -9,15 +11,23 @@ class CartScreen extends StatefulWidget {
   const CartScreen({
     super.key,
     required this.product,
+    required this.rentalMode,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalHours,
     required this.rentalDays,
     required this.totalPrice,
   });
 
   final LendProduct product;
+  final RentalMode rentalMode;
   final DateTime startDate;
   final DateTime endDate;
+  final String pickupTime;
+  final String returnTime;
+  final int rentalHours;
   final int rentalDays;
   final int totalPrice;
 
@@ -46,88 +56,101 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          slivers: [
-            const SliverToBoxAdapter(child: _CartTopBar()),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(20, 40, 20, bottomPadding + 32),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  const _CartTitle(),
-                  const SizedBox(height: 24),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final wide = constraints.maxWidth >= 900;
+      child: CustomScrollView(
+        slivers: [
+          const SliverToBoxAdapter(child: _CartTopBar()),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(20, 40, 20, bottomPadding + 32),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const _CartTitle(),
+                const SizedBox(height: 24),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 900;
 
-                      if (!wide) {
-                        return Column(
-                          children: [
-                            _CartItemsColumn(
-                              product: widget.product,
-                              hasItem: _hasItem,
-                              startDate: widget.startDate,
-                              endDate: widget.endDate,
-                              rentalDays: widget.rentalDays,
-                              onDelete: _removeItem,
-                            ),
-                            const SizedBox(height: 24),
-                            _OrderSummaryCard(
-                              product: widget.product,
-                              startDate: widget.startDate,
-                              endDate: widget.endDate,
-                              rentalDays: widget.rentalDays,
-                              subtotal: _hasItem ? widget.totalPrice : 0,
-                              serviceFee: _serviceFee,
-                              deposit: _deposit,
-                              total: _total,
-                              enabled: _hasItem,
-                            ),
-                          ],
-                        );
-                      }
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    if (!wide) {
+                      return Column(
                         children: [
-                          Expanded(
-                            flex: 8,
-                            child: _CartItemsColumn(
-                              product: widget.product,
-                              hasItem: _hasItem,
-                              startDate: widget.startDate,
-                              endDate: widget.endDate,
-                              rentalDays: widget.rentalDays,
-                              onDelete: _removeItem,
-                            ),
+                          _CartItemsColumn(
+                            product: widget.product,
+                            rentalMode: widget.rentalMode,
+                            hasItem: _hasItem,
+                            startDate: widget.startDate,
+                            endDate: widget.endDate,
+                            pickupTime: widget.pickupTime,
+                            returnTime: widget.returnTime,
+                            rentalHours: widget.rentalHours,
+                            rentalDays: widget.rentalDays,
+                            onDelete: _removeItem,
                           ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            flex: 4,
-                            child: _OrderSummaryCard(
-                              product: widget.product,
-                              startDate: widget.startDate,
-                              endDate: widget.endDate,
-                              rentalDays: widget.rentalDays,
-                              subtotal: _hasItem ? widget.totalPrice : 0,
-                              serviceFee: _serviceFee,
-                              deposit: _deposit,
-                              total: _total,
-                              enabled: _hasItem,
-                            ),
+                          const SizedBox(height: 24),
+                          _OrderSummaryCard(
+                            product: widget.product,
+                            rentalMode: widget.rentalMode,
+                            startDate: widget.startDate,
+                            endDate: widget.endDate,
+                            pickupTime: widget.pickupTime,
+                            returnTime: widget.returnTime,
+                            rentalHours: widget.rentalHours,
+                            rentalDays: widget.rentalDays,
+                            subtotal: _hasItem ? widget.totalPrice : 0,
+                            serviceFee: _serviceFee,
+                            deposit: _deposit,
+                            total: _total,
+                            enabled: _hasItem,
                           ),
                         ],
                       );
-                    },
-                  ),
-                ]),
-              ),
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 8,
+                          child: _CartItemsColumn(
+                            product: widget.product,
+                            rentalMode: widget.rentalMode,
+                            hasItem: _hasItem,
+                            startDate: widget.startDate,
+                            endDate: widget.endDate,
+                            pickupTime: widget.pickupTime,
+                            returnTime: widget.returnTime,
+                            rentalHours: widget.rentalHours,
+                            rentalDays: widget.rentalDays,
+                            onDelete: _removeItem,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          flex: 4,
+                          child: _OrderSummaryCard(
+                            product: widget.product,
+                            rentalMode: widget.rentalMode,
+                            startDate: widget.startDate,
+                            endDate: widget.endDate,
+                            pickupTime: widget.pickupTime,
+                            returnTime: widget.returnTime,
+                            rentalHours: widget.rentalHours,
+                            rentalDays: widget.rentalDays,
+                            subtotal: _hasItem ? widget.totalPrice : 0,
+                            serviceFee: _serviceFee,
+                            deposit: _deposit,
+                            total: _total,
+                            enabled: _hasItem,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -222,17 +245,25 @@ class _CartTitle extends StatelessWidget {
 class _CartItemsColumn extends StatelessWidget {
   const _CartItemsColumn({
     required this.product,
+    required this.rentalMode,
     required this.hasItem,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalHours,
     required this.rentalDays,
     required this.onDelete,
   });
 
   final LendProduct product;
+  final RentalMode rentalMode;
   final bool hasItem;
   final DateTime startDate;
   final DateTime endDate;
+  final String pickupTime;
+  final String returnTime;
+  final int rentalHours;
   final int rentalDays;
   final VoidCallback onDelete;
 
@@ -244,8 +275,12 @@ class _CartItemsColumn extends StatelessWidget {
 
     return _CartItemCard(
       product: product,
+      rentalMode: rentalMode,
       startDate: startDate,
       endDate: endDate,
+      pickupTime: pickupTime,
+      returnTime: returnTime,
+      rentalHours: rentalHours,
       rentalDays: rentalDays,
       onDelete: onDelete,
     );
@@ -255,15 +290,23 @@ class _CartItemsColumn extends StatelessWidget {
 class _CartItemCard extends StatelessWidget {
   const _CartItemCard({
     required this.product,
+    required this.rentalMode,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalHours,
     required this.rentalDays,
     required this.onDelete,
   });
 
   final LendProduct product;
+  final RentalMode rentalMode;
   final DateTime startDate;
   final DateTime endDate;
+  final String pickupTime;
+  final String returnTime;
+  final int rentalHours;
   final int rentalDays;
   final VoidCallback onDelete;
 
@@ -279,8 +322,12 @@ class _CartItemCard extends StatelessWidget {
             final image = _CartProductImage(product: product);
             final details = _CartItemDetails(
               product: product,
+              rentalMode: rentalMode,
               startDate: startDate,
               endDate: endDate,
+              pickupTime: pickupTime,
+              returnTime: returnTime,
+              rentalHours: rentalHours,
               rentalDays: rentalDays,
               onDelete: onDelete,
             );
@@ -369,20 +416,32 @@ class _CartProductImage extends StatelessWidget {
 class _CartItemDetails extends StatelessWidget {
   const _CartItemDetails({
     required this.product,
+    required this.rentalMode,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalHours,
     required this.rentalDays,
     required this.onDelete,
   });
 
   final LendProduct product;
+  final RentalMode rentalMode;
   final DateTime startDate;
   final DateTime endDate;
+  final String pickupTime;
+  final String returnTime;
+  final int rentalHours;
   final int rentalDays;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
+    final unitPrice = rentalMode == RentalMode.hour
+        ? (product.pricePerDay / 8).round().clamp(1, product.pricePerDay)
+        : product.pricePerDay;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -450,12 +509,39 @@ class _CartItemDetails extends StatelessWidget {
               ),
             ),
             _CartMetric(
-              label: AppLocalizations.of(
-                context,
-              ).choose('Pret / zi', 'Price / day'),
+              label: AppLocalizations.of(context).choose('Program', 'Schedule'),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.access_time_rounded,
+                    color: _CartScreenState._text,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      '$pickupTime - $returnTime',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _CartScreenState._text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _CartMetric(
+              label: AppLocalizations.of(context).choose(
+                rentalMode == RentalMode.hour ? 'Pret / ora' : 'Pret / zi',
+                rentalMode == RentalMode.hour ? 'Price / hour' : 'Price / day',
+              ),
               bordered: true,
               child: Text(
-                '${product.pricePerDay} RON',
+                '$unitPrice RON',
                 style: const TextStyle(
                   color: _CartScreenState._text,
                   fontSize: 24,
@@ -467,9 +553,14 @@ class _CartItemDetails extends StatelessWidget {
               label: AppLocalizations.of(context).choose('Durata', 'Duration'),
               bordered: true,
               child: Text(
-                AppLocalizations.of(
-                  context,
-                ).choose('$rentalDays zile', '$rentalDays days'),
+                AppLocalizations.of(context).choose(
+                  rentalMode == RentalMode.hour
+                      ? '$rentalHours ore'
+                      : '$rentalDays zile',
+                  rentalMode == RentalMode.hour
+                      ? '$rentalHours hours'
+                      : '$rentalDays days',
+                ),
                 style: const TextStyle(
                   color: _CartScreenState._text,
                   fontSize: 18,
@@ -533,8 +624,12 @@ class _CartMetric extends StatelessWidget {
 class _OrderSummaryCard extends StatelessWidget {
   const _OrderSummaryCard({
     required this.product,
+    required this.rentalMode,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalHours,
     required this.rentalDays,
     required this.subtotal,
     required this.serviceFee,
@@ -544,8 +639,12 @@ class _OrderSummaryCard extends StatelessWidget {
   });
 
   final LendProduct product;
+  final RentalMode rentalMode;
   final DateTime startDate;
   final DateTime endDate;
+  final String pickupTime;
+  final String returnTime;
+  final int rentalHours;
   final int rentalDays;
   final int subtotal;
   final int serviceFee;
@@ -647,8 +746,12 @@ class _OrderSummaryCard extends StatelessWidget {
                           MaterialPageRoute<void>(
                             builder: (_) => RentalContractScreen(
                               product: product,
+                              rentalMode: rentalMode,
                               startDate: startDate,
                               endDate: endDate,
+                              pickupTime: pickupTime,
+                              returnTime: returnTime,
+                              rentalHours: rentalHours,
                               rentalDays: rentalDays,
                               subtotal: subtotal,
                               serviceFee: serviceFee,

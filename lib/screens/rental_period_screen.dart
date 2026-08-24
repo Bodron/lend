@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/rental_mode.dart';
+import '../services/rental_orders_api.dart';
 import '../services/products_api.dart';
+import '../widgets/lend_screen_frame.dart';
 import 'cart_screen.dart';
 
 class RentalPeriodScreen extends StatefulWidget {
-  const RentalPeriodScreen({super.key, required this.product});
+  const RentalPeriodScreen({
+    super.key,
+    required this.product,
+    this.rentalMode = RentalMode.day,
+  });
 
   final LendProduct product;
+  final RentalMode rentalMode;
 
   @override
   State<RentalPeriodScreen> createState() => _RentalPeriodScreenState();
@@ -27,6 +35,12 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   late DateTime _visibleMonth;
   late DateTime? _startDate;
   late DateTime? _endDate;
+  late String _pickupTime;
+  late String _returnTime;
+  final _rentalOrdersApi = RentalOrdersApi();
+  Set<String> _unavailableDateKeys = {};
+  bool _availabilityLoading = false;
+  String? _availabilityError;
 
   @override
   void initState() {
@@ -35,6 +49,9 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     _visibleMonth = DateTime(tomorrow.year, tomorrow.month);
     _startDate = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
     _endDate = _startDate!.add(const Duration(days: 3));
+    _pickupTime = widget.product.pickupTime;
+    _returnTime = widget.product.returnTime;
+    _loadAvailabilityForVisibleMonth();
   }
 
   int get _rentalDays {
@@ -51,16 +68,48 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
 
   int get _totalPrice => _rentalDays * widget.product.pricePerDay;
 
+  int get _hourlyPrice {
+    return (widget.product.pricePerDay / 8).round().clamp(
+      1,
+      widget.product.pricePerDay,
+    );
+  }
+
+  int get _rentalHours {
+    final start = _startDate;
+    final end = _endDate;
+
+    if (start == null || end == null) {
+      return 0;
+    }
+
+    final startDateTime = _combineDateAndTime(start, _pickupTime);
+    final endDateTime = _combineDateAndTime(end, _returnTime);
+    final hours = endDateTime.difference(startDateTime).inMinutes / 60;
+
+    return hours <= 0 ? 0 : hours.ceil();
+  }
+
+  int get _checkoutTotalPrice {
+    if (widget.rentalMode == RentalMode.hour) {
+      return _rentalHours * _hourlyPrice;
+    }
+
+    return _totalPrice;
+  }
+
   void _goToPreviousMonth() {
     setState(() {
       _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month - 1);
     });
+    _loadAvailabilityForVisibleMonth();
   }
 
   void _goToNextMonth() {
     setState(() {
       _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
     });
+    _loadAvailabilityForVisibleMonth();
   }
 
   void _selectDate(DateTime date) {
@@ -71,7 +120,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     setState(() {
       if (_startDate == null || (_startDate != null && _endDate != null)) {
         _startDate = date;
-        _endDate = null;
+        _endDate = date;
         return;
       }
 
@@ -81,14 +130,74 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
         return;
       }
 
+      if (_rangeContainsUnavailable(_startDate!, date)) {
+        return;
+      }
+
       _endDate = date;
     });
   }
 
   bool _isUnavailable(DateTime date) {
-    return date.year == 2026 &&
-        date.month == 7 &&
-        (date.day == 18 || date.day == 19);
+    final today = _dateOnly(DateTime.now());
+    final current = _dateOnly(date);
+    return current.isBefore(today) ||
+        _unavailableDateKeys.contains(_dateKey(current));
+  }
+
+  bool _rangeContainsUnavailable(DateTime startDate, DateTime endDate) {
+    final start = _dateOnly(startDate);
+    final end = _dateOnly(endDate);
+    final first = start.isBefore(end) ? start : end;
+    final last = start.isBefore(end) ? end : start;
+
+    for (
+      var current = first;
+      current.isBefore(last);
+      current = current.add(const Duration(days: 1))
+    ) {
+      if (_isUnavailable(current)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  Future<void> _loadAvailabilityForVisibleMonth() async {
+    final from = DateTime(_visibleMonth.year, _visibleMonth.month);
+    final to = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
+
+    setState(() {
+      _availabilityLoading = true;
+      _availabilityError = null;
+    });
+
+    try {
+      final availability = await _rentalOrdersApi.getAvailability(
+        productId: widget.product.id,
+        from: from,
+        to: to,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _unavailableDateKeys = availability.unavailableDates;
+        _availabilityLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _availabilityError = error.toString();
+        _availabilityLoading = false;
+      });
+    }
   }
 
   bool _isSelectedEndpoint(DateTime date) {
@@ -110,74 +219,110 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   Widget build(BuildContext context) {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
 
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                const SliverToBoxAdapter(child: _PeriodTopBar()),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPadding + 126),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _ProductContextCard(product: widget.product),
-                      const SizedBox(height: 24),
-                      _CalendarCard(
-                        visibleMonth: _visibleMonth,
-                        startDate: _startDate,
-                        endDate: _endDate,
-                        onPrevious: _goToPreviousMonth,
-                        onNext: _goToNextMonth,
-                        onDateSelected: _selectDate,
-                        isUnavailable: _isUnavailable,
-                        isSelectedEndpoint: _isSelectedEndpoint,
-                        isInRange: _isInRange,
-                      ),
-                      const SizedBox(height: 24),
-                      _SummarySection(
-                        startDate: _startDate,
-                        endDate: _endDate,
-                        rentalDays: _rentalDays,
-                        totalPrice: _totalPrice,
-                      ),
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(child: _PeriodTopBar()),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPadding + 126),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _ProductContextCard(product: widget.product),
+                    const SizedBox(height: 24),
+                    _CalendarCard(
+                      visibleMonth: _visibleMonth,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      onPrevious: _goToPreviousMonth,
+                      onNext: _goToNextMonth,
+                      onDateSelected: _selectDate,
+                      isUnavailable: _isUnavailable,
+                      isSelectedEndpoint: _isSelectedEndpoint,
+                      isInRange: _isInRange,
+                      isLoading: _availabilityLoading,
+                      error: _availabilityError,
+                    ),
+                    const SizedBox(height: 24),
+                    _SummarySection(
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      pickupTime: _pickupTime,
+                      returnTime: _returnTime,
+                      rentalMode: widget.rentalMode,
+                      rentalHours: _rentalHours,
+                      rentalDays: _rentalDays,
+                      totalPrice: _checkoutTotalPrice,
+                    ),
+                    if (widget.rentalMode == RentalMode.hour) ...[
                       const SizedBox(height: 20),
-                      const _TrustInfoCard(),
-                    ]),
-                  ),
+                      _TimeSelectionCard(
+                        pickupTime: _pickupTime,
+                        returnTime: _returnTime,
+                        onPickupChanged: (value) {
+                          setState(() {
+                            _pickupTime = value;
+                          });
+                        },
+                        onReturnChanged: (value) {
+                          setState(() {
+                            _returnTime = value;
+                          });
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    const _TrustInfoCard(),
+                  ]),
                 ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _PeriodActionBar(
-                startDate: _startDate,
-                endDate: _endDate,
-                rentalDays: _rentalDays,
-                onContinue: _startDate == null || _endDate == null
-                    ? null
-                    : () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => CartScreen(
-                              product: widget.product,
-                              startDate: _startDate!,
-                              endDate: _endDate!,
-                              rentalDays: _rentalDays,
-                              totalPrice: _totalPrice,
-                            ),
-                          ),
-                        );
-                      },
               ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: _PeriodActionBar(
+              startDate: _startDate,
+              endDate: _endDate,
+              rentalDays: _rentalDays,
+              onContinue:
+                  _startDate == null ||
+                      _endDate == null ||
+                      (widget.rentalMode == RentalMode.hour &&
+                          _rentalHours <= 0)
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => CartScreen(
+                            product: widget.product,
+                            rentalMode: widget.rentalMode,
+                            startDate: _startDate!,
+                            endDate: _endDate!,
+                            pickupTime: _pickupTime,
+                            returnTime: _returnTime,
+                            rentalHours: _rentalHours,
+                            rentalDays: _rentalDays,
+                            totalPrice: _checkoutTotalPrice,
+                          ),
+                        ),
+                      );
+                    },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+DateTime _combineDateAndTime(DateTime date, String time) {
+  final parts = time.split(':');
+  final hours = int.tryParse(parts.first) ?? 0;
+  final minutes = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+
+  return DateTime(date.year, date.month, date.day, hours, minutes);
 }
 
 class _PeriodTopBar extends StatelessWidget {
@@ -320,6 +465,8 @@ class _CalendarCard extends StatelessWidget {
     required this.isUnavailable,
     required this.isSelectedEndpoint,
     required this.isInRange,
+    required this.isLoading,
+    required this.error,
   });
 
   final DateTime visibleMonth;
@@ -331,6 +478,8 @@ class _CalendarCard extends StatelessWidget {
   final bool Function(DateTime date) isUnavailable;
   final bool Function(DateTime date) isSelectedEndpoint;
   final bool Function(DateTime date) isInRange;
+  final bool isLoading;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
@@ -366,6 +515,47 @@ class _CalendarCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (isLoading || error != null) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (isLoading)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _RentalPeriodScreenState._primary,
+                      ),
+                    )
+                  else
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: _RentalPeriodScreenState._muted,
+                    ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isLoading
+                          ? AppLocalizations.of(context).choose(
+                              'Verific disponibilitatea...',
+                              'Checking availability...',
+                            )
+                          : AppLocalizations.of(context).choose(
+                              'Nu am putut actualiza disponibilitatea.',
+                              'Could not refresh availability.',
+                            ),
+                      style: const TextStyle(
+                        color: _RentalPeriodScreenState._muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 34),
             const _WeekDaysRow(),
             const SizedBox(height: 12),
@@ -491,16 +681,178 @@ class _DayCell extends StatelessWidget {
   }
 }
 
+class _TimeSelectionCard extends StatelessWidget {
+  const _TimeSelectionCard({
+    required this.pickupTime,
+    required this.returnTime,
+    required this.onPickupChanged,
+    required this.onReturnChanged,
+  });
+
+  static const _timeOptions = [
+    '06:00',
+    '07:00',
+    '08:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+    '18:00',
+    '19:00',
+    '20:00',
+    '21:00',
+    '22:00',
+  ];
+
+  final String pickupTime;
+  final String returnTime;
+  final ValueChanged<String> onPickupChanged;
+  final ValueChanged<String> onReturnChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: _periodCardDecoration,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.access_time_rounded,
+                  color: _RentalPeriodScreenState._text,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    AppLocalizations.of(
+                      context,
+                    ).choose('Alege orele', 'Choose hours'),
+                    style: const TextStyle(
+                      color: _RentalPeriodScreenState._text,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _TimeSelector(
+              label: AppLocalizations.of(context).choose('Ridicare', 'Pickup'),
+              value: pickupTime,
+              options: _timeOptions,
+              onChanged: onPickupChanged,
+            ),
+            const SizedBox(height: 16),
+            _TimeSelector(
+              label: AppLocalizations.of(context).choose('Retur', 'Return'),
+              value: returnTime,
+              options: _timeOptions,
+              onChanged: onReturnChanged,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeSelector extends StatelessWidget {
+  const _TimeSelector({
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final List<String> options;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: _RentalPeriodScreenState._muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 42,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: options.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final option = options[index];
+              final selected = option == value;
+
+              return ChoiceChip(
+                label: Text(option),
+                selected: selected,
+                showCheckmark: false,
+                onSelected: (_) => onChanged(option),
+                selectedColor: _RentalPeriodScreenState._primary,
+                backgroundColor: Colors.white,
+                labelStyle: TextStyle(
+                  color: selected
+                      ? Colors.white
+                      : _RentalPeriodScreenState._text,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+                side: BorderSide(
+                  color: selected
+                      ? _RentalPeriodScreenState._primary
+                      : _RentalPeriodScreenState._outline.withValues(
+                          alpha: 0.40,
+                        ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SummarySection extends StatelessWidget {
   const _SummarySection({
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalMode,
+    required this.rentalHours,
     required this.rentalDays,
     required this.totalPrice,
   });
 
   final DateTime? startDate;
   final DateTime? endDate;
+  final String pickupTime;
+  final String returnTime;
+  final RentalMode rentalMode;
+  final int rentalHours;
   final int rentalDays;
   final int totalPrice;
 
@@ -515,19 +867,23 @@ class _SummarySection extends StatelessWidget {
               context,
             ).choose('Data inceput', 'Start date'),
             icon: Icons.calendar_today_rounded,
-            value: _formatFullDate(startDate),
+            value: '${_formatFullDate(startDate)}\n$pickupTime',
           ),
           _SummaryCard(
             label: AppLocalizations.of(
               context,
             ).choose('Data sfarsit', 'End date'),
             icon: Icons.event_rounded,
-            value: _formatFullDate(endDate),
+            value: '${_formatFullDate(endDate)}\n$returnTime',
           ),
           _SummaryCard(
             label: AppLocalizations.of(context).choose(
-              'Pret total ($rentalDays zile)',
-              'Total price ($rentalDays days)',
+              rentalMode == RentalMode.hour
+                  ? 'Pret total ($rentalHours ore)'
+                  : 'Pret total ($rentalDays zile)',
+              rentalMode == RentalMode.hour
+                  ? 'Total price ($rentalHours hours)'
+                  : 'Total price ($rentalDays days)',
             ),
             value: '$totalPrice RON',
             highlighted: true,
@@ -614,7 +970,7 @@ class _SummaryCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     value,
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: highlighted
@@ -850,6 +1206,16 @@ bool _isSameDay(DateTime date, DateTime? other) {
       date.year == other.year &&
       date.month == other.month &&
       date.day == other.day;
+}
+
+DateTime _dateOnly(DateTime date) {
+  return DateTime(date.year, date.month, date.day);
+}
+
+String _dateKey(DateTime date) {
+  return '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 }
 
 String _formatMonth(DateTime date) {

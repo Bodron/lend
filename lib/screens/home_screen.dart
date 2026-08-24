@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../widgets/lend_screen_frame.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
@@ -13,8 +14,9 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
+    return LendScreenFrame(
+      backgroundColor: Colors.black,
+      child: Stack(
         fit: StackFit.expand,
         children: [
           Image.network(
@@ -25,21 +27,19 @@ class HomeScreen extends StatelessWidget {
             },
           ),
           const _BackgroundOverlay(),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 576),
-                    child: const _HeroContent(),
-                  ),
-                  const SizedBox(height: 40),
-                  const _FooterLinks(),
-                  const SizedBox(height: 14),
-                ],
-              ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                const Spacer(),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 576),
+                  child: const _HeroContent(),
+                ),
+                const SizedBox(height: 40),
+                const _FooterLinks(),
+                const SizedBox(height: 14),
+              ],
             ),
           ),
         ],

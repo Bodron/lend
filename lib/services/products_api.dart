@@ -8,12 +8,14 @@ import 'storage_api.dart';
 class ProductsApi {
   ProductsApi({http.Client? client}) : _client = client ?? http.Client();
 
+  static const _requestTimeout = Duration(seconds: 8);
+
   final http.Client _client;
 
   Future<List<LendProduct>> findAll() async {
-    final response = await _client.get(
-      Uri.parse('${AuthApi.baseUrl}/products'),
-    );
+    final response = await _client
+        .get(Uri.parse('${AuthApi.baseUrl}/products'))
+        .timeout(_requestTimeout);
     final payload = jsonDecode(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -31,10 +33,12 @@ class ProductsApi {
   }
 
   Future<List<LendProduct>> findMine(String accessToken) async {
-    final response = await _client.get(
-      Uri.parse('${AuthApi.baseUrl}/products/me'),
-      headers: {'Authorization': 'Bearer $accessToken'},
-    );
+    final response = await _client
+        .get(
+          Uri.parse('${AuthApi.baseUrl}/products/me'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(_requestTimeout);
     final payload = jsonDecode(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -55,14 +59,16 @@ class ProductsApi {
     required String accessToken,
     required ProductSaveInput input,
   }) async {
-    final response = await _client.post(
-      Uri.parse('${AuthApi.baseUrl}/products'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(input.toJson()),
-    );
+    final response = await _client
+        .post(
+          Uri.parse('${AuthApi.baseUrl}/products'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(input.toJson()),
+        )
+        .timeout(_requestTimeout);
 
     return _decodeProductResponse(response, 'Nu am putut publica anuntul.');
   }
@@ -72,14 +78,16 @@ class ProductsApi {
     required String productId,
     required ProductSaveInput input,
   }) async {
-    final response = await _client.patch(
-      Uri.parse('${AuthApi.baseUrl}/products/$productId'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(input.toJson()),
-    );
+    final response = await _client
+        .patch(
+          Uri.parse('${AuthApi.baseUrl}/products/$productId'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(input.toJson()),
+        )
+        .timeout(_requestTimeout);
 
     return _decodeProductResponse(response, 'Nu am putut salva modificarile.');
   }
@@ -127,6 +135,8 @@ class ProductSaveInput {
     required this.address,
     required this.latitude,
     required this.longitude,
+    required this.pickupTime,
+    required this.returnTime,
     required this.media,
   });
 
@@ -140,6 +150,8 @@ class ProductSaveInput {
   final String address;
   final double? latitude;
   final double? longitude;
+  final String pickupTime;
+  final String returnTime;
   final List<UploadedMedia> media;
 
   Map<String, dynamic> toJson() {
@@ -154,6 +166,8 @@ class ProductSaveInput {
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
+      'pickupTime': pickupTime,
+      'returnTime': returnTime,
       'media': media.map((item) => item.toJson()).toList(),
     };
   }
@@ -182,6 +196,8 @@ class LendProduct {
     required this.address,
     required this.latitude,
     required this.longitude,
+    required this.pickupTime,
+    required this.returnTime,
     required this.ownerName,
     required this.rating,
     required this.isAvailable,
@@ -200,6 +216,8 @@ class LendProduct {
   final String address;
   final double? latitude;
   final double? longitude;
+  final String pickupTime;
+  final String returnTime;
   final String ownerName;
   final double rating;
   final bool isAvailable;
@@ -239,6 +257,8 @@ class LendProduct {
       address: (json['address'] ?? '').toString(),
       latitude: _toNullableDouble(json['latitude']),
       longitude: _toNullableDouble(json['longitude']),
+      pickupTime: (json['pickupTime'] ?? '10:00').toString(),
+      returnTime: (json['returnTime'] ?? '18:00').toString(),
       ownerName: (json['ownerName'] ?? '').toString(),
       rating: _toDouble(json['rating']),
       isAvailable: json['isAvailable'] != false,

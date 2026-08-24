@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../widgets/lend_screen_frame.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -32,55 +33,52 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         : _items;
     final unreadCount = _items.where((item) => !item.isRead).length;
 
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: _NotificationsTopBar(
-                unreadCount: unreadCount,
-                onMarkAllRead: _markAllRead,
-              ),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: _NotificationsTopBar(
+              unreadCount: unreadCount,
+              onMarkAllRead: _markAllRead,
             ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _NotificationSummary(unreadCount: unreadCount),
-                  const SizedBox(height: 16),
-                  _NotificationFilters(
-                    showUnreadOnly: _showUnreadOnly,
-                    onChanged: (value) {
-                      setState(() {
-                        _showUnreadOnly = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  if (visibleItems.isEmpty)
-                    _EmptyNotifications(
-                      title: strings.choose(
-                        'Nu ai notificari necitite',
-                        'No unread notifications',
-                      ),
-                    )
-                  else
-                    ...visibleItems.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _NotificationTile(
-                          item: item,
-                          onTap: () => _markRead(item.id),
-                        ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _NotificationSummary(unreadCount: unreadCount),
+                const SizedBox(height: 16),
+                _NotificationFilters(
+                  showUnreadOnly: _showUnreadOnly,
+                  onChanged: (value) {
+                    setState(() {
+                      _showUnreadOnly = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 14),
+                if (visibleItems.isEmpty)
+                  _EmptyNotifications(
+                    title: strings.choose(
+                      'Nu ai notificari necitite',
+                      'No unread notifications',
+                    ),
+                  )
+                else
+                  ...visibleItems.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _NotificationTile(
+                        item: item,
+                        onTap: () => _markRead(item.id),
                       ),
                     ),
-                ]),
-              ),
+                  ),
+              ]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

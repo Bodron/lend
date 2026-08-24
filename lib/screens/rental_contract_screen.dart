@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/rental_mode.dart';
 import '../services/auth_api.dart';
+import '../services/payments_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
+import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
 
@@ -11,8 +15,12 @@ class RentalContractScreen extends StatefulWidget {
   const RentalContractScreen({
     super.key,
     required this.product,
+    required this.rentalMode,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalHours,
     required this.rentalDays,
     required this.subtotal,
     required this.serviceFee,
@@ -20,8 +28,12 @@ class RentalContractScreen extends StatefulWidget {
   });
 
   final LendProduct product;
+  final RentalMode rentalMode;
   final DateTime startDate;
   final DateTime endDate;
+  final String pickupTime;
+  final String returnTime;
+  final int rentalHours;
   final int rentalDays;
   final int subtotal;
   final int serviceFee;
@@ -44,8 +56,12 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
   static const _avatarUrl =
       'https://lh3.googleusercontent.com/aida-public/AB6AXuC1ghPKdxoO_3mmQ3RZgZxv5ytA_LRAUc9NlTMTVk9WPd3QoUt2lG9KZXGlrT50vj8PWFC9o3BVCWcryLMmlTgzPFE-zRoN2rPZCVWPpUuINt7-wsq5re-UanfPQURi1yF6sm8nLhOcVMwR1zscivEQqMISLMbPvXD1vokYsGmYDDsqKHGRGk1zGn2LV1m9lIcT9a7v_doOYN-zt5Tr4QsbivI1qlQ4bF68gd0hfDQxd-8bwl25fX8amy6e-LH0-21NffEO_U0-Rlc';
+  static const _stripeMerchantIdentifier = String.fromEnvironment(
+    'STRIPE_MERCHANT_IDENTIFIER',
+  );
 
   final _rentalOrdersApi = RentalOrdersApi();
+  final _paymentsApi = PaymentsApi();
   final List<Offset?> _signaturePoints = [];
   bool _isSigning = false;
   bool _submitting = false;
@@ -92,11 +108,56 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         throw RentalOrdersApiException('Trebuie sa fii autentificat.');
       }
 
-      final order = await _rentalOrdersApi.create(
+      final paymentsConfig = await _paymentsApi.getConfig();
+
+      if (paymentsConfig.publishableKey.isEmpty) {
+        throw PaymentsApiException(
+          'Stripe nu este configurat. Lipseste cheia publica.',
+        );
+      }
+
+      Stripe.publishableKey = paymentsConfig.publishableKey;
+      if (_stripeMerchantIdentifier.isNotEmpty) {
+        Stripe.merchantIdentifier = _stripeMerchantIdentifier;
+      }
+      await Stripe.instance.applySettings();
+
+      var order = await _rentalOrdersApi.create(
         accessToken: token,
         productId: widget.product.id,
         startDate: widget.startDate,
         endDate: widget.endDate,
+        rentalMode: widget.rentalMode,
+        pickupTime: widget.pickupTime,
+        returnTime: widget.returnTime,
+      );
+
+      if (order.paymentClientSecret.isEmpty) {
+        throw RentalOrdersApiException(
+          'Nu am primit confirmarea de plata de la Stripe.',
+        );
+      }
+
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: order.paymentClientSecret,
+          merchantDisplayName: 'BorrowIt',
+          style: ThemeMode.system,
+          googlePay: const PaymentSheetGooglePay(
+            merchantCountryCode: 'RO',
+            currencyCode: 'RON',
+            testEnv: true,
+          ),
+          applePay: _stripeMerchantIdentifier.isEmpty
+              ? null
+              : const PaymentSheetApplePay(merchantCountryCode: 'RO'),
+        ),
+      );
+      await Stripe.instance.presentPaymentSheet();
+
+      order = await _rentalOrdersApi.markPaymentAuthorized(
+        accessToken: token,
+        orderId: order.id,
       );
 
       if (!mounted) {
@@ -105,7 +166,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
       LendToast.success(
         context,
-        message: 'Comanda #${order.id} a fost trimisa.',
+        message: 'Cererea #${order.id} a fost trimisa proprietarului.',
       );
 
       Navigator.of(context).pushAndRemoveUntil(
@@ -131,87 +192,90 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              physics: _isSigning
-                  ? const NeverScrollableScrollPhysics()
-                  : const BouncingScrollPhysics(),
-              slivers: [
-                const SliverToBoxAdapter(child: _ContractTopBar()),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 188),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _LegalDocumentCard(
-                        product: widget.product,
-                        rentalDays: widget.rentalDays,
-                      ),
-                      const SizedBox(height: 20),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final wide = constraints.maxWidth >= 680;
-                          if (!wide) {
-                            return Column(
-                              children: [
-                                _OwnerSignatureCard(
-                                  ownerName: widget.product.ownerName,
-                                ),
-                                const SizedBox(height: 20),
-                                _TenantSignatureCard(
-                                  points: _signaturePoints,
-                                  onPoint: _addPoint,
-                                  onStrokeEnd: _endStroke,
-                                  onClear: _clearSignature,
-                                  onSigningChanged: _setSigning,
-                                ),
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
+        children: [
+          CustomScrollView(
+            physics: _isSigning
+                ? const NeverScrollableScrollPhysics()
+                : const BouncingScrollPhysics(),
+            slivers: [
+              const SliverToBoxAdapter(child: _ContractTopBar()),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 188),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _LegalDocumentCard(
+                      product: widget.product,
+                      rentalMode: widget.rentalMode,
+                      pickupTime: widget.pickupTime,
+                      returnTime: widget.returnTime,
+                      rentalDays: widget.rentalDays,
+                      rentalHours: widget.rentalHours,
+                    ),
+                    const SizedBox(height: 20),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final wide = constraints.maxWidth >= 680;
+                        if (!wide) {
+                          return Column(
                             children: [
-                              Expanded(
-                                child: _OwnerSignatureCard(
-                                  ownerName: widget.product.ownerName,
-                                ),
+                              _OwnerSignatureCard(
+                                ownerName: widget.product.ownerName,
                               ),
-                              const SizedBox(width: 20),
-                              Expanded(
-                                child: _TenantSignatureCard(
-                                  points: _signaturePoints,
-                                  onPoint: _addPoint,
-                                  onStrokeEnd: _endStroke,
-                                  onClear: _clearSignature,
-                                  onSigningChanged: _setSigning,
-                                ),
+                              const SizedBox(height: 20),
+                              _TenantSignatureCard(
+                                points: _signaturePoints,
+                                onPoint: _addPoint,
+                                onStrokeEnd: _endStroke,
+                                onClear: _clearSignature,
+                                onSigningChanged: _setSigning,
                               ),
                             ],
                           );
-                        },
-                      ),
-                    ]),
-                  ),
+                        }
+
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _OwnerSignatureCard(
+                                ownerName: widget.product.ownerName,
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: _TenantSignatureCard(
+                                points: _signaturePoints,
+                                onPoint: _addPoint,
+                                onStrokeEnd: _endStroke,
+                                onClear: _clearSignature,
+                                onSigningChanged: _setSigning,
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ]),
                 ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _PricingBar(
-                rentalDays: widget.rentalDays,
-                total: widget.total,
-                canSubmit: _signaturePoints.isNotEmpty && !_submitting,
-                submitting: _submitting,
-                onSubmit: _submitOrder,
               ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: _PricingBar(
+              rentalDays: widget.rentalDays,
+              rentalHours: widget.rentalHours,
+              rentalMode: widget.rentalMode,
+              total: widget.total,
+              canSubmit: _signaturePoints.isNotEmpty && !_submitting,
+              submitting: _submitting,
+              onSubmit: _submitOrder,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -274,10 +338,21 @@ class _ContractTopBar extends StatelessWidget {
 }
 
 class _LegalDocumentCard extends StatelessWidget {
-  const _LegalDocumentCard({required this.product, required this.rentalDays});
+  const _LegalDocumentCard({
+    required this.product,
+    required this.rentalMode,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalDays,
+    required this.rentalHours,
+  });
 
   final LendProduct product;
+  final RentalMode rentalMode;
+  final String pickupTime;
+  final String returnTime;
   final int rentalDays;
+  final int rentalHours;
 
   @override
   Widget build(BuildContext context) {
@@ -356,6 +431,18 @@ class _LegalDocumentCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     _HighlightedLegalSection(
+                      icon: Icons.access_time_rounded,
+                      color: _RentalContractScreenState._secondary,
+                      title: AppLocalizations.of(
+                        context,
+                      ).choose('Program predare si retur', 'Pickup and return'),
+                      body: AppLocalizations.of(context).choose(
+                        'Ridicarea se face la ora $pickupTime, iar returul la ora $returnTime.',
+                        'Pickup is at $pickupTime and return is at $returnTime.',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _HighlightedLegalSection(
                       icon: Icons.gavel_rounded,
                       color: _RentalContractScreenState._text,
                       title: AppLocalizations.of(
@@ -385,8 +472,12 @@ class _LegalDocumentCard extends StatelessWidget {
                         '3. Contract termination',
                       ),
                       body: AppLocalizations.of(context).choose(
-                        'Contractul pentru ${product.title} inceteaza automat la expirarea perioadei de $rentalDays zile sau prin acordul prealabil al ambelor parti in scris prin mesageria aplicatiei.',
-                        'The contract for ${product.title} ends automatically when the $rentalDays day period expires or by prior written agreement between both parties through the app messaging system.',
+                        rentalMode == RentalMode.hour
+                            ? 'Contractul pentru ${product.title} inceteaza automat la expirarea perioadei de $rentalHours ore sau prin acordul prealabil al ambelor parti in scris prin mesageria aplicatiei.'
+                            : 'Contractul pentru ${product.title} inceteaza automat la expirarea perioadei de $rentalDays zile sau prin acordul prealabil al ambelor parti in scris prin mesageria aplicatiei.',
+                        rentalMode == RentalMode.hour
+                            ? 'The contract for ${product.title} ends automatically when the $rentalHours hour period expires or by prior written agreement between both parties through the app messaging system.'
+                            : 'The contract for ${product.title} ends automatically when the $rentalDays day period expires or by prior written agreement between both parties through the app messaging system.',
                       ),
                     ),
                   ],
@@ -751,6 +842,8 @@ class _SignaturePainter extends CustomPainter {
 class _PricingBar extends StatelessWidget {
   const _PricingBar({
     required this.rentalDays,
+    required this.rentalHours,
+    required this.rentalMode,
     required this.total,
     required this.canSubmit,
     required this.submitting,
@@ -758,6 +851,8 @@ class _PricingBar extends StatelessWidget {
   });
 
   final int rentalDays;
+  final int rentalHours;
+  final RentalMode rentalMode;
   final int total;
   final bool canSubmit;
   final bool submitting;
@@ -789,9 +884,14 @@ class _PricingBar extends StatelessWidget {
                 label: AppLocalizations.of(
                   context,
                 ).choose('Durata totala', 'Total duration'),
-                value: AppLocalizations.of(
-                  context,
-                ).choose('$rentalDays zile', '$rentalDays days'),
+                value: AppLocalizations.of(context).choose(
+                  rentalMode == RentalMode.hour
+                      ? '$rentalHours ore'
+                      : '$rentalDays zile',
+                  rentalMode == RentalMode.hour
+                      ? '$rentalHours hours'
+                      : '$rentalDays days',
+                ),
               ),
               const SizedBox(width: 18),
               const SizedBox(

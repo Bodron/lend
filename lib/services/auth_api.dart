@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthApi {
   AuthApi({http.Client? client}) : _client = client ?? http.Client();
 
+  static const _requestTimeout = Duration(seconds: 8);
+
   final http.Client _client;
 
   static const _configuredBaseUrl = String.fromEnvironment('APP_BASE_URL');
@@ -85,10 +87,12 @@ class AuthApi {
   }
 
   Future<AuthUser> me(String accessToken) async {
-    final response = await _client.get(
-      Uri.parse('$baseUrl/auth/me'),
-      headers: {'Authorization': 'Bearer $accessToken'},
-    );
+    final response = await _client
+        .get(
+          Uri.parse('$baseUrl/auth/me'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(_requestTimeout);
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -104,17 +108,20 @@ class AuthApi {
     required String avatarUrl,
     String? avatarKey,
   }) async {
-    final response = await _client.patch(
-      Uri.parse('$baseUrl/auth/me/avatar'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'avatarUrl': avatarUrl,
-        if (avatarKey != null && avatarKey.isNotEmpty) 'avatarKey': avatarKey,
-      }),
-    );
+    final response = await _client
+        .patch(
+          Uri.parse('$baseUrl/auth/me/avatar'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'avatarUrl': avatarUrl,
+            if (avatarKey != null && avatarKey.isNotEmpty)
+              'avatarKey': avatarKey,
+          }),
+        )
+        .timeout(_requestTimeout);
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -126,11 +133,13 @@ class AuthApi {
   }
 
   Future<AuthSession> _postAuth(String path, Map<String, String> body) async {
-    final response = await _client.post(
-      Uri.parse('$baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(_requestTimeout);
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -189,6 +198,9 @@ class AuthUser {
     required this.phone,
     this.avatarUrl,
     this.avatarKey,
+    this.stripeAccountId,
+    this.stripePayoutsEnabled = false,
+    this.stripeDetailsSubmitted = false,
   });
 
   final String id;
@@ -197,6 +209,9 @@ class AuthUser {
   final String phone;
   final String? avatarUrl;
   final String? avatarKey;
+  final String? stripeAccountId;
+  final bool stripePayoutsEnabled;
+  final bool stripeDetailsSubmitted;
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
     return AuthUser(
@@ -206,6 +221,9 @@ class AuthUser {
       phone: json['phone'] as String,
       avatarUrl: _optionalString(json['avatarUrl']),
       avatarKey: _optionalString(json['avatarKey']),
+      stripeAccountId: _optionalString(json['stripeAccountId']),
+      stripePayoutsEnabled: json['stripePayoutsEnabled'] == true,
+      stripeDetailsSubmitted: json['stripeDetailsSubmitted'] == true,
     );
   }
 

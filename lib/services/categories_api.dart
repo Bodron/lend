@@ -7,12 +7,14 @@ import 'auth_api.dart';
 class CategoriesApi {
   CategoriesApi({http.Client? client}) : _client = client ?? http.Client();
 
+  static const _requestTimeout = Duration(seconds: 8);
+
   final http.Client _client;
 
   Future<List<LendCategory>> findAll() async {
-    final response = await _client.get(
-      Uri.parse('${AuthApi.baseUrl}/categories'),
-    );
+    final response = await _client
+        .get(Uri.parse('${AuthApi.baseUrl}/categories'))
+        .timeout(_requestTimeout);
     final payload = jsonDecode(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {

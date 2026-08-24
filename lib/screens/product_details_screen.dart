@@ -7,7 +7,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/rental_mode.dart';
 import '../services/products_api.dart';
+import '../widgets/lend_screen_frame.dart';
 import '../widgets/product_media_preview.dart';
 import 'rental_period_screen.dart';
 
@@ -59,50 +61,47 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final product = widget.product;
 
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                const SliverToBoxAdapter(child: _DetailsTopBar()),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(12, 8, 12, bottomPadding + 116),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _HeroImage(product: product),
-                      const SizedBox(height: 8),
-                      _DetailsInfoCard(
-                        product: product,
-                        perHour: _perHour,
-                        mapStyle: _mapStyle,
-                        onPriceModeChanged: (value) {
-                          setState(() {
-                            _perHour = value;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      _SpecsGrid(product: product),
-                      const SizedBox(height: 24),
-                      _ReviewsSection(product: product),
-                      const SizedBox(height: 24),
-                      _OwnerCard(product: product),
-                      const SizedBox(height: 16),
-                      const _ProtectCard(),
-                    ]),
-                  ),
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              const SliverToBoxAdapter(child: _DetailsTopBar()),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(12, 8, 12, bottomPadding + 116),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _HeroImage(product: product),
+                    const SizedBox(height: 8),
+                    _DetailsInfoCard(
+                      product: product,
+                      perHour: _perHour,
+                      mapStyle: _mapStyle,
+                      onPriceModeChanged: (value) {
+                        setState(() {
+                          _perHour = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    _SpecsGrid(product: product),
+                    const SizedBox(height: 24),
+                    _ReviewsSection(product: product),
+                    const SizedBox(height: 24),
+                    _OwnerCard(product: product),
+                    const SizedBox(height: 16),
+                    const _ProtectCard(),
+                  ]),
                 ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: _BottomActionBar(perHour: _perHour, product: product),
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: _BottomActionBar(perHour: _perHour, product: product),
+          ),
+        ],
       ),
     );
   }
@@ -718,6 +717,11 @@ class _SpecsGrid extends StatelessWidget {
         '${product.deposit} RON',
       ),
       (
+        Icons.schedule_rounded,
+        AppLocalizations.of(context).choose('Program', 'Schedule'),
+        '${product.pickupTime} - ${product.returnTime}',
+      ),
+      (
         Icons.cleaning_services_rounded,
         AppLocalizations.of(context).choose('Stare', 'Condition'),
         AppLocalizations.of(context).choose('Verificat', 'Verified'),
@@ -775,7 +779,7 @@ class _SpecCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: _ProductDetailsScreenState._text,
@@ -1127,7 +1131,7 @@ class _BottomActionBar extends StatelessWidget {
         : AppLocalizations.of(context).choose('/ zi', '/ day');
 
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 14, 20, bottomPadding + 14),
+      padding: EdgeInsets.fromLTRB(18, 10, 18, bottomPadding + 10),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
@@ -1148,7 +1152,7 @@ class _BottomActionBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            flex: 4,
+            flex: 5,
             child: Text.rich(
               TextSpan(
                 text: price,
@@ -1172,14 +1176,17 @@ class _BottomActionBar extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            flex: 5,
+            flex: 4,
             child: SizedBox(
-              height: 56,
+              height: 50,
               child: FilledButton(
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => RentalPeriodScreen(product: product),
+                      builder: (_) => RentalPeriodScreen(
+                        product: product,
+                        rentalMode: perHour ? RentalMode.hour : RentalMode.day,
+                      ),
                     ),
                   );
                 },
@@ -1188,12 +1195,12 @@ class _BottomActionBar extends StatelessWidget {
                   foregroundColor: Colors.white,
                   elevation: 8,
                   shadowColor: _ProductDetailsScreenState._primary.withValues(
-                    alpha: 0.20,
+                    alpha: 0.16,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -1219,7 +1226,7 @@ class _BottomActionBar extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.arrow_forward_rounded, size: 20),
+                        const Icon(Icons.arrow_forward_rounded, size: 18),
                       ],
                     );
                   },

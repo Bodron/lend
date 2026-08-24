@@ -3,13 +3,16 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
+import '../services/payments_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
 import '../services/storage_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
+import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
 import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
@@ -50,6 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _authApi = AuthApi();
   final _productsApi = ProductsApi();
   final _rentalOrdersApi = RentalOrdersApi();
+  final _paymentsApi = PaymentsApi();
   final _storageApi = StorageApi();
   bool _uploadingAvatar = false;
   late Future<_ProfileData> _profileFuture = _loadProfileData();
@@ -188,93 +192,94 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                if (widget.showChrome)
-                  const SliverToBoxAdapter(
-                    child: LendTopBar(
-                      title: 'Lend',
-                      avatarUrl: _ProfileScreenState._avatarUrl,
-                    ),
-                  )
-                else
-                  const SliverToBoxAdapter(child: SizedBox(height: 106)),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    widget.showChrome ? 24 : 0,
-                    20,
-                    widget.showChrome ? 128 : 6,
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: FutureBuilder<_ProfileData>(
-                      future: _profileFuture,
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState != ConnectionState.done) {
-                          return const SizedBox(
-                            height: 320,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: _ProfileScreenState._text,
-                              ),
-                            ),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          return _ProfileMessage(
-                            icon: Icons.cloud_off_rounded,
-                            title: AppLocalizations.of(context).choose(
-                              'Nu am putut incarca profilul',
-                              'Could not load profile',
-                            ),
-                            body: AppLocalizations.of(context).choose(
-                              'Verifica backendul si incearca din nou.',
-                              'Check the backend and try again.',
-                            ),
-                            actionLabel: AppLocalizations.of(context).retry,
-                            onAction: _reloadProfile,
-                          );
-                        }
-
-                        final data = snapshot.data!;
-
-                        return Column(
-                          children: [
-                            _ProfileHeader(
-                              data: data,
-                              uploadingAvatar: _uploadingAvatar,
-                              onAvatarPressed: _uploadAvatar,
-                            ),
-                            const SizedBox(height: 32),
-                            _ProfileSidebar(onLogout: _logout),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    final content = Stack(
+      children: [
+        CustomScrollView(
+          slivers: [
             if (widget.showChrome)
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: LendBottomNavigation(
-                  currentIndex: 3,
-                  onSelected: _handleNavigation,
-                  onAddListing: _openAddListing,
+              const SliverToBoxAdapter(
+                child: LendTopBar(
+                  title: 'Lend',
+                  avatarUrl: _ProfileScreenState._avatarUrl,
+                ),
+              )
+            else
+              const SliverToBoxAdapter(child: SizedBox(height: 106)),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                widget.showChrome ? 24 : 0,
+                20,
+                widget.showChrome ? 128 : 6,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: FutureBuilder<_ProfileData>(
+                  future: _profileFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const SizedBox(
+                        height: 320,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: _ProfileScreenState._text,
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return _ProfileMessage(
+                        icon: Icons.cloud_off_rounded,
+                        title: AppLocalizations.of(context).choose(
+                          'Nu am putut incarca profilul',
+                          'Could not load profile',
+                        ),
+                        body: AppLocalizations.of(context).choose(
+                          'Verifica backendul si incearca din nou.',
+                          'Check the backend and try again.',
+                        ),
+                        actionLabel: AppLocalizations.of(context).retry,
+                        onAction: _reloadProfile,
+                      );
+                    }
+
+                    final data = snapshot.data!;
+
+                    return Column(
+                      children: [
+                        _ProfileHeader(
+                          data: data,
+                          uploadingAvatar: _uploadingAvatar,
+                          onAvatarPressed: _uploadAvatar,
+                          onPayoutPressed: _openPayoutOnboarding,
+                        ),
+                        const SizedBox(height: 32),
+                        _ProfileSidebar(onLogout: _logout),
+                      ],
+                    );
+                  },
                 ),
               ),
+            ),
           ],
         ),
-      ),
+        if (widget.showChrome)
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: LendBottomNavigation(
+              currentIndex: 3,
+              onSelected: _handleNavigation,
+              onAddListing: _openAddListing,
+            ),
+          ),
+      ],
     );
+
+    if (!widget.showChrome) {
+      return content;
+    }
+
+    return LendScreenFrame(backgroundColor: _background, child: content);
   }
 
   void _handleNavigation(int index) {
@@ -313,6 +318,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _openPayoutOnboarding() async {
+    try {
+      final token = await AuthSessionStore.getToken();
+
+      if (token == null) {
+        throw AuthApiException('Trebuie sa fii autentificat.');
+      }
+
+      final result = await _paymentsApi.requestPayout(token);
+
+      if (result.requiresOnboarding) {
+        final uri = Uri.tryParse(result.url);
+
+        if (uri == null ||
+            !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+          throw PaymentsApiException('Nu am putut deschide Stripe onboarding.');
+        }
+        return;
+      }
+
+      if (result.paidOut) {
+        if (!mounted) {
+          return;
+        }
+
+        LendToast.success(
+          context,
+          message: '${result.amount} RON au fost trimisi catre Stripe.',
+        );
+        _reloadProfile();
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      LendToast.error(context, message: error.toString());
+    }
+  }
+
   static void _replaceWith(BuildContext context, Widget screen) {
     Navigator.of(
       context,
@@ -337,6 +382,16 @@ class _ProfileData {
         .fold<int>(0, (sum, order) => sum + order.subtotal);
   }
 
+  int get availablePayout {
+    return rentals
+        .where(
+          (order) =>
+              order.paymentStatus == 'captured' &&
+              order.payoutStatus != 'paid_out',
+        )
+        .fold<int>(0, (sum, order) => sum + order.subtotal);
+  }
+
   String get ratingLabel {
     if (listings.isEmpty) {
       return '-';
@@ -354,11 +409,13 @@ class _ProfileHeader extends StatelessWidget {
     required this.data,
     required this.uploadingAvatar,
     required this.onAvatarPressed,
+    required this.onPayoutPressed,
   });
 
   final _ProfileData data;
   final bool uploadingAvatar;
   final VoidCallback onAvatarPressed;
+  final VoidCallback onPayoutPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -459,7 +516,85 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ],
         ),
+        if (data.availablePayout > 0) ...[
+          const SizedBox(height: 16),
+          _PayoutCard(
+            amount: data.availablePayout,
+            payoutsEnabled: data.user.stripePayoutsEnabled,
+            onPressed: onPayoutPressed,
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _PayoutCard extends StatelessWidget {
+  const _PayoutCard({
+    required this.amount,
+    required this.payoutsEnabled,
+    required this.onPressed,
+  });
+
+  final int amount;
+  final bool payoutsEnabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: _profileCardDecoration,
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: _ProfileScreenState._secondaryContainer,
+              foregroundColor: _ProfileScreenState._secondary,
+              child: Icon(Icons.account_balance_wallet_rounded),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$amount RON disponibili',
+                    style: const TextStyle(
+                      color: _ProfileScreenState._text,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    payoutsEnabled
+                        ? 'Contul Stripe este pregatit pentru retrageri.'
+                        : 'Configureaza Stripe ca sa primesti banii.',
+                    style: const TextStyle(
+                      color: _ProfileScreenState._muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton(
+              onPressed: onPressed,
+              style: FilledButton.styleFrom(
+                backgroundColor: _ProfileScreenState._primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: const Text('Primeste banii'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

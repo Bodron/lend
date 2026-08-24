@@ -5,9 +5,11 @@ import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/storage_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
+import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_top_bar.dart';
 import '../widgets/product_media_preview.dart';
 import 'add_listing_screen.dart';
+import 'availability_management_screen.dart';
 import 'explore_screen.dart';
 import 'profile_screen.dart';
 import 'rentals_screen.dart';
@@ -126,10 +128,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
       return content;
     }
 
-    return Scaffold(
-      backgroundColor: _background,
-      body: SafeArea(bottom: false, child: content),
-    );
+    return LendScreenFrame(backgroundColor: _background, child: content);
   }
 
   void _handleNavigation(int index) {
@@ -426,6 +425,8 @@ class _ListingCard extends StatelessWidget {
                                     address: item.address,
                                     latitude: item.latitude,
                                     longitude: item.longitude,
+                                    pickupTime: item.pickupTime,
+                                    returnTime: item.returnTime,
                                     imageUrl: item.imageUrl,
                                     media: item.images
                                         .map(
@@ -464,7 +465,14 @@ class _ListingCard extends StatelessWidget {
                       width: 42,
                       height: 42,
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  AvailabilityManagementScreen(product: item),
+                            ),
+                          );
+                        },
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.zero,
                           foregroundColor: _MyListingsScreenState._muted,
@@ -473,7 +481,7 @@ class _ListingCard extends StatelessWidget {
                           ),
                           shape: const CircleBorder(),
                         ),
-                        child: const Icon(Icons.more_vert_rounded, size: 20),
+                        child: const Icon(Icons.event_busy_rounded, size: 20),
                       ),
                     ),
                   ],

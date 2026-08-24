@@ -3,6 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../l10n/app_localizations.dart';
 import '../widgets/lend_bottom_navigation.dart';
+import '../widgets/lend_screen_frame.dart';
 import 'add_listing_screen.dart';
 import 'main_shell.dart';
 
@@ -32,97 +33,92 @@ class ReturnQrScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
 
-    return Scaffold(
+    return LendScreenFrame(
       backgroundColor: _background,
-      body: SafeArea(
-        bottom: false,
-        child: Stack(
-          children: [
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: _ReturnTopBar(title: itemTitle)),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 138),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      const _ReturnStatusBadge(),
-                      const SizedBox(height: 8),
-                      _ReturnQrCard(
-                        itemTitle: itemTitle,
-                        itemImageUrl: itemImageUrl,
-                        returnCode: returnCode,
+      child: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: _ReturnTopBar(title: itemTitle)),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 138),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    const _ReturnStatusBadge(),
+                    const SizedBox(height: 8),
+                    _ReturnQrCard(
+                      itemTitle: itemTitle,
+                      itemImageUrl: itemImageUrl,
+                      returnCode: returnCode,
+                    ),
+                    const SizedBox(height: 20),
+                    _SecondaryActionButton(
+                      icon: Icons.report_problem_outlined,
+                      label: strings.choose(
+                        'Raporteaza o problema',
+                        'Report a problem',
                       ),
-                      const SizedBox(height: 20),
-                      _SecondaryActionButton(
-                        icon: Icons.report_problem_outlined,
-                        label: strings.choose(
-                          'Raporteaza o problema',
-                          'Report a problem',
-                        ),
-                        onPressed: () {},
+                      onPressed: () {},
+                    ),
+                    const SizedBox(height: 12),
+                    _PrimaryActionButton(
+                      icon: Icons.support_agent_rounded,
+                      label: strings.choose(
+                        'Contact support',
+                        'Contact support',
                       ),
-                      const SizedBox(height: 12),
-                      _PrimaryActionButton(
-                        icon: Icons.support_agent_rounded,
-                        label: strings.choose(
-                          'Contact support',
-                          'Contact support',
-                        ),
-                        onPressed: () {},
-                      ),
-                      const SizedBox(height: 34),
-                      const _SecurityNote(),
-                    ]),
-                  ),
+                      onPressed: () {},
+                    ),
+                    const SizedBox(height: 34),
+                    const _SecurityNote(),
+                  ]),
                 ),
-              ],
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: LendBottomNavigation(
-                currentIndex: 2,
-                onAddListing: () {
-                  Navigator.of(context).push(
+              ),
+            ],
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: LendBottomNavigation(
+              currentIndex: 2,
+              onAddListing: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AddListingScreen(),
+                  ),
+                );
+              },
+              onSelected: (index) {
+                if (index == 0) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute<void>(builder: (_) => const MainShell()),
+                    (route) => false,
+                  );
+                }
+                if (index == 1) {
+                  Navigator.of(context).pushReplacement(
                     MaterialPageRoute<void>(
-                      builder: (_) => const AddListingScreen(),
+                      builder: (_) => const MainShell(initialIndex: 1),
                     ),
                   );
-                },
-                onSelected: (index) {
-                  if (index == 0) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const MainShell(),
-                      ),
-                      (route) => false,
-                    );
-                  }
-                  if (index == 1) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const MainShell(initialIndex: 1),
-                      ),
-                    );
-                  }
-                  if (index == 2) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const MainShell(initialIndex: 2),
-                      ),
-                    );
-                  }
-                  if (index == 3) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const MainShell(initialIndex: 3),
-                      ),
-                    );
-                  }
-                },
-              ),
+                }
+                if (index == 2) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const MainShell(initialIndex: 2),
+                    ),
+                  );
+                }
+                if (index == 3) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const MainShell(initialIndex: 3),
+                    ),
+                  );
+                }
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -541,4 +537,3 @@ class _SecurityNote extends StatelessWidget {
     );
   }
 }
-

@@ -2,10 +2,13 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/rental_mode.dart';
 import 'auth_api.dart';
 
 class RentalOrdersApi {
   RentalOrdersApi({http.Client? client}) : _client = client ?? http.Client();
+
+  static const _requestTimeout = Duration(seconds: 8);
 
   final http.Client _client;
 
@@ -14,19 +17,27 @@ class RentalOrdersApi {
     required String productId,
     required DateTime startDate,
     required DateTime endDate,
+    required RentalMode rentalMode,
+    required String pickupTime,
+    required String returnTime,
   }) async {
-    final response = await _client.post(
-      Uri.parse('${AuthApi.baseUrl}/rental-orders'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'productId': productId,
-        'startDate': _dateKey(startDate),
-        'endDate': _dateKey(endDate),
-      }),
-    );
+    final response = await _client
+        .post(
+          Uri.parse('${AuthApi.baseUrl}/rental-orders'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'productId': productId,
+            'startDate': _dateKey(startDate),
+            'endDate': _dateKey(endDate),
+            'rentalMode': rentalMode == RentalMode.hour ? 'hour' : 'day',
+            'pickupTime': pickupTime,
+            'returnTime': returnTime,
+          }),
+        )
+        .timeout(_requestTimeout);
 
     final payload = jsonDecode(response.body);
 
@@ -42,10 +53,12 @@ class RentalOrdersApi {
   }
 
   Future<List<RentalOrder>> findMine(String accessToken) async {
-    final response = await _client.get(
-      Uri.parse('${AuthApi.baseUrl}/rental-orders/me'),
-      headers: {'Authorization': 'Bearer $accessToken'},
-    );
+    final response = await _client
+        .get(
+          Uri.parse('${AuthApi.baseUrl}/rental-orders/me'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(_requestTimeout);
 
     final payload = jsonDecode(response.body);
 
@@ -64,10 +77,12 @@ class RentalOrdersApi {
   }
 
   Future<List<RentalOrder>> findOwned(String accessToken) async {
-    final response = await _client.get(
-      Uri.parse('${AuthApi.baseUrl}/rental-orders/owned'),
-      headers: {'Authorization': 'Bearer $accessToken'},
-    );
+    final response = await _client
+        .get(
+          Uri.parse('${AuthApi.baseUrl}/rental-orders/owned'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(_requestTimeout);
 
     final payload = jsonDecode(response.body);
 
@@ -90,14 +105,16 @@ class RentalOrdersApi {
     required String orderId,
     required String status,
   }) async {
-    final response = await _client.patch(
-      Uri.parse('${AuthApi.baseUrl}/rental-orders/$orderId/status'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'status': status}),
-    );
+    final response = await _client
+        .patch(
+          Uri.parse('${AuthApi.baseUrl}/rental-orders/$orderId/status'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'status': status}),
+        )
+        .timeout(_requestTimeout);
 
     final payload = jsonDecode(response.body);
 
@@ -112,6 +129,72 @@ class RentalOrdersApi {
     return RentalOrder.fromJson(payload);
   }
 
+  Future<RentalOrder> updateSchedule({
+    required String accessToken,
+    required String orderId,
+    required String pickupTime,
+    required String returnTime,
+  }) async {
+    final response = await _client
+        .patch(
+          Uri.parse('${AuthApi.baseUrl}/rental-orders/$orderId/schedule'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'pickupTime': pickupTime,
+            'returnTime': returnTime,
+          }),
+        )
+        .timeout(_requestTimeout);
+
+    final payload = jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
+
+    if (payload is! Map<String, dynamic>) {
+      throw RentalOrdersApiException('Raspuns invalid pentru program.');
+    }
+
+    return RentalOrder.fromJson(payload);
+  }
+
+  Future<RentalOrder> markPaymentAuthorized({
+    required String accessToken,
+    required String orderId,
+  }) async {
+    return _patchOrder(
+      accessToken: accessToken,
+      path: '/rental-orders/$orderId/payment-authorized',
+      fallback: 'Nu am putut confirma plata.',
+    );
+  }
+
+  Future<RentalOrder> accept({
+    required String accessToken,
+    required String orderId,
+  }) async {
+    return _patchOrder(
+      accessToken: accessToken,
+      path: '/rental-orders/$orderId/accept',
+      fallback: 'Nu am putut accepta cererea.',
+    );
+  }
+
+  Future<RentalOrder> reject({
+    required String accessToken,
+    required String orderId,
+  }) async {
+    return _patchOrder(
+      accessToken: accessToken,
+      path: '/rental-orders/$orderId/reject',
+      fallback: 'Nu am putut refuza cererea.',
+    );
+  }
+
   Future<RentalOrder> completeReturn({
     required String accessToken,
     required String orderId,
@@ -121,6 +204,107 @@ class RentalOrdersApi {
       orderId: orderId,
       status: 'completed',
     );
+  }
+
+  Future<RentalOrder> _patchOrder({
+    required String accessToken,
+    required String path,
+    required String fallback,
+  }) async {
+    final response = await _client
+        .patch(
+          Uri.parse('${AuthApi.baseUrl}$path'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(_requestTimeout);
+    final payload = jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
+
+    if (payload is! Map<String, dynamic>) {
+      throw RentalOrdersApiException(fallback);
+    }
+
+    return RentalOrder.fromJson(payload);
+  }
+
+  Future<ProductAvailability> getAvailability({
+    required String productId,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final uri = Uri.parse(
+      '${AuthApi.baseUrl}/rental-orders/products/$productId/availability',
+    ).replace(queryParameters: {'from': _dateKey(from), 'to': _dateKey(to)});
+    final response = await _client.get(uri).timeout(_requestTimeout);
+    final payload = jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
+
+    if (payload is! Map<String, dynamic>) {
+      throw RentalOrdersApiException('Raspuns invalid pentru disponibilitate.');
+    }
+
+    return ProductAvailability.fromJson(payload);
+  }
+
+  Future<AvailabilityBlock> createAvailabilityBlock({
+    required String accessToken,
+    required String productId,
+    required DateTime startDate,
+    required DateTime endDate,
+    String reason = '',
+  }) async {
+    final response = await _client
+        .post(
+          Uri.parse(
+            '${AuthApi.baseUrl}/rental-orders/products/$productId/availability-blocks',
+          ),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'startDate': _dateKey(startDate),
+            'endDate': _dateKey(endDate),
+            if (reason.trim().isNotEmpty) 'reason': reason.trim(),
+          }),
+        )
+        .timeout(_requestTimeout);
+    final payload = jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
+
+    if (payload is! Map<String, dynamic>) {
+      throw RentalOrdersApiException('Raspuns invalid pentru blocaj.');
+    }
+
+    return AvailabilityBlock.fromJson(payload);
+  }
+
+  Future<void> deleteAvailabilityBlock({
+    required String accessToken,
+    required String blockId,
+  }) async {
+    final response = await _client
+        .delete(
+          Uri.parse(
+            '${AuthApi.baseUrl}/rental-orders/availability-blocks/$blockId',
+          ),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        )
+        .timeout(_requestTimeout);
+    final payload = response.body.isEmpty ? null : jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
   }
 
   String _extractMessage(Object? payload) {
@@ -146,6 +330,97 @@ class RentalOrdersApi {
   }
 }
 
+class ProductAvailability {
+  const ProductAvailability({
+    required this.productId,
+    required this.from,
+    required this.to,
+    required this.unavailableDates,
+    required this.reservations,
+    required this.manualBlocks,
+  });
+
+  final String productId;
+  final DateTime? from;
+  final DateTime? to;
+  final Set<String> unavailableDates;
+  final List<AvailabilityReservation> reservations;
+  final List<AvailabilityBlock> manualBlocks;
+
+  factory ProductAvailability.fromJson(Map<String, dynamic> json) {
+    final unavailable = json['unavailableDates'];
+    final reservations = json['reservations'];
+    final blocks = json['manualBlocks'];
+
+    return ProductAvailability(
+      productId: (json['productId'] ?? '').toString(),
+      from: DateTime.tryParse((json['from'] ?? '').toString()),
+      to: DateTime.tryParse((json['to'] ?? '').toString()),
+      unavailableDates: unavailable is List
+          ? unavailable.map((value) => value.toString()).toSet()
+          : const {},
+      reservations: reservations is List
+          ? reservations
+                .whereType<Map<String, dynamic>>()
+                .map(AvailabilityReservation.fromJson)
+                .toList()
+          : const [],
+      manualBlocks: blocks is List
+          ? blocks
+                .whereType<Map<String, dynamic>>()
+                .map(AvailabilityBlock.fromJson)
+                .toList()
+          : const [],
+    );
+  }
+}
+
+class AvailabilityReservation {
+  const AvailabilityReservation({
+    required this.id,
+    required this.startDate,
+    required this.endDate,
+    required this.status,
+  });
+
+  final String id;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String status;
+
+  factory AvailabilityReservation.fromJson(Map<String, dynamic> json) {
+    return AvailabilityReservation(
+      id: (json['id'] ?? '').toString(),
+      startDate: DateTime.tryParse((json['startDate'] ?? '').toString()),
+      endDate: DateTime.tryParse((json['endDate'] ?? '').toString()),
+      status: (json['status'] ?? '').toString(),
+    );
+  }
+}
+
+class AvailabilityBlock {
+  const AvailabilityBlock({
+    required this.id,
+    required this.startDate,
+    required this.endDate,
+    required this.reason,
+  });
+
+  final String id;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final String reason;
+
+  factory AvailabilityBlock.fromJson(Map<String, dynamic> json) {
+    return AvailabilityBlock(
+      id: (json['_id'] ?? json['id'] ?? '').toString(),
+      startDate: DateTime.tryParse((json['startDate'] ?? '').toString()),
+      endDate: DateTime.tryParse((json['endDate'] ?? '').toString()),
+      reason: (json['reason'] ?? '').toString(),
+    );
+  }
+}
+
 class RentalOrder {
   const RentalOrder({
     required this.id,
@@ -159,6 +434,13 @@ class RentalOrder {
     required this.renterEmail,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
+    required this.rentalMode,
+    required this.rentalHours,
+    required this.paymentStatus,
+    required this.paymentClientSecret,
+    required this.payoutStatus,
     required this.rentalDays,
     required this.subtotal,
     required this.serviceFee,
@@ -177,6 +459,13 @@ class RentalOrder {
   final String renterEmail;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String pickupTime;
+  final String returnTime;
+  final String rentalMode;
+  final int rentalHours;
+  final String paymentStatus;
+  final String paymentClientSecret;
+  final String payoutStatus;
   final int rentalDays;
   final int subtotal;
   final int serviceFee;
@@ -206,6 +495,13 @@ class RentalOrder {
       renterEmail: (renter['email'] ?? '').toString(),
       startDate: DateTime.tryParse((json['startDate'] ?? '').toString()),
       endDate: DateTime.tryParse((json['endDate'] ?? '').toString()),
+      pickupTime: (json['pickupTime'] ?? '10:00').toString(),
+      returnTime: (json['returnTime'] ?? '18:00').toString(),
+      rentalMode: (json['rentalMode'] ?? 'day').toString(),
+      rentalHours: _toInt(json['rentalHours']),
+      paymentStatus: (json['paymentStatus'] ?? '').toString(),
+      paymentClientSecret: (json['stripePaymentClientSecret'] ?? '').toString(),
+      payoutStatus: (json['payoutStatus'] ?? '').toString(),
       rentalDays: _toInt(json['rentalDays']),
       subtotal: _toInt(json['subtotal']),
       serviceFee: _toInt(json['serviceFee']),
