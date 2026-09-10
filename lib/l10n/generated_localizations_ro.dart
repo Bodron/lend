@@ -1178,4 +1178,18 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
 
   @override
   String get editListingBackendNote =>
-      'Modificările vor fi
+      'Modificările vor fi trimise către backend când endpointul de update este conectat.';
+
+  @override
+  String get publishListingTermsNote =>
+      'Apăsând \"Publică anunțul\" ești de acord cu termenii noștri.';
+
+  @override
+  String get pricePerMonth => 'Preț pe lună';
+
+  @override
+  String get monthly => 'Pe lună';
+
+  @override
+  String get month => 'Lună';
+}
