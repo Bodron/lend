@@ -70,7 +70,7 @@ class PushNotifications with WidgetsBindingObserver {
       WidgetsBinding.instance.addObserver(this);
       _ready = true;
     } catch (error) {
-      debugPrint('Push initialization failed: ${error.runtimeType}');
+      _logError('initialization', error);
     }
   }
 
@@ -100,9 +100,11 @@ class PushNotifications with WidgetsBindingObserver {
         badge: true,
         sound: true,
       );
+      debugPrint('Push permission: ${permission.authorizationStatus.name}');
       if (permission.authorizationStatus == AuthorizationStatus.denied) return;
       if (defaultTargetPlatform == TargetPlatform.iOS &&
           await FirebaseMessaging.instance.getAPNSToken() == null) {
+        debugPrint('Push: waiting for APNs token (attempt ${_attempts + 1})');
         _scheduleRetry();
         return;
       }
@@ -114,10 +116,11 @@ class PushNotifications with WidgetsBindingObserver {
       await _enqueue(() async {
         if (_paused || await AuthSessionStore.getToken() != accessToken) return;
         await _request('POST', accessToken, token);
+        debugPrint('Push: device registered with backend');
       });
       _attempts = 0;
     } catch (error) {
-      debugPrint('Push registration failed: ${error.runtimeType}');
+      _logError('registration', error);
       _scheduleRetry();
     } finally {
       _syncing = false;
@@ -128,6 +131,16 @@ class PushNotifications with WidgetsBindingObserver {
     if (_paused || _attempts >= 5) return;
     _retry?.cancel();
     _retry = Timer(Duration(seconds: 3 * ++_attempts), () => unawaited(sync()));
+  }
+
+  void _logError(String operation, Object error) {
+    // Include diagnostic codes, never credentials or registration tokens.
+    final detail = error is FirebaseException
+        ? '${error.plugin}/${error.code}'
+        : error is StateError
+        ? error.message
+        : error.runtimeType.toString();
+    debugPrint('Push $operation failed: $detail');
   }
 
   Future<void> _enqueue(Future<void> Function() action) {
