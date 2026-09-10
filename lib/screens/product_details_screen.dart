@@ -12,6 +12,8 @@ import '../services/products_api.dart';
 import '../services/favorites_service.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/product_media_preview.dart';
+import '../widgets/product_reviews_section.dart';
+import 'messages_screen.dart';
 import 'rental_period_screen.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
@@ -125,7 +127,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     const SizedBox(height: 24),
                     _SpecsGrid(product: product),
                     const SizedBox(height: 24),
-                    _ReviewsSection(product: product),
+                    ProductReviewsSection(product: product),
                     const SizedBox(height: 24),
                     _OwnerCard(product: product),
                     const SizedBox(height: 16),
@@ -971,7 +973,8 @@ class _OwnerCard extends StatelessWidget {
                         width: 64,
                         height: 64,
                         child: Image.network(
-                          _ProductDetailsScreenState._ownerImageUrl,
+                          product.ownerAvatarUrl ??
+                              _ProductDetailsScreenState._ownerImageUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
                             return const ColoredBox(color: Color(0xFFD3E3FF));
@@ -1060,7 +1063,7 @@ class _OwnerCard extends StatelessWidget {
                 ),
                 Expanded(
                   child: _OwnerStat(
-                    value: '42',
+                    value: '${product.ownerRentalCount}',
                     label: GeneratedLocalizations.of(context).navRentals,
                   ),
                 ),
@@ -1071,7 +1074,17 @@ class _OwnerCard extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ProductChatScreen(
+                        productId: product.id,
+                        productTitle: product.title,
+                        ownerName: product.ownerName,
+                      ),
+                    ),
+                  );
+                },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _ProductDetailsScreenState._text,
                   side: const BorderSide(

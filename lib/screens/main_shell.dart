@@ -8,7 +8,7 @@ import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
 import 'explore_screen.dart';
 import 'my_listings_screen.dart';
-import 'notifications_screen.dart';
+import 'messages_screen.dart';
 import 'profile_screen.dart';
 import 'rentals_screen.dart';
 
@@ -76,7 +76,7 @@ class _MainShellState extends State<MainShell> {
 
   void _openNotifications() {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const NotificationsScreen()),
+      MaterialPageRoute<void>(builder: (_) => const MessagesScreen()),
     );
   }
 

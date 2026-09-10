@@ -134,8 +134,10 @@ class _LendBottomNavigationPainter extends CustomPainter {
     final background = Paint()..color = const Color(0xFF050505);
 
     final path = Path()
-      ..moveTo(0, 14)
-      ..quadraticBezierTo(size.width / 2, 0, size.width, 14)
+      // Extend the black surface to the top edge so the content behind it
+      // cannot show through as a thin white strip.
+      ..moveTo(0, 0)
+      ..quadraticBezierTo(size.width / 2, -10, size.width, 0)
       ..lineTo(size.width, size.height)
       ..lineTo(0, size.height)
       ..close();

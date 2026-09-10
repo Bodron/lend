@@ -434,6 +434,7 @@ class AvailabilityBlock {
 class RentalOrder {
   const RentalOrder({
     required this.id,
+    required this.productId,
     required this.status,
     required this.productTitle,
     required this.productOwnerName,
@@ -459,6 +460,7 @@ class RentalOrder {
   });
 
   final String id;
+  final String productId;
   final String status;
   final String productTitle;
   final String productOwnerName;
@@ -494,6 +496,7 @@ class RentalOrder {
 
     return RentalOrder(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
+      productId: (json['productId'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
       productTitle: (productSnapshot['title'] ?? '').toString(),
       productOwnerName: (productSnapshot['ownerName'] ?? '').toString(),

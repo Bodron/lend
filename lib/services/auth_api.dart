@@ -132,6 +132,16 @@ class AuthApi {
     return AuthUser.fromJson(payload);
   }
 
+  Future<void> requestAccountDeletion(String accessToken) async {
+    final response = await _client.post(
+      Uri.parse('$baseUrl/auth/me/deletion-request'),
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AuthApiException('Nu am putut trimite cererea de ștergere.');
+    }
+  }
+
   Future<AuthSession> _postAuth(String path, Map<String, String> body) async {
     final response = await _client
         .post(

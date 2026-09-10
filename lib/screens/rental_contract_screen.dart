@@ -54,8 +54,6 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
   static const _outline = Color(0xFFC3C6D1);
   static const _error = Color(0xFFBA1A1A);
 
-  static const _avatarUrl =
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuC1ghPKdxoO_3mmQ3RZgZxv5ytA_LRAUc9NlTMTVk9WPd3QoUt2lG9KZXGlrT50vj8PWFC9o3BVCWcryLMmlTgzPFE-zRoN2rPZCVWPpUuINt7-wsq5re-UanfPQURi1yF6sm8nLhOcVMwR1zscivEQqMISLMbPvXD1vokYsGmYDDsqKHGRGk1zGn2LV1m9lIcT9a7v_doOYN-zt5Tr4QsbivI1qlQ4bF68gd0hfDQxd-8bwl25fX8amy6e-LH0-21NffEO_U0-Rlc';
   static const _stripeMerchantIdentifier = String.fromEnvironment(
     'STRIPE_MERCHANT_IDENTIFIER',
   );
@@ -310,19 +308,6 @@ class _ContractTopBar extends StatelessWidget {
                 color: _RentalContractScreenState._text,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          ClipOval(
-            child: SizedBox(
-              width: 32,
-              height: 32,
-              child: Image.network(
-                _RentalContractScreenState._avatarUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return const ColoredBox(color: Color(0xFFE2E2E2));
-                },
               ),
             ),
           ),

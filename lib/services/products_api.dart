@@ -207,6 +207,8 @@ class LendProduct {
     required this.returnTime,
     this.rentalModes = const ['hour', 'day'],
     required this.ownerName,
+    this.ownerAvatarUrl,
+    this.ownerRentalCount = 0,
     required this.rating,
     required this.isAvailable,
     required this.images,
@@ -229,6 +231,8 @@ class LendProduct {
   final String returnTime;
   final List<String> rentalModes;
   final String ownerName;
+  final String? ownerAvatarUrl;
+  final int ownerRentalCount;
   final double rating;
   final bool isAvailable;
   final List<LendProductImage> images;
@@ -253,6 +257,7 @@ class LendProduct {
 
   factory LendProduct.fromJson(Map<String, dynamic> json) {
     final imagesPayload = json['images'];
+    final ownerAvatarPayload = json['ownerAvatarUrl'];
 
     return LendProduct(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
@@ -276,6 +281,11 @@ class LendProduct {
                 .toList()
           : const ['hour', 'day'],
       ownerName: (json['ownerName'] ?? '').toString(),
+      ownerAvatarUrl:
+          ownerAvatarPayload is String && ownerAvatarPayload.isNotEmpty
+          ? ownerAvatarPayload
+          : null,
+      ownerRentalCount: _toInt(json['ownerRentalCount']),
       rating: _toDouble(json['rating']),
       isAvailable: json['isAvailable'] != false,
       images: imagesPayload is List

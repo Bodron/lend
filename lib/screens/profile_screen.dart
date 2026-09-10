@@ -250,7 +250,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPayoutPressed: _openPayoutOnboarding,
                         ),
                         const SizedBox(height: 32),
-                        _ProfileSidebar(onLogout: _logout),
+                        _ProfileSidebar(
+                          onLogout: _logout,
+                          onRequestDeletion: _requestAccountDeletion,
+                        ),
                       ],
                     );
                   },
@@ -312,6 +315,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
       (route) => false,
     );
+  }
+
+  Future<void> _requestAccountDeletion() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Solicită ștergerea contului'),
+        content: const Text(
+          'Se va trimite o cerere către echipa Lend. Contul nu va fi șters acum.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Anulează'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Trimite cererea'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+    final token = await AuthSessionStore.getToken();
+    if (token == null) {
+      return;
+    }
+    try {
+      await _authApi.requestAccountDeletion(token);
+      if (mounted) {
+        LendToast.success(context, message: 'Cererea a fost trimisă.');
+      }
+    } catch (error) {
+      if (mounted) LendToast.error(context, message: error.toString());
+    }
   }
 
   Future<void> _openPayoutOnboarding() async {
@@ -730,15 +770,19 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _ProfileSidebar extends StatelessWidget {
-  const _ProfileSidebar({required this.onLogout});
+  const _ProfileSidebar({
+    required this.onLogout,
+    required this.onRequestDeletion,
+  });
 
   final VoidCallback onLogout;
+  final VoidCallback onRequestDeletion;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _AccountCard(onLogout: onLogout),
+        _AccountCard(onLogout: onLogout, onRequestDeletion: onRequestDeletion),
         const SizedBox(height: 20),
         const _TrustBadge(),
       ],
@@ -747,9 +791,10 @@ class _ProfileSidebar extends StatelessWidget {
 }
 
 class _AccountCard extends StatelessWidget {
-  const _AccountCard({required this.onLogout});
+  const _AccountCard({required this.onLogout, required this.onRequestDeletion});
 
   final VoidCallback onLogout;
+  final VoidCallback onRequestDeletion;
 
   @override
   Widget build(BuildContext context) {
@@ -799,6 +844,12 @@ class _AccountCard extends StatelessWidget {
               label: strings.signOut,
               color: const Color(0xFFBA1A1A),
               onTap: onLogout,
+            ),
+            _ActionRow(
+              icon: Icons.delete_outline_rounded,
+              label: 'Solicită ștergerea contului',
+              color: const Color(0xFFBA1A1A),
+              onTap: onRequestDeletion,
             ),
           ],
         ),

@@ -917,7 +917,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
             crossAxisSpacing: 20,
             mainAxisSpacing: 20,
             mainAxisExtent: perspective == _RentalPerspective.lending
-                ? 526
+                ? 444
                 : 452,
           ),
           itemBuilder: (context, index) {
@@ -957,293 +957,287 @@ class _ActiveRentalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final expiring = item.status == _RentalStatus.expiring;
     final isPendingRequest = item.statusRaw == 'pending';
-    final hasAuthorizedPayment = item.paymentStatus == 'authorized';
+    final hasAuthorizedPayment =
+        item.paymentStatus == 'authorized' || item.paymentStatus == 'captured';
 
-    return DecoratedBox(
-      decoration: _rentalCardDecoration,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              height: 206,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _RentalMediaPreview(
-                    title: item.title,
-                    imageUrl: item.imageUrl,
-                    imageContentType: item.imageContentType,
-                    imageType: item.imageType,
-                  ),
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: _StatusBadge(
-                      text: isPendingRequest
-                          ? 'Cerere'
-                          : expiring
-                          ? 'Expira azi'
-                          : 'In curs',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 224,
+          decoration: _rentalCardDecoration,
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _RentalMediaPreview(
+                title: item.title,
+                imageUrl: item.imageUrl,
+                imageContentType: item.imageContentType,
+                imageType: item.imageType,
+              ),
+              Positioned(
+                top: 16,
+                left: 16,
+                child: _StatusBadge(
+                  text: isPendingRequest
+                      ? 'Cerere'
+                      : expiring
+                      ? 'Expira azi'
+                      : 'In curs',
+                  color: expiring
+                      ? _RentalsScreenState._error
+                      : _RentalsScreenState._primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: _rentalCardDecoration,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _RentalsScreenState._text,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const _VerifiedBadge(),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Icon(
+                      perspective == _RentalPerspective.renting
+                          ? Icons.storefront_rounded
+                          : Icons.person_outline_rounded,
+                      color: _RentalsScreenState._muted,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.detailText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _RentalsScreenState._muted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      expiring
+                          ? Icons.schedule_rounded
+                          : Icons.calendar_today_rounded,
                       color: expiring
                           ? _RentalsScreenState._error
-                          : _RentalsScreenState._primary,
+                          : _RentalsScreenState._muted,
+                      size: 18,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _RentalsScreenState._text,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const _VerifiedBadge(),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Icon(
-                          perspective == _RentalPerspective.renting
-                              ? Icons.storefront_rounded
-                              : Icons.person_outline_rounded,
-                          color: _RentalsScreenState._muted,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            item.detailText,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _RentalsScreenState._muted,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          expiring
-                              ? Icons.schedule_rounded
-                              : Icons.calendar_today_rounded,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.dateText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
                           color: expiring
                               ? _RentalsScreenState._error
                               : _RentalsScreenState._muted,
-                          size: 18,
+                          fontSize: 14,
+                          fontWeight: expiring
+                              ? FontWeight.w800
+                              : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      color: _RentalsScreenState._muted,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.scheduleText,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _RentalsScreenState._muted,
+                          fontSize: 13,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                if (perspective == _RentalPerspective.lending) ...[
+                  if (isPendingRequest && hasAuthorizedPayment) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 40,
+                            child: OutlinedButton(
+                              onPressed: () => onReject(item),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: _RentalsScreenState._error,
+                                side: const BorderSide(
+                                  color: _RentalsScreenState._error,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              child: Text(
+                                GeneratedLocalizations.of(context).reject,
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text(
-                            item.dateText,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: expiring
-                                  ? _RentalsScreenState._error
-                                  : _RentalsScreenState._muted,
-                              fontSize: 14,
-                              fontWeight: expiring
-                                  ? FontWeight.w800
-                                  : FontWeight.w500,
+                          child: SizedBox(
+                            height: 40,
+                            child: FilledButton(
+                              onPressed: () => onAccept(item),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: _RentalsScreenState._primary,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                              ),
+                              child: Text(
+                                GeneratedLocalizations.of(context).accept,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.access_time_rounded,
-                          color: _RentalsScreenState._muted,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            item.scheduleText,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _RentalsScreenState._muted,
-                              fontSize: 13,
-                              height: 1.25,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                  ] else if (isPendingRequest) ...[
+                    Text(
+                      GeneratedLocalizations.of(
+                        context,
+                      ).waitingPaymentAuthorization,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _RentalsScreenState._muted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    const Spacer(),
-                    if (perspective == _RentalPerspective.lending) ...[
-                      if (isPendingRequest && hasAuthorizedPayment) ...[
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: OutlinedButton(
-                                  onPressed: () => onReject(item),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: _RentalsScreenState._error,
-                                    side: const BorderSide(
-                                      color: _RentalsScreenState._error,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    GeneratedLocalizations.of(context).reject,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: SizedBox(
-                                height: 40,
-                                child: FilledButton(
-                                  onPressed: () => onAccept(item),
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor:
-                                        _RentalsScreenState._primary,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    GeneratedLocalizations.of(context).accept,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                    const SizedBox(height: 8),
+                  ],
+                  if (!isPendingRequest) ...[
+                    SizedBox(
+                      height: 40,
+                      child: OutlinedButton.icon(
+                        onPressed: () => onEditSchedule(item),
+                        icon: const Icon(Icons.schedule_rounded, size: 18),
+                        label: Text(
+                          GeneratedLocalizations.of(context).editTime,
                         ),
-                        const SizedBox(height: 8),
-                      ] else if (isPendingRequest) ...[
-                        Text(
-                          GeneratedLocalizations.of(
-                            context,
-                          ).waitingPaymentAuthorization,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _RentalsScreenState._muted,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                      if (!isPendingRequest) ...[
-                        SizedBox(
-                          height: 40,
-                          child: OutlinedButton.icon(
-                            onPressed: () => onEditSchedule(item),
-                            icon: const Icon(Icons.schedule_rounded, size: 18),
-                            label: Text(
-                              GeneratedLocalizations.of(context).editTime,
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: _RentalsScreenState._text,
-                              side: const BorderSide(color: Color(0xFFC3C6D1)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                      ],
-                    ],
-                    if (!(perspective == _RentalPerspective.lending &&
-                        isPendingRequest))
-                      SizedBox(
-                        height: 42,
-                        child: FilledButton(
-                          onPressed:
-                              perspective == _RentalPerspective.renting &&
-                                  isPendingRequest
-                              ? null
-                              : () {
-                                  if (perspective ==
-                                      _RentalPerspective.lending) {
-                                    onScanReturn();
-                                    return;
-                                  }
-
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => ReturnQrScreen(
-                                        itemTitle: item.title,
-                                        itemImageUrl: item.imageUrl,
-                                        returnCode:
-                                            'borrowit:return:${item.id}',
-                                      ),
-                                    ),
-                                  );
-                                },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: _RentalsScreenState._primary,
-                            disabledBackgroundColor: const Color(0xFFC3C6D1),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          child: Text(
-                            perspective == _RentalPerspective.renting
-                                ? isPendingRequest
-                                      ? GeneratedLocalizations.of(
-                                          context,
-                                        ).waitingApproval
-                                      : GeneratedLocalizations.of(
-                                          context,
-                                        ).completeReturn
-                                : GeneratedLocalizations.of(
-                                    context,
-                                  ).scanReturnCode,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _RentalsScreenState._text,
+                          side: const BorderSide(color: Color(0xFFC3C6D1)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
                           ),
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 8),
                   ],
-                ),
-              ),
+                ],
+                if (!(perspective == _RentalPerspective.lending &&
+                    isPendingRequest))
+                  SizedBox(
+                    height: 42,
+                    child: FilledButton(
+                      onPressed:
+                          perspective == _RentalPerspective.renting &&
+                              isPendingRequest
+                          ? null
+                          : () {
+                              if (perspective == _RentalPerspective.lending) {
+                                onScanReturn();
+                                return;
+                              }
+
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ReturnQrScreen(
+                                    itemTitle: item.title,
+                                    itemImageUrl: item.imageUrl,
+                                    returnCode: 'borrowit:return:${item.id}',
+                                  ),
+                                ),
+                              );
+                            },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _RentalsScreenState._primary,
+                        disabledBackgroundColor: const Color(0xFFC3C6D1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: Text(
+                        perspective == _RentalPerspective.renting
+                            ? isPendingRequest
+                                  ? GeneratedLocalizations.of(
+                                      context,
+                                    ).waitingApproval
+                                  : GeneratedLocalizations.of(
+                                      context,
+                                    ).completeReturn
+                            : GeneratedLocalizations.of(context).scanReturnCode,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

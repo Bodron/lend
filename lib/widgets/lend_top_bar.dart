@@ -63,7 +63,7 @@ class LendTopBar extends StatelessWidget {
                 icon: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    const Icon(Icons.notifications_none_rounded),
+                    const Icon(Icons.chat_bubble_outline_rounded),
                     if (hasUnreadNotifications)
                       Positioned(
                         top: -2,
