@@ -15,6 +15,7 @@ class RentalPeriodScreen extends StatefulWidget {
     this.initialStartDate,
     this.initialEndDate,
     this.negotiatedSubtotal,
+    this.lockSelection = false,
   });
 
   final LendProduct product;
@@ -22,6 +23,7 @@ class RentalPeriodScreen extends StatefulWidget {
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
   final int? negotiatedSubtotal;
+  final bool lockSelection;
 
   @override
   State<RentalPeriodScreen> createState() => _RentalPeriodScreenState();
@@ -53,7 +55,8 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   void initState() {
     super.initState();
     final tomorrow = DateTime.now().add(const Duration(days: 1));
-    _visibleMonth = DateTime(tomorrow.year, tomorrow.month);
+    final visibleDate = widget.initialStartDate ?? tomorrow;
+    _visibleMonth = DateTime(visibleDate.year, visibleDate.month);
     final initialDate = widget.rentalMode == RentalMode.hour
         ? DateTime(
             DateTime.now().year,
@@ -314,9 +317,9 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                       visibleMonth: _visibleMonth,
                       startDate: _startDate,
                       endDate: _endDate,
-                      onPrevious: _goToPreviousMonth,
-                      onNext: _goToNextMonth,
-                      onDateSelected: _selectDate,
+                      onPrevious: widget.lockSelection ? () {} : _goToPreviousMonth,
+                      onNext: widget.lockSelection ? () {} : _goToNextMonth,
+                      onDateSelected: widget.lockSelection ? (_) {} : _selectDate,
                       isUnavailable: _isUnavailable,
                       isSelectedEndpoint: _isSelectedEndpoint,
                       isInRange: _isInRange,

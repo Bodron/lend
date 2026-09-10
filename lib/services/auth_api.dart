@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'push_notifications.dart';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
@@ -259,6 +260,7 @@ class AuthSessionStore {
   }
 
   static Future<void> clear() async {
+    await PushNotifications.instance.signOut();
     final preferences = await SharedPreferences.getInstance();
     await preferences.remove(_tokenKey);
     await preferences.remove(_userNameKey);

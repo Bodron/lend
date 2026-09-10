@@ -95,6 +95,13 @@ class MessagesApi {
     return RentalOffer.fromJson(payload as Map<String, dynamic>);
   }
 
+  Future<RentalOffer> claimOffer({required String accessToken, required String offerId}) async {
+    final response = await _client.patch(Uri.parse('${AuthApi.baseUrl}/messages/offers/$offerId/claim'), headers: {'Authorization': 'Bearer $accessToken'});
+    final payload = jsonDecode(response.body);
+    if (response.statusCode < 200 || response.statusCode >= 300) throw MessagesApiException(_message(payload));
+    return RentalOffer.fromJson(payload as Map<String, dynamic>);
+  }
+
   MessageThread _decodeThread(http.Response response) {
     final payload = jsonDecode(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {

@@ -4,6 +4,7 @@ import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 import '../services/auth_api.dart';
 import '../services/messages_api.dart';
 import '../services/products_api.dart';
+import '../services/rental_orders_api.dart';
 import '../models/rental_mode.dart';
 import '../widgets/lend_screen_frame.dart';
 import 'rental_period_screen.dart';
@@ -243,6 +244,160 @@ String _rentalModeLabel(String mode) {
   }
 }
 
+class _OfferDraft {
+  const _OfferDraft({required this.rentalMode, required this.startDate, required this.endDate, required this.amount});
+  final String rentalMode;
+  final DateTime startDate;
+  final DateTime endDate;
+  final int amount;
+}
+
+class _OfferDraftSheet extends StatefulWidget {
+  const _OfferDraftSheet({required this.modes, required this.today, required this.product, required this.amountController});
+  final List<String> modes;
+  final DateTime today;
+  final LendProduct product;
+  final TextEditingController amountController;
+
+  @override
+  State<_OfferDraftSheet> createState() => _OfferDraftSheetState();
+}
+
+class _OfferDraftSheetState extends State<_OfferDraftSheet> {
+  int _step = 0;
+  bool _ignoreInitialCalendarChange = true;
+  late String _mode = widget.modes.first;
+  DateTime? _start;
+  DateTime? _end;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _ignoreInitialCalendarChange = false);
+    });
+  }
+
+  DateTime get _firstDate => DateTime(widget.today.year, widget.today.month, widget.today.day).add(const Duration(days: 1));
+
+  void _next() {
+    if (_step == 0) {
+      setState(() => _step = 1);
+    } else if (_step == 1 && _start != null && _end != null) {
+      setState(() => _step = 2);
+    } else if (_step == 2 && _end != null && widget.amountController.text.trim().isNotEmpty) {
+      final amount = int.tryParse(widget.amountController.text.trim());
+      if (amount != null && amount > 0) {
+        FocusManager.instance.primaryFocus?.unfocus();
+        Navigator.pop(context, _OfferDraft(rentalMode: _mode, startDate: _start!, endDate: _end!, amount: amount));
+      }
+    }
+  }
+
+  int get _normalPrice {
+    final days = _start == null || _end == null ? 1 : _end!.difference(_start!).inDays.clamp(1, 365);
+    if (_mode == 'month') return widget.product.pricePerMonth ?? days * widget.product.pricePerDay;
+    return days * widget.product.pricePerDay;
+  }
+
+  void _selectDate(DateTime date) {
+    if (_ignoreInitialCalendarChange) return;
+    if (_start == null) {
+      setState(() => _start = date);
+      return;
+    }
+    if (date.isAfter(_start!)) {
+      setState(() => _end = date);
+    } else {
+      setState(() {
+        _start = date;
+        _end = null;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _step == 0 ? 'Alege modul' : _step == 1 ? (_start == null ? 'Alege începutul' : 'Alege sfârșitul') : 'Verifică oferta';
+    return SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(20, 12, 20, 20), child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 42, height: 4, decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(4))),
+      const SizedBox(height: 18),
+      Row(children: [Expanded(child: Text('Trimite o ofertă', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800))), TextButton(onPressed: () => Navigator.pop(context), child: const Text('Anulează'))]),
+      Align(alignment: Alignment.centerLeft, child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.black54))),
+      const SizedBox(height: 12),
+      if (_step == 0)
+        ...widget.modes.map((mode) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => setState(() { _mode = mode; _step = 1; }),
+              icon: Icon(mode == 'month' ? Icons.calendar_month_outlined : mode == 'hour' ? Icons.schedule : Icons.today),
+              label: Text(_rentalModeLabel(mode)),
+            ),
+          ),
+        )),
+      if (_step == 1) _OfferRangeCalendar(firstDate: _firstDate, lastDate: DateTime(widget.today.year + 2), startDate: _start, endDate: _end, onDateSelected: _selectDate),
+      if (_step == 2) ...[
+        if (_mode == 'month') Text('Perioada: ${_shortDate(_start!)} – ${_shortDate(_end!)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 10),
+        Align(alignment: Alignment.centerLeft, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Preț normal pentru perioada aleasă', style: TextStyle(fontSize: 13, color: Colors.black54)), const SizedBox(height: 3), Text('$_normalPrice RON', style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Color(0xFF30578F)))])),
+        const SizedBox(height: 8),
+        TextField(controller: widget.amountController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Suma propusă de tine', hintText: 'Introdu suma', suffixText: 'RON')),
+      ],
+      if (_step > 0) Row(children: [TextButton(onPressed: () => setState(() { _step--; if (_step == 1) _end = null; }), child: const Text('Înapoi')), const Spacer(), FilledButton(onPressed: _step == 1 && (_start == null || _end == null) ? null : _next, child: Text(_step == 2 ? 'Trimite oferta' : 'Continuă'))]),
+    ]))));
+  }
+}
+
+class _OfferRangeCalendar extends StatefulWidget {
+  const _OfferRangeCalendar({required this.firstDate, required this.lastDate, required this.startDate, required this.endDate, required this.onDateSelected});
+  final DateTime firstDate;
+  final DateTime lastDate;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final ValueChanged<DateTime> onDateSelected;
+
+  @override
+  State<_OfferRangeCalendar> createState() => _OfferRangeCalendarState();
+}
+
+class _OfferRangeCalendarState extends State<_OfferRangeCalendar> {
+  late DateTime _month = DateTime((widget.startDate ?? widget.firstDate).year, (widget.startDate ?? widget.firstDate).month);
+  static const _blue = Color(0xFF30578F);
+
+  bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstWeekday = DateTime(_month.year, _month.month, 1).weekday;
+    final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
+    final cells = List<DateTime?>.filled(firstWeekday - 1, null, growable: true)
+      ..addAll(List.generate(daysInMonth, (index) => DateTime(_month.year, _month.month, index + 1)));
+    final canPrevious = _month.isAfter(DateTime(widget.firstDate.year, widget.firstDate.month));
+    final canNext = _month.isBefore(DateTime(widget.lastDate.year, widget.lastDate.month));
+    return Column(children: [
+      Row(children: [IconButton(onPressed: canPrevious ? () => setState(() => _month = DateTime(_month.year, _month.month - 1)) : null, icon: const Icon(Icons.chevron_left)), Expanded(child: Center(child: Text(_monthLabel(_month), style: const TextStyle(fontWeight: FontWeight.w700))),), IconButton(onPressed: canNext ? () => setState(() => _month = DateTime(_month.year, _month.month + 1)) : null, icon: const Icon(Icons.chevron_right))]),
+      Row(children: ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day) => Expanded(child: Center(child: Text(day, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black54))))).toList()),
+      const SizedBox(height: 6),
+      GridView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: cells.length, gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: 1.25), itemBuilder: (context, index) {
+        final date = cells[index];
+        if (date == null) return const SizedBox.shrink();
+        final disabled = date.isBefore(widget.firstDate) || date.isAfter(widget.lastDate);
+        final isStart = widget.startDate != null && _sameDay(date, widget.startDate!);
+        final isEnd = widget.endDate != null && _sameDay(date, widget.endDate!);
+        final inRange = widget.startDate != null && widget.endDate != null && !date.isBefore(widget.startDate!) && !date.isAfter(widget.endDate!);
+        return GestureDetector(onTap: disabled ? null : () => widget.onDateSelected(date), child: Container(margin: const EdgeInsets.symmetric(vertical: 3), decoration: BoxDecoration(color: inRange && !isStart && !isEnd ? const Color(0xFFDCE8FA) : Colors.transparent, borderRadius: BorderRadius.horizontal(left: isStart ? const Radius.circular(22) : Radius.zero, right: isEnd ? const Radius.circular(22) : Radius.zero)), child: Center(child: Container(width: 36, height: 36, alignment: Alignment.center, decoration: BoxDecoration(color: isStart || isEnd ? _blue : Colors.transparent, shape: BoxShape.circle), child: Text('${date.day}', style: TextStyle(color: disabled ? Colors.grey.shade300 : isStart || isEnd ? Colors.white : Colors.black87, fontWeight: isStart || isEnd ? FontWeight.w800 : FontWeight.w400))))));
+      }),
+    ]);
+  }
+}
+
+String _monthLabel(DateTime date) {
+  const months = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+  return '${months[date.month - 1]} ${date.year}';
+}
+
 class ProductChatScreen extends StatefulWidget {
   const ProductChatScreen({
     super.key,
@@ -319,9 +474,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         if (data is! Map) return;
         final offer = RentalOffer.fromJson(Map<String, dynamic>.from(data));
         if (!mounted) return;
-        setState(() {
-          _offers = [..._offers.where((item) => item.id != offer.id), offer];
-        });
+        _upsertOffer(offer);
       });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -364,10 +517,38 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       return;
     }
     final today = DateTime.now();
-    final start = await showDatePicker(context: context, firstDate: today, lastDate: DateTime(today.year + 2), initialDate: today.add(const Duration(days: 1)));
-    if (start == null || !mounted) return;
-    final end = await showDatePicker(context: context, firstDate: start.add(const Duration(days: 1)), lastDate: DateTime(today.year + 2), initialDate: start.add(const Duration(days: 3)));
-    if (end == null || !mounted) return;
+    final amountController = TextEditingController();
+    final draft = await showModalBottomSheet<_OfferDraft>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      builder: (sheetContext) => _OfferDraftSheet(modes: modes, today: today, product: product!, amountController: amountController),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => amountController.dispose());
+    if (draft == null || !mounted) return;
+    final start = draft.startDate;
+    final end = draft.endDate;
+    final mode = draft.rentalMode;
+    try {
+      final availability = await RentalOrdersApi().getAvailability(productId: widget.productId, from: start, to: end);
+      final occupied = <String>[];
+      for (var date = DateTime(start.year, start.month, start.day); date.isBefore(end); date = date.add(const Duration(days: 1))) {
+        final key = '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        if (availability.unavailableDates.contains(key)) occupied.add(key);
+      }
+      if (occupied.isNotEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Perioada selectată este deja ocupată. Alege alte date.')));
+        return;
+      }
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nu am putut verifica disponibilitatea: $error')));
+      return;
+    }
+    if (!mounted) return;
+    /*
     final amountController = TextEditingController();
     var mode = modes.first;
     final amount = await showDialog<int>(
@@ -386,10 +567,12 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       ),
     );
     amountController.dispose();
-    if (amount == null || amount <= 0 || _token == null) return;
+    */
+    final amount = draft.amount;
+    if (amount <= 0 || _token == null) return;
     try {
       final offer = await _api.createOffer(accessToken: _token!, productId: widget.productId, amount: amount, startDate: start, endDate: end, rentalMode: mode);
-      if (mounted) setState(() => _offers = [..._offers, offer]);
+      if (mounted) _upsertOffer(offer);
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
     }
@@ -399,21 +582,37 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
     if (_token == null) return;
     try {
       final updated = await _api.updateOffer(accessToken: _token!, offerId: offer.id, accept: accept);
-      if (mounted) setState(() => _offers = [..._offers.where((item) => item.id != updated.id), updated]);
+      if (mounted) _upsertOffer(updated);
     } catch (error) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
     }
   }
 
+  void _upsertOffer(RentalOffer offer) {
+    if (!mounted) return;
+    setState(() {
+      final index = _offers.indexWhere((item) => item.id == offer.id);
+      if (index == -1) {
+        _offers = [..._offers, offer];
+      } else {
+        final updated = [..._offers];
+        updated[index] = offer;
+        _offers = updated;
+      }
+    });
+  }
+
   Future<void> _checkoutOffer(RentalOffer offer) async {
     if (_token == null) return;
     try {
+      final claimed = await _api.claimOffer(accessToken: _token!, offerId: offer.id);
+      if (mounted) _upsertOffer(claimed);
       final products = await ProductsApi().findAll();
       final matches = products.where((item) => item.id == widget.productId).toList();
       final product = matches.isEmpty ? null : matches.first;
       if (product == null || !mounted) return;
       final rentalMode = RentalMode.values.firstWhere((item) => item.name == offer.rentalMode, orElse: () => RentalMode.day);
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => RentalPeriodScreen(product: product, rentalMode: rentalMode, initialStartDate: offer.startDate, initialEndDate: offer.endDate, negotiatedSubtotal: offer.amount)));
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => RentalPeriodScreen(product: product, rentalMode: rentalMode, initialStartDate: offer.startDate, initialEndDate: offer.endDate, negotiatedSubtotal: offer.amount, lockSelection: true)));
     } catch (error) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString()))); }
   }
 

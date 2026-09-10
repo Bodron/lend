@@ -6,8 +6,11 @@ import 'l10n/generated_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/main_shell.dart';
 import 'services/auth_api.dart';
+import 'services/push_notifications.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PushNotifications.instance.initialize();
   runApp(const LendApp());
 }
 
@@ -41,6 +44,7 @@ class _LendAppState extends State<LendApp> {
         animation: _languageController,
         builder: (context, _) {
           return MaterialApp(
+            scaffoldMessengerKey: PushNotifications.instance.messengerKey,
             title: 'Lend',
             debugShowCheckedModeBanner: false,
             locale: _languageController.locale,

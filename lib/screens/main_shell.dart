@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
+import '../services/push_notifications.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
@@ -34,6 +35,49 @@ class _MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
     _loadTopBarAvatar();
+    PushNotifications.instance.sessionStarted();
+    PushNotifications.instance.pendingMessage.addListener(_openPushMessage);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPushMessage());
+  }
+
+  @override
+  void dispose() {
+    PushNotifications.instance.pendingMessage.removeListener(_openPushMessage);
+    super.dispose();
+  }
+
+  Future<void> _openPushMessage() async {
+    final message = PushNotifications.instance.pendingMessage.value;
+    if (!mounted || message == null) return;
+    PushNotifications.instance.pendingMessage.value = null;
+    if (message.data['type'] != 'chat_message') return;
+    final productId = message.data['productId'];
+    if (productId == null || productId.isEmpty) return;
+    try {
+      final token = await AuthSessionStore.getToken();
+      if (token == null) return;
+      final user = await _authApi.me(token);
+      if (!mounted || user.id != message.data['recipientId']) return;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => ProductChatScreen(
+            productId: productId,
+            productTitle: message.data['productTitle'] ?? 'Conversație',
+            ownerName: 'Conversație',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Nu am putut deschide conversația. Încearcă din Mesaje.',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadTopBarAvatar() async {
@@ -75,9 +119,9 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _openNotifications() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const MessagesScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const MessagesScreen()));
   }
 
   @override
