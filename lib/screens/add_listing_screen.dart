@@ -1,13 +1,15 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:video_player/video_player.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/storage_api.dart';
@@ -77,11 +79,16 @@ class _AddListingScreenState extends State<AddListingScreen> {
   static const _bucharest = LatLng(44.4268, 26.1025);
 
   bool _insuranceEnabled = true;
+  bool _hourlyEnabled = true;
+  bool _dailyEnabled = true;
+  bool _monthlyEnabled = false;
+  Timer? _addressDebounce;
   String _category = 'choose';
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _pricePerDayController;
   late final TextEditingController _pricePerHourController;
+  late final TextEditingController _pricePerMonthController;
   late final TextEditingController _depositController;
   late final TextEditingController _cityController;
   late final TextEditingController _addressController;
@@ -109,6 +116,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _pricePerHourController = TextEditingController(
       text: initialData?.pricePerHour ?? '',
     );
+    _pricePerMonthController = TextEditingController();
     _depositController = TextEditingController(
       text: initialData?.deposit ?? '0',
     );
@@ -120,6 +128,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _addressController = TextEditingController(
       text: initialData?.address ?? '',
     );
+    _addressController.addListener(_geocodeAddress);
     _pickupTimeController = TextEditingController(
       text: initialData?.pickupTime ?? '10:00',
     );
@@ -143,12 +152,33 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _descriptionController.dispose();
     _pricePerDayController.dispose();
     _pricePerHourController.dispose();
+    _pricePerMonthController.dispose();
     _depositController.dispose();
     _cityController.dispose();
     _addressController.dispose();
+    _addressDebounce?.cancel();
     _pickupTimeController.dispose();
     _returnTimeController.dispose();
     super.dispose();
+  }
+
+  void _geocodeAddress() {
+    _addressDebounce?.cancel();
+    final address = _addressController.text.trim();
+    if (address.length < 5) return;
+    _addressDebounce = Timer(const Duration(milliseconds: 700), () async {
+      try {
+        final query = '$address, ${_cityController.text.trim()}, Romania';
+        final locations = await Geocoding().locationFromAddress(query);
+        if (!mounted || locations.isEmpty) return;
+        final location = locations.first;
+        setState(() {
+          _selectedLocation = LatLng(location.latitude, location.longitude);
+        });
+      } catch (_) {
+        // Utilizatorul poate ajusta pinul manual dacă adresa nu este găsită.
+      }
+    });
   }
 
   Future<void> _loadMapStyle() async {
@@ -198,9 +228,13 @@ class _AddListingScreenState extends State<AddListingScreen> {
       return;
     }
 
+    final strings = GeneratedLocalizations.of(context);
+
     final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
     final pricePerDay = int.tryParse(_pricePerDayController.text.trim()) ?? 0;
+    final pricePerMonth =
+        int.tryParse(_pricePerMonthController.text.trim()) ?? 0;
     final deposit = int.tryParse(_depositController.text.trim()) ?? 0;
     final city = _cityController.text.trim();
     final address = _addressController.text.trim();
@@ -214,14 +248,11 @@ class _AddListingScreenState extends State<AddListingScreen> {
         city.isEmpty ||
         address.isEmpty ||
         _category == 'choose' ||
+        (!_hourlyEnabled && !_dailyEnabled && !_monthlyEnabled) ||
+        (_monthlyEnabled && pricePerMonth <= 0) ||
         !_isValidTime(pickupTime) ||
         !_isValidTime(returnTime)) {
-      _showMessage(
-        AppLocalizations.of(context).choose(
-          'Completeaza datele anuntului si foloseste ore de forma 10:00.',
-          'Complete the listing and use times like 10:00.',
-        ),
-      );
+      _showMessage(GeneratedLocalizations.of(context).listingFormInvalid);
       return;
     }
 
@@ -233,7 +264,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
       final token = await AuthSessionStore.getToken();
 
       if (token == null) {
-        throw AuthApiException('Trebuie sa fii autentificat.');
+        throw AuthApiException(strings.signInRequired);
       }
 
       final uploadedMedia = <UploadedMedia>[
@@ -257,6 +288,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
         categorySlug: _category,
         description: description,
         pricePerDay: pricePerDay,
+        pricePerMonth: _monthlyEnabled ? pricePerMonth : null,
         deposit: deposit,
         city: city,
         address: address,
@@ -264,6 +296,11 @@ class _AddListingScreenState extends State<AddListingScreen> {
         longitude: _selectedLocation.longitude,
         pickupTime: pickupTime,
         returnTime: returnTime,
+        rentalModes: [
+          if (_hourlyEnabled) 'hour',
+          if (_dailyEnabled) 'day',
+          if (_monthlyEnabled) 'month',
+        ],
         media: uploadedMedia,
       );
 
@@ -271,9 +308,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
         final productId = widget.initialData?.productId;
 
         if (productId == null || productId.isEmpty) {
-          throw ProductsApiException(
-            'Lipseste ID-ul produsului pentru editare.',
-          );
+          throw ProductsApiException(strings.missingProductIdForEdit);
         }
 
         await _productsApi.update(
@@ -318,23 +353,18 @@ class _AddListingScreenState extends State<AddListingScreen> {
   }
 
   String _categoryLabel(String value) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return switch (value) {
-      'tools' => strings.choose('Unelte & DIY', 'Tools & DIY'),
-      'unelte' => strings.choose('Unelte', 'Tools'),
-      'home' => strings.choose('Casa & Gradina', 'Home & Garden'),
-      'electronics' => strings.choose('Electronice', 'Electronics'),
-      'electronice' => strings.choose('Electronice', 'Electronics'),
-      'sport' => strings.choose('Sport & Outdoor', 'Sport & Outdoor'),
-      'sport-outdoor' => strings.choose('Sport & Outdoor', 'Sport & Outdoor'),
-      'gaming-console' => strings.choose(
-        'Gaming & Console',
-        'Gaming & Console',
-      ),
-      'foto-video' => strings.choose('Foto & Video', 'Photo & Video'),
-      'drone' => strings.choose('Drone', 'Drones'),
-      _ => strings.choose('Altele', 'Other'),
+      'tools' => strings.toolsDiy,
+      'unelte' => strings.tools,
+      'home' => strings.homeGarden,
+      'electronics' || 'electronice' => strings.electronics,
+      'sport' || 'sport-outdoor' => strings.sportOutdoor,
+      'gaming-console' => strings.gamingConsole,
+      'foto-video' => strings.photoVideo,
+      'drone' => strings.drones,
+      _ => strings.other,
     };
   }
 
@@ -438,9 +468,19 @@ class _AddListingScreenState extends State<AddListingScreen> {
                           _RatesSection(
                             pricePerHourController: _pricePerHourController,
                             pricePerDayController: _pricePerDayController,
+                            pricePerMonthController: _pricePerMonthController,
                             depositController: _depositController,
                             pickupTimeController: _pickupTimeController,
                             returnTimeController: _returnTimeController,
+                            hourlyEnabled: _hourlyEnabled,
+                            dailyEnabled: _dailyEnabled,
+                            monthlyEnabled: _monthlyEnabled,
+                            onHourlyChanged: (value) =>
+                                setState(() => _hourlyEnabled = value),
+                            onDailyChanged: (value) =>
+                                setState(() => _dailyEnabled = value),
+                            onMonthlyChanged: (value) =>
+                                setState(() => _monthlyEnabled = value),
                           ),
                           const SizedBox(height: 24),
                           _InsuranceCard(
@@ -480,7 +520,7 @@ class _AddListingTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return Container(
       height: 64,
@@ -502,9 +542,7 @@ class _AddListingTopBar extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              isEditing
-                  ? strings.choose('Editeaza anuntul', 'Edit listing')
-                  : strings.choose('Adauga anunt', 'Add listing'),
+              isEditing ? strings.editListing : strings.addListing,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -516,7 +554,7 @@ class _AddListingTopBar extends StatelessWidget {
           ),
           const LanguageToggleButton(),
           const SizedBox(width: 8),
-          _SecurePill(label: strings.choose('Securizat', 'Secure')),
+          _SecurePill(label: strings.secure),
         ],
       ),
     );
@@ -568,7 +606,7 @@ class _TrustBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -599,10 +637,7 @@ class _TrustBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    strings.choose(
-                      'Esti asigurat de BorrowIt',
-                      'You are covered by BorrowIt',
-                    ),
+                    strings.coveredByLend,
                     style: const TextStyle(
                       color: Color(0xFF2B486C),
                       fontSize: 14,
@@ -611,10 +646,7 @@ class _TrustBanner extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    strings.choose(
-                      'Fiecare tranzactie este protejata impotriva daunelor sau furtului pana la 5000 RON.',
-                      'Every transaction is protected against damage or theft up to 5000 RON.',
-                    ),
+                    strings.coveredByLendBody,
                     style: const TextStyle(
                       color: _AddListingScreenState._muted,
                       fontSize: 12,
@@ -647,11 +679,11 @@ class _PhotosSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return _Section(
-      title: strings.choose('Fotografii', 'Photos'),
-      trailing: strings.choose('Maxim 8 fisiere', 'Maximum 8 files'),
+      title: strings.photos,
+      trailing: strings.maxEightFiles,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final itemWidth = (constraints.maxWidth - 16) / 2;
@@ -688,7 +720,7 @@ class _PhotosSection extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        strings.choose('Adauga media', 'Add media'),
+                        strings.addMedia,
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ],
@@ -960,12 +992,13 @@ class _VideoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = GeneratedLocalizations.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: dark ? 0.92 : 0.82),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: const Padding(
+      child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -977,7 +1010,7 @@ class _VideoBadge extends StatelessWidget {
             ),
             SizedBox(width: 4),
             Text(
-              'VIDEO',
+              strings.videoLabel,
               style: TextStyle(
                 color: _AddListingScreenState._text,
                 fontSize: 10,
@@ -1046,22 +1079,19 @@ class _BasicInfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return _TitledFormSection(
       icon: Icons.info_outline_rounded,
-      title: strings.choose('Informatii de baza', 'Basic information'),
+      title: strings.basicInformation,
       children: [
         _LabeledField(
           controller: titleController,
-          label: strings.choose('Numele articolului', 'Item name'),
-          hint: strings.choose(
-            'Ex: Masina de tuns iarba profesionala',
-            'Ex: Professional lawn mower',
-          ),
+          label: strings.itemName,
+          hint: strings.itemNameHint,
         ),
         _LabeledDropdown(
-          label: strings.choose('Categorie', 'Category'),
+          label: strings.category,
           value: category,
           values: const [
             'choose',
@@ -1077,38 +1107,27 @@ class _BasicInfoSection extends StatelessWidget {
             'sport',
           ],
           labelForValue: (value) => switch (value) {
-            'tools' => strings.choose('Unelte & DIY', 'Tools & DIY'),
-            'unelte' => strings.choose('Unelte', 'Tools'),
-            'home' => strings.choose('Casa & Gradina', 'Home & Garden'),
-            'electronics' => strings.choose('Electronice', 'Electronics'),
-            'electronice' => strings.choose('Electronice', 'Electronics'),
-            'sport' => strings.choose('Sport & Outdoor', 'Sport & Outdoor'),
-            'sport-outdoor' => strings.choose(
-              'Sport & Outdoor',
-              'Sport & Outdoor',
-            ),
-            'gaming-console' => strings.choose(
-              'Gaming & Console',
-              'Gaming & Console',
-            ),
-            'foto-video' => strings.choose('Foto & Video', 'Photo & Video'),
-            'drone' => strings.choose('Drone', 'Drones'),
-            _ => strings.choose('Alege o categorie', 'Choose a category'),
+            'tools' => strings.toolsDiy,
+            'unelte' => strings.tools,
+            'home' => strings.homeGarden,
+            'electronics' || 'electronice' => strings.electronics,
+            'sport' || 'sport-outdoor' => strings.sportOutdoor,
+            'gaming-console' => strings.gamingConsole,
+            'foto-video' => strings.photoVideo,
+            'drone' => strings.drones,
+            _ => strings.chooseCategory,
           },
           onChanged: onCategoryChanged,
         ),
         _LabeledField(
           controller: cityController,
-          label: strings.choose('Oras', 'City'),
-          hint: strings.choose('Ex: Bucuresti', 'Ex: Bucharest'),
+          label: strings.city,
+          hint: strings.cityHint,
         ),
         _LabeledField(
           controller: addressController,
-          label: strings.choose('Adresa', 'Address'),
-          hint: strings.choose(
-            'Ex: Strada Exemplu 10, Sector 3',
-            'Ex: 10 Example Street',
-          ),
+          label: strings.address,
+          hint: strings.addressHint,
         ),
         _LocationPicker(
           selectedLocation: selectedLocation,
@@ -1118,11 +1137,8 @@ class _BasicInfoSection extends StatelessWidget {
         ),
         _LabeledField(
           controller: descriptionController,
-          label: strings.choose('Descriere', 'Description'),
-          hint: strings.choose(
-            'Descrie starea articolului si ce include pachetul...',
-            'Describe the item condition and what is included...',
-          ),
+          label: strings.description,
+          hint: strings.descriptionHint,
           maxLines: 4,
         ),
       ],
@@ -1168,22 +1184,18 @@ class _LocationPickerState extends State<_LocationPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
           children: [
-            Expanded(
-              child: _FieldLabel(strings.choose('Pin pe harta', 'Map pin')),
-            ),
+            Expanded(child: _FieldLabel(strings.mapPin)),
             TextButton.icon(
               onPressed: widget.onCenterPinOnCity,
               icon: const Icon(Icons.my_location_rounded, size: 18),
-              label: Text(
-                strings.choose('Centreaza pe oras', 'Center on city'),
-              ),
+              label: Text(strings.centerOnCity),
             ),
           ],
         ),
@@ -1221,10 +1233,7 @@ class _LocationPickerState extends State<_LocationPicker> {
         ),
         const SizedBox(height: 8),
         Text(
-          strings.choose(
-            'Atinge harta sau trage pinul pentru locatia exacta.',
-            'Tap the map or drag the pin for the exact location.',
-          ),
+          strings.mapPinHelp,
           style: const TextStyle(
             color: _AddListingScreenState._muted,
             fontSize: 12,
@@ -1240,51 +1249,138 @@ class _RatesSection extends StatelessWidget {
   const _RatesSection({
     required this.pricePerHourController,
     required this.pricePerDayController,
+    required this.pricePerMonthController,
     required this.depositController,
     required this.pickupTimeController,
     required this.returnTimeController,
+    required this.hourlyEnabled,
+    required this.dailyEnabled,
+    required this.monthlyEnabled,
+    required this.onHourlyChanged,
+    required this.onDailyChanged,
+    required this.onMonthlyChanged,
   });
 
   final TextEditingController pricePerHourController;
   final TextEditingController pricePerDayController;
+  final TextEditingController pricePerMonthController;
   final TextEditingController depositController;
   final TextEditingController pickupTimeController;
   final TextEditingController returnTimeController;
+  final bool hourlyEnabled;
+  final bool dailyEnabled;
+  final bool monthlyEnabled;
+  final ValueChanged<bool> onHourlyChanged;
+  final ValueChanged<bool> onDailyChanged;
+  final ValueChanged<bool> onMonthlyChanged;
+
+  Future<void> _selectTime(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
+    final current = controller.text.split(':');
+    final initial = current.length == 2
+        ? TimeOfDay(
+            hour: int.tryParse(current[0]) ?? 10,
+            minute: int.tryParse(current[1]) ?? 0,
+          )
+        : const TimeOfDay(hour: 10, minute: 0);
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: initial,
+    );
+    if (selected != null) {
+      controller.text =
+          '${selected.hour.toString().padLeft(2, '0')}:${selected.minute.toString().padLeft(2, '0')}';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return _TitledFormSection(
       icon: Icons.payments_outlined,
-      title: strings.choose('Tarife', 'Rates'),
+      title: strings.rates,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _LabeledField(
-                controller: pricePerHourController,
-                label: strings.choose('Pret pe ora', 'Price per hour'),
-                hint: '0.00',
-                suffix: 'RON',
-                keyboardType: TextInputType.number,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _LabeledField(
-                controller: pricePerDayController,
-                label: strings.choose('Pret pe zi', 'Price per day'),
-                hint: '0.00',
-                suffix: 'RON',
-                keyboardType: TextInputType.number,
-              ),
-            ),
-          ],
+        _RentalPriceRow(
+          label: strings.hourly,
+          priceLabel: strings.pricePerHour,
+          controller: pricePerHourController,
+          selected: hourlyEnabled,
+          onChanged: onHourlyChanged,
         ),
+        const SizedBox(height: 4),
+        _RentalPriceRow(
+          label: strings.daily,
+          priceLabel: strings.pricePerDay,
+          controller: pricePerDayController,
+          selected: dailyEnabled,
+          onChanged: onDailyChanged,
+        ),
+        const SizedBox(height: 4),
+        _RentalPriceRow(
+          label: strings.monthly,
+          priceLabel: strings.pricePerMonth,
+          controller: pricePerMonthController,
+          selected: monthlyEnabled,
+          onChanged: onMonthlyChanged,
+        ),
+        const SizedBox(height: 16),
+        if (_shouldShowLegacyLayout()) ...[
+          Row(
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(strings.hourly),
+                  value: hourlyEnabled,
+                  onChanged: (v) {
+                    if (v != null) onHourlyChanged(v);
+                  },
+                ),
+              ),
+              Expanded(
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(strings.daily),
+                  value: dailyEnabled,
+                  onChanged: (v) {
+                    if (v != null) onDailyChanged(v);
+                  },
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              if (hourlyEnabled)
+                Expanded(
+                  child: _LabeledField(
+                    controller: pricePerHourController,
+                    label: strings.pricePerHour,
+                    hint: '0.00',
+                    suffix: 'RON',
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              if (hourlyEnabled && dailyEnabled) const SizedBox(width: 14),
+              if (dailyEnabled)
+                Expanded(
+                  child: _LabeledField(
+                    controller: pricePerDayController,
+                    label: strings.pricePerDay,
+                    hint: '0.00',
+                    suffix: 'RON',
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+            ],
+          ),
+        ],
         _LabeledField(
           controller: depositController,
-          label: strings.choose('Garantie', 'Deposit'),
+          label: strings.deposit,
           hint: '0.00',
           suffix: 'RON',
           keyboardType: TextInputType.number,
@@ -1294,18 +1390,22 @@ class _RatesSection extends StatelessWidget {
             Expanded(
               child: _LabeledField(
                 controller: pickupTimeController,
-                label: strings.choose('Predare dupa', 'Pickup after'),
+                label: strings.pickupAfter,
                 hint: '10:00',
                 keyboardType: TextInputType.datetime,
+                readOnly: true,
+                onTap: () => _selectTime(context, pickupTimeController),
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: _LabeledField(
                 controller: returnTimeController,
-                label: strings.choose('Retur pana la', 'Return by'),
+                label: strings.returnBy,
                 hint: '18:00',
                 keyboardType: TextInputType.datetime,
+                readOnly: true,
+                onTap: () => _selectTime(context, returnTimeController),
               ),
             ),
           ],
@@ -1314,6 +1414,55 @@ class _RatesSection extends StatelessWidget {
       ],
     );
   }
+}
+
+bool _shouldShowLegacyLayout() => false;
+
+class _RentalPriceRow extends StatelessWidget {
+  const _RentalPriceRow({
+    required this.label,
+    required this.priceLabel,
+    required this.controller,
+    required this.selected,
+    required this.onChanged,
+  });
+  final String label, priceLabel;
+  final TextEditingController controller;
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      CheckboxListTile(
+        contentPadding: EdgeInsets.zero,
+        dense: true,
+        visualDensity: const VisualDensity(vertical: -3),
+        title: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: _AddListingScreenState._text,
+          ),
+        ),
+        value: selected,
+        onChanged: (v) {
+          if (v != null) onChanged(v);
+        },
+      ),
+      if (selected)
+        _LabeledField(
+          controller: controller,
+          label: priceLabel,
+          hint: '0.00',
+          suffix: 'RON',
+          keyboardType: TextInputType.number,
+        ),
+    ],
+  );
 }
 
 class _SuggestionChip extends StatelessWidget {
@@ -1341,10 +1490,7 @@ class _SuggestionChip extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                AppLocalizations.of(context).choose(
-                  'Utilizatorii prefera adesea un pret redus pentru inchirieri de peste 3 zile.',
-                  'Users often prefer a lower price for rentals longer than 3 days.',
-                ),
+                GeneratedLocalizations.of(context).pricingSuggestion,
                 style: const TextStyle(
                   color: _AddListingScreenState._text,
                   fontSize: 12,
@@ -1381,10 +1527,9 @@ class _InsuranceCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                AppLocalizations.of(context).choose(
-                  'Asigurare activata automat',
-                  'Insurance enabled automatically',
-                ),
+                GeneratedLocalizations.of(
+                  context,
+                ).insuranceEnabledAutomatically,
                 style: const TextStyle(
                   color: _AddListingScreenState._text,
                   fontSize: 16,
@@ -1500,6 +1645,8 @@ class _LabeledField extends StatelessWidget {
     this.suffix,
     this.maxLines = 1,
     this.keyboardType,
+    this.onTap,
+    this.readOnly = false,
   });
 
   final TextEditingController controller;
@@ -1508,6 +1655,8 @@ class _LabeledField extends StatelessWidget {
   final String? suffix;
   final int maxLines;
   final TextInputType? keyboardType;
+  final VoidCallback? onTap;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -1519,6 +1668,8 @@ class _LabeledField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
+          onTap: onTap,
+          readOnly: readOnly,
           decoration: _inputDecoration(hint).copyWith(suffixText: suffix),
         ),
       ],
@@ -1635,7 +1786,7 @@ class _BottomActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -1669,10 +1820,10 @@ class _BottomActions extends StatelessWidget {
               ),
               child: Text(
                 submitting
-                    ? strings.choose('Se incarca...', 'Uploading...')
+                    ? strings.uploading
                     : isEditing
-                    ? strings.choose('Salveaza modificarile', 'Save changes')
-                    : strings.choose('Publica anuntul', 'Post item'),
+                    ? strings.saveChanges
+                    : strings.publishListing,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
@@ -1683,14 +1834,8 @@ class _BottomActions extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             isEditing
-                ? strings.choose(
-                    'Modificarile vor fi trimise catre backend cand endpointul de update este conectat.',
-                    'Changes will be sent to the backend when the update endpoint is connected.',
-                  )
-                : strings.choose(
-                    'Apasand "Publica anuntul" esti de acord cu termenii nostri.',
-                    'By tapping "Post item" you agree to our terms.',
-                  ),
+                ? strings.editListingBackendNote
+                : strings.publishListingTermsNote,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF737781),

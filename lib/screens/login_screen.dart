@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/language_toggle_button.dart';
@@ -67,8 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       LendToast.success(
         context,
-        message:
-            '${strings.choose('Bine ai revenit', 'Welcome back')}, ${session.user.fullName}!',
+        message: '${strings.welcomeBack}, ${session.user.fullName}!',
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const MainShell()),
@@ -79,13 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
       LendToast.error(context, message: error.message);
     } catch (_) {
       if (!mounted) return;
-      LendToast.error(
-        context,
-        message: strings.choose(
-          'Nu se poate conecta la server.',
-          'Cannot connect to the server.',
-        ),
-      );
+      LendToast.error(context, message: strings.cannotConnectServer);
     } finally {
       if (mounted) {
         setState(() {
@@ -114,12 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final identityToken = credential.identityToken;
       if (identityToken == null || identityToken.isEmpty) {
-        throw AuthApiException(
-          strings.choose(
-            'Apple nu a returnat un token de autentificare.',
-            'Apple did not return an authentication token.',
-          ),
-        );
+        throw AuthApiException(strings.appleMissingToken);
       }
 
       final session = await _authApi.loginWithApple(
@@ -132,8 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       LendToast.success(
         context,
-        message:
-            '${strings.choose('Bine ai revenit', 'Welcome back')}, ${session.user.fullName}!',
+        message: '${strings.welcomeBack}, ${session.user.fullName}!',
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const MainShell()),
@@ -145,25 +133,13 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      LendToast.error(
-        context,
-        message: strings.choose(
-          'Autentificarea cu Apple nu a reusit.',
-          'Apple sign-in failed.',
-        ),
-      );
+      LendToast.error(context, message: strings.appleSignInFailed);
     } on AuthApiException catch (error) {
       if (!mounted) return;
       LendToast.error(context, message: error.message);
     } catch (_) {
       if (!mounted) return;
-      LendToast.error(
-        context,
-        message: strings.choose(
-          'Nu se poate conecta la server.',
-          'Cannot connect to the server.',
-        ),
-      );
+      LendToast.error(context, message: strings.cannotConnectServer);
     } finally {
       if (mounted) {
         setState(() {
@@ -194,12 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final account = await _googleSignIn.authenticate();
       final idToken = account.authentication.idToken;
       if (idToken == null || idToken.isEmpty) {
-        throw AuthApiException(
-          strings.choose(
-            'Google nu a returnat un token de autentificare.',
-            'Google did not return an authentication token.',
-          ),
-        );
+        throw AuthApiException(strings.googleMissingToken);
       }
 
       final session = await _authApi.loginWithGoogle(
@@ -211,8 +182,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       LendToast.success(
         context,
-        message:
-            '${strings.choose('Bine ai revenit', 'Welcome back')}, ${session.user.fullName}!',
+        message: '${strings.welcomeBack}, ${session.user.fullName}!',
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const MainShell()),
@@ -224,25 +194,13 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      LendToast.error(
-        context,
-        message: strings.choose(
-          'Autentificarea cu Google nu a reusit.',
-          'Google sign-in failed.',
-        ),
-      );
+      LendToast.error(context, message: strings.googleSignInFailed);
     } on AuthApiException catch (error) {
       if (!mounted) return;
       LendToast.error(context, message: error.message);
     } catch (_) {
       if (!mounted) return;
-      LendToast.error(
-        context,
-        message: strings.choose(
-          'Nu se poate conecta la server.',
-          'Cannot connect to the server.',
-        ),
-      );
+      LendToast.error(context, message: strings.cannotConnectServer);
     } finally {
       if (mounted) {
         setState(() {
@@ -396,7 +354,7 @@ class _LoginCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            strings.choose('Bine ai revenit', 'Welcome back'),
+            strings.welcomeBack,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: LoginScreen._text,
@@ -407,10 +365,7 @@ class _LoginCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            strings.choose(
-              'Intra in contul tau pentru a continua',
-              'Sign in to your account to continue',
-            ),
+            strings.signInSubtitle,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: LoginScreen._muted,
@@ -420,22 +375,22 @@ class _LoginCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: isCompact ? 32 : 46),
-          _FieldLabel(strings.choose('Email', 'Email')),
+          _FieldLabel(strings.email),
           const SizedBox(height: 6),
           _LoginInput(
             icon: Icons.mail_outline_rounded,
             controller: emailController,
-            hintText: strings.choose('nume@exemplu.ro', 'name@example.com'),
+            hintText: strings.emailHint,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
           ),
           SizedBox(height: isCompact ? 18 : 24),
-          _FieldLabel(strings.choose('Parola', 'Password')),
+          _FieldLabel(strings.password),
           const SizedBox(height: 6),
           _LoginInput(
             icon: Icons.lock_outline_rounded,
             controller: passwordController,
-            hintText: strings.choose('Parola ta', 'Your password'),
+            hintText: strings.yourPassword,
             trailing: Icons.visibility_outlined,
             obscureText: true,
             onFieldSubmitted: (_) => onSubmit(),
@@ -452,7 +407,7 @@ class _LoginCard extends StatelessWidget {
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                strings.choose('Am uitat parola', 'Forgot password'),
+                strings.forgotPassword,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -484,7 +439,7 @@ class _LoginCard extends StatelessWidget {
                       ),
                     )
                   : Text(
-                      strings.choose('Conecteaza-te', 'Sign in'),
+                      strings.signIn,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
@@ -629,9 +584,7 @@ class _DividerLabel extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            AppLocalizations.of(
-              context,
-            ).choose('SAU CONTINUA CU', 'OR CONTINUE WITH'),
+            GeneratedLocalizations.of(context).orContinueWith,
             style: const TextStyle(
               color: Color(0xFF7A828E),
               fontSize: 12,
@@ -708,7 +661,7 @@ class _CreateAccountPrompt extends StatelessWidget {
       spacing: 8,
       children: [
         Text(
-          strings.choose('Nu ai un cont?', 'Do not have an account?'),
+          strings.noAccount,
           style: const TextStyle(
             color: LoginScreen._muted,
             fontSize: 16,
@@ -728,7 +681,7 @@ class _CreateAccountPrompt extends StatelessWidget {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: Text(
-            strings.choose('Creeaza cont nou', 'Create new account'),
+            strings.createNewAccount,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
           ),
         ),
@@ -761,10 +714,7 @@ class _TrustBadge extends StatelessWidget {
             const SizedBox(width: 9),
             Flexible(
               child: Text(
-                AppLocalizations.of(context).choose(
-                  'Comunitate sigura si verificata',
-                  'Safe and verified community',
-                ),
+                GeneratedLocalizations.of(context).safeVerifiedCommunity,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: LoginScreen._text,

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/auth_api.dart';
 import '../services/payments_api.dart';
@@ -97,6 +97,8 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
       return;
     }
 
+    final strings = GeneratedLocalizations.of(context);
+
     setState(() {
       _submitting = true;
     });
@@ -105,15 +107,13 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
       final token = await AuthSessionStore.getToken();
 
       if (token == null) {
-        throw RentalOrdersApiException('Trebuie sa fii autentificat.');
+        throw RentalOrdersApiException(strings.signInRequired);
       }
 
       final paymentsConfig = await _paymentsApi.getConfig();
 
       if (paymentsConfig.publishableKey.isEmpty) {
-        throw PaymentsApiException(
-          'Stripe nu este configurat. Lipseste cheia publica.',
-        );
+        throw PaymentsApiException(strings.stripeNotConfigured);
       }
 
       Stripe.publishableKey = paymentsConfig.publishableKey;
@@ -134,14 +134,14 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
       if (order.paymentClientSecret.isEmpty) {
         throw RentalOrdersApiException(
-          'Nu am primit confirmarea de plata de la Stripe.',
+          strings.stripePaymentConfirmationMissing,
         );
       }
 
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: order.paymentClientSecret,
-          merchantDisplayName: 'BorrowIt',
+          merchantDisplayName: 'Lend',
           style: ThemeMode.system,
           googlePay: const PaymentSheetGooglePay(
             merchantCountryCode: 'RO',
@@ -164,10 +164,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         return;
       }
 
-      LendToast.success(
-        context,
-        message: 'Cererea #${order.id} a fost trimisa proprietarului.',
-      );
+      LendToast.success(context, message: strings.requestSentToOwner(order.id));
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(
@@ -306,9 +303,7 @@ class _ContractTopBar extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              AppLocalizations.of(
-                context,
-              ).choose('Contract si semnatura', 'Contract and signature'),
+              GeneratedLocalizations.of(context).contractAndSignature,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -367,9 +362,7 @@ class _LegalDocumentCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).choose('DOCUMENT LEGAL', 'LEGAL DOCUMENT'),
+                    GeneratedLocalizations.of(context).legalDocument,
                     style: const TextStyle(
                       color: _RentalContractScreenState._muted,
                       fontSize: 12,
@@ -397,10 +390,7 @@ class _LegalDocumentCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          AppLocalizations.of(context).choose(
-                            'Securizat de BorrowIt',
-                            'Secured by BorrowIt',
-                          ),
+                          GeneratedLocalizations.of(context).securedByLend,
                           style: const TextStyle(
                             color: _RentalContractScreenState._text,
                             fontSize: 12,
@@ -421,64 +411,56 @@ class _LegalDocumentCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _LegalSection(
-                      title: AppLocalizations.of(
+                      title: GeneratedLocalizations.of(
                         context,
-                      ).choose('1. Termeni generali', '1. General terms'),
-                      body: AppLocalizations.of(context).choose(
-                        'Acest acord de inchiriere stabileste conditiile sub care locatorul ofera bunul spre folosinta locatarului pentru perioada specificata.',
-                        'This rental agreement sets the conditions under which the owner provides the item to the renter for the specified period.',
-                      ),
+                      ).legalGeneralTermsTitle,
+                      body: GeneratedLocalizations.of(
+                        context,
+                      ).legalGeneralTermsBody,
                     ),
                     const SizedBox(height: 24),
                     _HighlightedLegalSection(
                       icon: Icons.access_time_rounded,
                       color: _RentalContractScreenState._secondary,
-                      title: AppLocalizations.of(
+                      title: GeneratedLocalizations.of(context).pickupAndReturn,
+                      body: GeneratedLocalizations.of(
                         context,
-                      ).choose('Program predare si retur', 'Pickup and return'),
-                      body: AppLocalizations.of(context).choose(
-                        'Ridicarea se face la ora $pickupTime, iar returul la ora $returnTime.',
-                        'Pickup is at $pickupTime and return is at $returnTime.',
-                      ),
+                      ).pickupReturnContractBody(pickupTime, returnTime),
                     ),
                     const SizedBox(height: 24),
                     _HighlightedLegalSection(
                       icon: Icons.gavel_rounded,
                       color: _RentalContractScreenState._text,
-                      title: AppLocalizations.of(
+                      title: GeneratedLocalizations.of(context).responsibility,
+                      body: GeneratedLocalizations.of(
                         context,
-                      ).choose('Responsabilitate', 'Responsibility'),
-                      body: AppLocalizations.of(context).choose(
-                        'Locatarul isi asuma intreaga responsabilitate pentru integritatea bunului pe durata inchirierii. Orice dauna cauzata din neglijenta sau utilizare necorespunzatoare va fi suportata integral de catre locatar.',
-                        'The renter assumes full responsibility for the item during the rental period. Any damage caused by negligence or improper use is covered by the renter.',
-                      ),
+                      ).responsibilityBody,
                     ),
                     const SizedBox(height: 16),
                     _HighlightedLegalSection(
                       icon: Icons.security_rounded,
                       color: _RentalContractScreenState._secondary,
-                      title: AppLocalizations.of(
+                      title: GeneratedLocalizations.of(context).deposit,
+                      body: GeneratedLocalizations.of(
                         context,
-                      ).choose('Garantie', 'Deposit'),
-                      body: AppLocalizations.of(context).choose(
-                        'Garantia retinuta prin platforma BorrowIt serveste ca asigurare pentru returnarea bunului in starea initiala. Aceasta va fi deblocata in termen de 24 de ore de la confirmarea returnarii.',
-                        'The deposit held through BorrowIt secures the return of the item in its original condition. It is released within 24 hours after return confirmation.',
-                      ),
+                      ).depositContractBody,
                     ),
                     const SizedBox(height: 24),
                     _LegalSection(
-                      title: AppLocalizations.of(context).choose(
-                        '3. Incetarea contractului',
-                        '3. Contract termination',
-                      ),
-                      body: AppLocalizations.of(context).choose(
-                        rentalMode == RentalMode.hour
-                            ? 'Contractul pentru ${product.title} inceteaza automat la expirarea perioadei de $rentalHours ore sau prin acordul prealabil al ambelor parti in scris prin mesageria aplicatiei.'
-                            : 'Contractul pentru ${product.title} inceteaza automat la expirarea perioadei de $rentalDays zile sau prin acordul prealabil al ambelor parti in scris prin mesageria aplicatiei.',
-                        rentalMode == RentalMode.hour
-                            ? 'The contract for ${product.title} ends automatically when the $rentalHours hour period expires or by prior written agreement between both parties through the app messaging system.'
-                            : 'The contract for ${product.title} ends automatically when the $rentalDays day period expires or by prior written agreement between both parties through the app messaging system.',
-                      ),
+                      title: GeneratedLocalizations.of(
+                        context,
+                      ).contractTerminationTitle,
+                      body: GeneratedLocalizations.of(context)
+                          .contractTerminationBody(
+                            product.title,
+                            rentalMode == RentalMode.hour
+                                ? GeneratedLocalizations.of(
+                                    context,
+                                  ).hoursCount(rentalHours)
+                                : GeneratedLocalizations.of(
+                                    context,
+                                  ).daysCount(rentalDays),
+                          ),
                     ),
                   ],
                 ),
@@ -589,6 +571,7 @@ class _OwnerSignatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = GeneratedLocalizations.of(context);
     return DecoratedBox(
       decoration: _contractCardDecoration,
       child: Stack(
@@ -610,9 +593,7 @@ class _OwnerSignatureCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  AppLocalizations.of(
-                    context,
-                  ).choose('SEMNATURA PROPRIETAR', 'OWNER SIGNATURE'),
+                  GeneratedLocalizations.of(context).ownerSignature,
                   style: const TextStyle(
                     color: _RentalContractScreenState._muted,
                     fontSize: 12,
@@ -625,7 +606,7 @@ class _OwnerSignatureCard extends StatelessWidget {
                   height: 96,
                   child: Center(
                     child: Text(
-                      ownerName.isEmpty ? 'Proprietar Lend' : ownerName,
+                      ownerName.isEmpty ? strings.lendOwnerName : ownerName,
                       style: const TextStyle(
                         color: Color(0x6630578F),
                         fontSize: 32,
@@ -646,9 +627,7 @@ class _OwnerSignatureCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      AppLocalizations.of(
-                        context,
-                      ).choose('Identitate verificata', 'Verified identity'),
+                      GeneratedLocalizations.of(context).verifiedIdentity,
                       style: const TextStyle(
                         color: _RentalContractScreenState._text,
                         fontSize: 12,
@@ -695,9 +674,7 @@ class _TenantSignatureCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              AppLocalizations.of(
-                context,
-              ).choose('SEMNATURA LOCATAR (DVS.)', 'RENTER SIGNATURE (YOU)'),
+              GeneratedLocalizations.of(context).renterSignature,
               style: const TextStyle(
                 color: _RentalContractScreenState._muted,
                 fontSize: 12,
@@ -738,9 +715,7 @@ class _TenantSignatureCard extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  ).choose('Semnati aici', 'Sign here'),
+                                  GeneratedLocalizations.of(context).signHere,
                                   style: const TextStyle(
                                     color: Color(0xFF737781),
                                     fontSize: 12,
@@ -766,17 +741,13 @@ class _TenantSignatureCard extends StatelessWidget {
                     minimumSize: const Size(0, 36),
                   ),
                   child: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).choose('Sterge semnatura', 'Clear signature'),
+                    GeneratedLocalizations.of(context).clearSignature,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
                 const Spacer(),
                 Text(
-                  AppLocalizations.of(
-                    context,
-                  ).choose('Utilizati degetul', 'Use your finger'),
+                  GeneratedLocalizations.of(context).useYourFinger,
                   style: const TextStyle(
                     color: _RentalContractScreenState._muted,
                     fontSize: 12,
@@ -881,17 +852,10 @@ class _PricingBar extends StatelessWidget {
           final totals = Row(
             children: [
               _TotalMetric(
-                label: AppLocalizations.of(
-                  context,
-                ).choose('Durata totala', 'Total duration'),
-                value: AppLocalizations.of(context).choose(
-                  rentalMode == RentalMode.hour
-                      ? '$rentalHours ore'
-                      : '$rentalDays zile',
-                  rentalMode == RentalMode.hour
-                      ? '$rentalHours hours'
-                      : '$rentalDays days',
-                ),
+                label: GeneratedLocalizations.of(context).totalDuration,
+                value: rentalMode == RentalMode.hour
+                    ? GeneratedLocalizations.of(context).hoursCount(rentalHours)
+                    : GeneratedLocalizations.of(context).daysCount(rentalDays),
               ),
               const SizedBox(width: 18),
               const SizedBox(
@@ -902,9 +866,7 @@ class _PricingBar extends StatelessWidget {
               ),
               const SizedBox(width: 18),
               _TotalMetric(
-                label: AppLocalizations.of(
-                  context,
-                ).choose('Pret total', 'Total price'),
+                label: GeneratedLocalizations.of(context).totalPrice,
                 value: '$total RON',
               ),
             ],
@@ -926,12 +888,8 @@ class _PricingBar extends StatelessWidget {
               ),
               label: Text(
                 submitting
-                    ? AppLocalizations.of(
-                        context,
-                      ).choose('Se trimite...', 'Submitting...')
-                    : AppLocalizations.of(
-                        context,
-                      ).choose('Semneaza si trimite', 'Sign and submit'),
+                    ? GeneratedLocalizations.of(context).submitting
+                    : GeneratedLocalizations.of(context).signAndSubmit,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),

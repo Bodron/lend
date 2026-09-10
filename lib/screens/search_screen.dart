@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/products_api.dart';
 import '../widgets/product_media_preview.dart';
 import 'product_details_screen.dart';
@@ -68,7 +68,10 @@ class _SearchScreenState extends State<SearchScreen> {
               builder: (context, snapshot) {
                 final products = snapshot.data ?? widget.initialProducts;
                 final results = _matchingProducts(products);
-                final suggestions = _suggestionsFor(products);
+                final suggestions = _suggestionsFor(
+                  GeneratedLocalizations.of(context),
+                  products,
+                );
                 final Widget searchBody;
 
                 if (_query.trim().isEmpty) {
@@ -102,25 +105,6 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                         Expanded(child: searchBody),
                       ],
-                    ),
-                    Positioned(
-                      left: 20,
-                      right: 20,
-                      bottom: MediaQuery.viewInsetsOf(context).bottom + 20,
-                      child: _VisualSearchActions(
-                        onCamera: () => _showUnavailable(
-                          AppLocalizations.of(context).choose(
-                            'Cautarea cu camera va fi disponibila curand.',
-                            'Camera search will be available soon.',
-                          ),
-                        ),
-                        onImage: () => _showUnavailable(
-                          AppLocalizations.of(context).choose(
-                            'Cautarea cu imagine va fi disponibila curand.',
-                            'Image search will be available soon.',
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 );
@@ -160,12 +144,6 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  void _showUnavailable(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
   List<LendProduct> _matchingProducts(List<LendProduct> products) {
     final query = _normalize(_query);
     if (query.isEmpty) {
@@ -181,7 +159,10 @@ class _SearchScreenState extends State<SearchScreen> {
     }).toList();
   }
 
-  List<_SearchSuggestion> _suggestionsFor(List<LendProduct> products) {
+  List<_SearchSuggestion> _suggestionsFor(
+    GeneratedLocalizations strings,
+    List<LendProduct> products,
+  ) {
     final query = _normalize(_query);
     final values = <_SearchSuggestion>[];
     final seen = <String>{};
@@ -207,8 +188,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
     if (query.isNotEmpty) {
       add(_query.trim().toLowerCase());
-      add(_query.trim().toLowerCase(), 'Aproape de tine');
-      add('${_query.trim().toLowerCase()} de inchiriat');
+      add(_query.trim().toLowerCase(), strings.nearYouSuggestion);
+      add(strings.forRentSuggestion(_query.trim().toLowerCase()));
     }
 
     for (final product in products) {
@@ -217,15 +198,15 @@ class _SearchScreenState extends State<SearchScreen> {
       add(product.city);
     }
 
-    for (final fallback in const [
-      'Bicicleta',
-      'Camera foto',
-      'GoPro',
-      'Masina de gaurit',
-      'Cort',
-      'Scule electrice',
-      'Laptop',
-      'Boxa portabila',
+    for (final fallback in [
+      strings.suggestionBike,
+      strings.suggestionCamera,
+      strings.suggestionGoPro,
+      strings.suggestionDrill,
+      strings.suggestionTent,
+      strings.suggestionPowerTools,
+      strings.suggestionLaptop,
+      strings.suggestionSpeaker,
     ]) {
       add(fallback);
     }
@@ -253,7 +234,7 @@ class _SearchHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return ColoredBox(
       color: Colors.white,
@@ -291,10 +272,7 @@ class _SearchHeader extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                         decoration: InputDecoration(
-                          hintText: strings.choose(
-                            'Incepe o cautare',
-                            'Start a search',
-                          ),
+                          hintText: strings.startSearch,
                           hintStyle: const TextStyle(
                             color: _SearchScreenState._muted,
                             fontWeight: FontWeight.w700,
@@ -312,25 +290,6 @@ class _SearchHeader extends StatelessWidget {
                         color: _SearchScreenState._muted,
                         iconSize: 20,
                       ),
-                    IconButton(
-                      onPressed: () {},
-                      tooltip: strings.choose(
-                        'Cauta cu imagine',
-                        'Search by image',
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      icon: ShaderMask(
-                        shaderCallback: (rect) => const LinearGradient(
-                          colors: [Color(0xFF2787E8), Color(0xFFB84CDC)],
-                        ).createShader(rect),
-                        child: const Icon(
-                          Icons.center_focus_strong_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
                   ],
                 ),
               ),
@@ -451,7 +410,7 @@ class _SearchResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     if (isLoading) {
       return const Center(
@@ -470,10 +429,7 @@ class _SearchResults extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            strings.choose(
-              'Nu am gasit produse pentru "$query".',
-              'No items found for "$query".',
-            ),
+            strings.noItemsFoundForQuery(query),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: _SearchScreenState._text,
@@ -578,94 +534,6 @@ class _SearchProductTile extends StatelessWidget {
   }
 }
 
-class _VisualSearchActions extends StatelessWidget {
-  const _VisualSearchActions({required this.onCamera, required this.onImage});
-
-  final VoidCallback onCamera;
-  final VoidCallback onImage;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _VisualSearchButton(
-            icon: Icons.add_a_photo_rounded,
-            label: strings.choose('Cauta cu camera', 'Camera search'),
-            onTap: onCamera,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: _VisualSearchButton(
-            icon: Icons.add_photo_alternate_rounded,
-            label: strings.choose('Cauta cu imagine', 'Image search'),
-            onTap: onImage,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _VisualSearchButton extends StatelessWidget {
-  const _VisualSearchButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white.withValues(alpha: 0.94),
-      borderRadius: BorderRadius.circular(999),
-      elevation: 12,
-      shadowColor: Colors.black.withValues(alpha: 0.18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          height: 50,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ShaderMask(
-                shaderCallback: (rect) => const LinearGradient(
-                  colors: [Color(0xFF2787E8), Color(0xFFB84CDC)],
-                ).createShader(rect),
-                child: Icon(icon, color: Colors.white, size: 22),
-              ),
-              const SizedBox(width: 10),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      color: _SearchScreenState._text,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _SearchSuggestion {
   const _SearchSuggestion(this.title, this.subtitle);
 
@@ -677,18 +545,11 @@ String _normalize(String value) {
   return value
       .trim()
       .toLowerCase()
-      .replaceAll('ă', 'a')
-      .replaceAll('â', 'a')
-      .replaceAll('î', 'i')
-      .replaceAll('ș', 's')
-      .replaceAll('ş', 's')
-      .replaceAll('ț', 't')
-      .replaceAll('ţ', 't')
-      .replaceAll('Äƒ', 'a')
-      .replaceAll('Ã¢', 'a')
-      .replaceAll('Ã®', 'i')
-      .replaceAll('È™', 's')
-      .replaceAll('ÅŸ', 's')
-      .replaceAll('È›', 't')
-      .replaceAll('Å£', 't');
+      .replaceAll('\u0103', 'a')
+      .replaceAll('\u00e2', 'a')
+      .replaceAll('\u00ee', 'i')
+      .replaceAll('\u0219', 's')
+      .replaceAll('\u015f', 's')
+      .replaceAll('\u021b', 't')
+      .replaceAll('\u0163', 't');
 }

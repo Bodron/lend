@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../widgets/language_toggle_button.dart';
 import '../widgets/lend_logo.dart';
@@ -48,13 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final strings = AppLocalizations.of(context);
 
     if (!_acceptedTerms) {
-      LendToast.warning(
-        context,
-        message: strings.choose(
-          'Trebuie sa accepti termenii pentru a continua.',
-          'You must accept the terms to continue.',
-        ),
-      );
+      LendToast.warning(context, message: strings.acceptTermsWarning);
       return;
     }
 
@@ -74,8 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       LendToast.success(
         context,
-        message:
-            '${strings.choose('Cont creat pentru', 'Account created for')} ${session.user.fullName}.',
+        message: '${strings.accountCreatedFor} ${session.user.fullName}.',
       );
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(builder: (_) => const MainShell()),
@@ -86,13 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       LendToast.error(context, message: error.message);
     } catch (_) {
       if (!mounted) return;
-      LendToast.error(
-        context,
-        message: strings.choose(
-          'Nu se poate conecta la server.',
-          'Cannot connect to the server.',
-        ),
-      );
+      LendToast.error(context, message: strings.cannotConnectServer);
     } finally {
       if (mounted) {
         setState(() {
@@ -161,10 +149,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              AppLocalizations.of(context).choose(
-                '© 2024 Lend. Economie colaborativa pentru un viitor mai bun.',
-                '© 2024 Lend. Shared economy for a better future.',
-              ),
+              GeneratedLocalizations.of(context).registerFooter,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Color(0x99737781),
@@ -216,7 +201,7 @@ class _RegisterHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
             child: Text(
-              strings.choose('Ajutor', 'Help'),
+              strings.help,
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
             ),
           ),
@@ -279,7 +264,7 @@ class _RegisterColumn extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                strings.choose('Creeaza cont', 'Create account'),
+                strings.createAccount,
                 style: const TextStyle(
                   color: _RegisterScreenState._text,
                   fontSize: 28,
@@ -289,10 +274,7 @@ class _RegisterColumn extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                strings.choose(
-                  'Incepe sa imprumuti si sa oferi astazi.',
-                  'Start borrowing and sharing today.',
-                ),
+                strings.createAccountSubtitle,
                 style: const TextStyle(
                   color: _RegisterScreenState._muted,
                   fontSize: 16,
@@ -302,41 +284,35 @@ class _RegisterColumn extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               _RegisterField(
-                label: strings.choose('Nume complet', 'Full name'),
+                label: strings.fullName,
                 icon: Icons.person_outline_rounded,
-                hintText: strings.choose(
-                  'Ex: Andrei Ionescu',
-                  'Ex: Alex Smith',
-                ),
+                hintText: strings.fullNameHint,
                 textInputAction: TextInputAction.next,
                 controller: fullNameController,
               ),
               const SizedBox(height: 24),
               _RegisterField(
-                label: strings.choose('Email', 'Email'),
+                label: strings.email,
                 icon: Icons.mail_outline_rounded,
-                hintText: strings.choose('nume@exemplu.ro', 'name@example.com'),
+                hintText: strings.emailHint,
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 24),
               _RegisterField(
-                label: strings.choose('Numar de telefon', 'Phone number'),
+                label: strings.phoneNumber,
                 icon: Icons.call_outlined,
-                hintText: strings.choose('+40 7xx xxx xxx', '+1 555 000 0000'),
+                hintText: strings.phoneHint,
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 24),
               _RegisterField(
-                label: strings.choose('Parola', 'Password'),
+                label: strings.password,
                 icon: Icons.lock_outline_rounded,
-                hintText: strings.choose(
-                  'Minim 8 caractere',
-                  'At least 8 characters',
-                ),
+                hintText: strings.passwordMinHint,
                 controller: passwordController,
                 obscureText: !showPassword,
                 onFieldSubmitted: (_) => onSubmit(),
@@ -376,7 +352,7 @@ class _RegisterColumn extends StatelessWidget {
                           ),
                         )
                       : Text(
-                          strings.choose('Creeaza cont', 'Create account'),
+                          strings.createAccount,
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -391,7 +367,7 @@ class _RegisterColumn extends StatelessWidget {
                 spacing: 6,
                 children: [
                   Text(
-                    strings.choose('Ai deja cont?', 'Already have an account?'),
+                    strings.alreadyHaveAccountQuestion,
                     style: const TextStyle(
                       color: _RegisterScreenState._muted,
                       fontSize: 14,
@@ -407,7 +383,7 @@ class _RegisterColumn extends StatelessWidget {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      strings.choose('Conecteaza-te', 'Sign in'),
+                      strings.signIn,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -420,7 +396,7 @@ class _RegisterColumn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 32),
-        const _BorrowTrustBadge(),
+        const _LendTrustBadge(),
       ],
     );
   }
@@ -551,25 +527,17 @@ class _TermsCheckbox extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
               children: [
+                TextSpan(text: strings.iAgreeTo),
                 TextSpan(
-                  text: strings.choose('Sunt de acord cu ', 'I agree to the '),
-                ),
-                TextSpan(
-                  text: strings.choose(
-                    'Termenii si conditiile',
-                    'Terms and Conditions',
-                  ),
+                  text: strings.termsAndConditions,
                   style: const TextStyle(
                     color: _RegisterScreenState._text,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                TextSpan(text: strings.choose(' si ', ' and ')),
+                TextSpan(text: strings.andWord),
                 TextSpan(
-                  text: strings.choose(
-                    'Politica de confidentialitate',
-                    'Privacy Policy',
-                  ),
+                  text: strings.privacyPolicy,
                   style: const TextStyle(
                     color: _RegisterScreenState._text,
                     fontWeight: FontWeight.w800,
@@ -628,10 +596,7 @@ class _VisualPanel extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        strings.choose(
-                          'Alatura-te comunitatii.',
-                          'Join the community.',
-                        ),
+                        strings.joinCommunity,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
@@ -641,10 +606,7 @@ class _VisualPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        strings.choose(
-                          'Economisesti bani si protejezi mediul prin partajarea resurselor cu vecinii tai.',
-                          'Save money and protect the environment by sharing resources with your neighbors.',
-                        ),
+                        strings.joinCommunityBody,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -683,10 +645,7 @@ class _VisualPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      strings.choose(
-                        'Tranzactii securizate',
-                        'Secure transactions',
-                      ),
+                      strings.secureTransactions,
                       style: const TextStyle(
                         color: _RegisterScreenState._text,
                         fontSize: 14,
@@ -695,10 +654,7 @@ class _VisualPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      strings.choose(
-                        'Fiecare membru este verificat pentru siguranta ta.',
-                        'Every member is verified for your safety.',
-                      ),
+                      strings.secureTransactionsBody,
                       style: const TextStyle(
                         color: _RegisterScreenState._muted,
                         fontSize: 12,
@@ -716,8 +672,8 @@ class _VisualPanel extends StatelessWidget {
   }
 }
 
-class _BorrowTrustBadge extends StatelessWidget {
-  const _BorrowTrustBadge();
+class _LendTrustBadge extends StatelessWidget {
+  const _LendTrustBadge();
 
   @override
   Widget build(BuildContext context) {
@@ -738,9 +694,7 @@ class _BorrowTrustBadge extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              AppLocalizations.of(
-                context,
-              ).choose('Securizat prin BorrowTrust', 'Secured by BorrowTrust'),
+              GeneratedLocalizations.of(context).securedByLendTrust,
               style: const TextStyle(
                 color: _RegisterScreenState._text,
                 fontSize: 12,

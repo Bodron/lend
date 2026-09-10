@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/rental_orders_api.dart';
 import '../services/products_api.dart';
@@ -39,6 +39,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   late String _returnTime;
   final _rentalOrdersApi = RentalOrdersApi();
   Set<String> _unavailableDateKeys = {};
+  List<AvailabilityReservation> _reservations = const [];
   bool _availabilityLoading = false;
   String? _availabilityError;
 
@@ -47,8 +48,19 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     super.initState();
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     _visibleMonth = DateTime(tomorrow.year, tomorrow.month);
-    _startDate = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
-    _endDate = _startDate!.add(const Duration(days: 3));
+    final initialDate = widget.rentalMode == RentalMode.hour
+        ? DateTime(
+            DateTime.now().year,
+            DateTime.now().month,
+            DateTime.now().day,
+          )
+        : DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
+    _startDate = initialDate;
+    _endDate = widget.rentalMode == RentalMode.hour
+        ? initialDate
+        : widget.rentalMode == RentalMode.month
+        ? _sameDayNextMonth(initialDate)
+        : initialDate.add(const Duration(days: 3));
     _pickupTime = widget.product.pickupTime;
     _returnTime = widget.product.returnTime;
     _loadAvailabilityForVisibleMonth();
@@ -66,7 +78,15 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     return days < 1 ? 1 : days;
   }
 
-  int get _totalPrice => _rentalDays * widget.product.pricePerDay;
+  int get _totalPrice => widget.rentalMode == RentalMode.month
+      ? (widget.product.pricePerMonth ?? 0)
+      : _rentalDays * widget.product.pricePerDay;
+
+  DateTime _sameDayNextMonth(DateTime date) {
+    final next = DateTime(date.year, date.month + 1, 1);
+    final lastDay = DateTime(next.year, next.month + 1, 0).day;
+    return DateTime(next.year, next.month, date.day.clamp(1, lastDay));
+  }
 
   int get _hourlyPrice {
     return (widget.product.pricePerDay / 8).round().clamp(
@@ -98,6 +118,15 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     return _totalPrice;
   }
 
+  List<String> get _availableTimeOptions {
+    final first = _timeToMinutes(widget.product.pickupTime);
+    final last = _timeToMinutes(widget.product.returnTime);
+    return _TimeSelectionCard.timeOptions.where((value) {
+      final minutes = _timeToMinutes(value);
+      return minutes >= first && minutes <= last;
+    }).toList();
+  }
+
   void _goToPreviousMonth() {
     setState(() {
       _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month - 1);
@@ -118,6 +147,18 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     }
 
     setState(() {
+      if (widget.rentalMode == RentalMode.hour) {
+        _startDate = date;
+        _endDate = date;
+        return;
+      }
+      if (widget.rentalMode == RentalMode.month) {
+        final end = _sameDayNextMonth(date);
+        if (_rangeContainsUnavailable(date, end)) return;
+        _startDate = date;
+        _endDate = end;
+        return;
+      }
       if (_startDate == null || (_startDate != null && _endDate != null)) {
         _startDate = date;
         _endDate = date;
@@ -166,7 +207,9 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
 
   Future<void> _loadAvailabilityForVisibleMonth() async {
     final from = DateTime(_visibleMonth.year, _visibleMonth.month);
-    final to = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
+    // Load the following month as well so monthly rentals can validate the
+    // complete start-to-same-date-next-month interval.
+    final to = DateTime(_visibleMonth.year, _visibleMonth.month + 2);
 
     setState(() {
       _availabilityLoading = true;
@@ -186,7 +229,27 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
 
       setState(() {
         _unavailableDateKeys = availability.unavailableDates;
+        _reservations = availability.reservations;
         _availabilityLoading = false;
+
+        // Nu păstrăm o perioadă implicită/anterioară dacă API-ul a marcat
+        // una dintre zile ca fiind deja ocupată.
+        if ((_startDate != null && _isUnavailable(_startDate!)) ||
+            (_endDate != null && _isUnavailable(_endDate!)) ||
+            (_startDate != null &&
+                _endDate != null &&
+                _rangeContainsUnavailable(_startDate!, _endDate!))) {
+          _startDate = null;
+          _endDate = null;
+        }
+
+        if (widget.rentalMode == RentalMode.hour && _startDate == null) {
+          final firstAvailable = _findFirstAvailableDate(from);
+          if (firstAvailable != null) {
+            _startDate = firstAvailable;
+            _endDate = firstAvailable;
+          }
+        }
       });
     } catch (error) {
       if (!mounted) {
@@ -200,8 +263,17 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     }
   }
 
+  DateTime? _findFirstAvailableDate(DateTime from) {
+    for (var offset = 0; offset < 31; offset++) {
+      final date = _dateOnly(from.add(Duration(days: offset)));
+      if (!_isUnavailable(date)) return date;
+    }
+    return null;
+  }
+
   bool _isSelectedEndpoint(DateTime date) {
-    return _isSameDay(date, _startDate) || _isSameDay(date, _endDate);
+    return !_isUnavailable(date) &&
+        (_isSameDay(date, _startDate) || _isSameDay(date, _endDate));
   }
 
   bool _isInRange(DateTime date) {
@@ -242,9 +314,25 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                       isUnavailable: _isUnavailable,
                       isSelectedEndpoint: _isSelectedEndpoint,
                       isInRange: _isInRange,
+                      hourlyMode: widget.rentalMode == RentalMode.hour,
                       isLoading: _availabilityLoading,
                       error: _availabilityError,
                     ),
+                    if (widget.rentalMode == RentalMode.hour) ...[
+                      const SizedBox(height: 24),
+                      _TimeSelectionCard(
+                        pickupTime: _pickupTime,
+                        returnTime: _returnTime,
+                        options: _availableTimeOptions,
+                        isUnavailable: _isHourUnavailable,
+                        onPickupChanged: (value) => setState(() {
+                          _pickupTime = value;
+                        }),
+                        onReturnChanged: (value) => setState(() {
+                          _returnTime = value;
+                        }),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     _SummarySection(
                       startDate: _startDate,
@@ -256,23 +344,6 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                       rentalDays: _rentalDays,
                       totalPrice: _checkoutTotalPrice,
                     ),
-                    if (widget.rentalMode == RentalMode.hour) ...[
-                      const SizedBox(height: 20),
-                      _TimeSelectionCard(
-                        pickupTime: _pickupTime,
-                        returnTime: _returnTime,
-                        onPickupChanged: (value) {
-                          setState(() {
-                            _pickupTime = value;
-                          });
-                        },
-                        onReturnChanged: (value) {
-                          setState(() {
-                            _returnTime = value;
-                          });
-                        },
-                      ),
-                    ],
                     const SizedBox(height: 20),
                     const _TrustInfoCard(),
                   ]),
@@ -315,6 +386,27 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
       ),
     );
   }
+
+  bool _isHourUnavailable(String time) {
+    final date = _startDate;
+    if (date == null) return true;
+    final selectedMinutes = _timeToMinutes(time);
+    return _reservations.any((item) {
+      if (item.startDate == null || item.endDate == null) return false;
+      if (!_isSameDay(date, item.startDate) ||
+          !_isSameDay(date, item.endDate)) {
+        return item.startDate!.isBefore(date.add(const Duration(days: 1))) &&
+            item.endDate!.isAfter(date);
+      }
+      return selectedMinutes >= _timeToMinutes(item.pickupTime) &&
+          selectedMinutes < _timeToMinutes(item.returnTime);
+    });
+  }
+
+  int _timeToMinutes(String value) {
+    final parts = value.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
 }
 
 DateTime _combineDateAndTime(DateTime date, String time) {
@@ -351,9 +443,7 @@ class _PeriodTopBar extends StatelessWidget {
           const SizedBox(width: 4),
           Expanded(
             child: Text(
-              AppLocalizations.of(
-                context,
-              ).choose('Alege perioada', 'Choose period'),
+              GeneratedLocalizations.of(context).choosePeriod,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -423,19 +513,19 @@ class _ProductContextCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 6),
-                  const Row(
+                  Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.verified_user_rounded,
                         size: 16,
                         color: _RentalPeriodScreenState._secondary,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'Proprietar verificat',
+                          GeneratedLocalizations.of(context).ownerVerified,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: _RentalPeriodScreenState._secondary,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -465,6 +555,7 @@ class _CalendarCard extends StatelessWidget {
     required this.isUnavailable,
     required this.isSelectedEndpoint,
     required this.isInRange,
+    required this.hourlyMode,
     required this.isLoading,
     required this.error,
   });
@@ -478,6 +569,7 @@ class _CalendarCard extends StatelessWidget {
   final bool Function(DateTime date) isUnavailable;
   final bool Function(DateTime date) isSelectedEndpoint;
   final bool Function(DateTime date) isInRange;
+  final bool hourlyMode;
   final bool isLoading;
   final String? error;
 
@@ -495,7 +587,7 @@ class _CalendarCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    _formatMonth(visibleMonth),
+                    _formatMonth(context, visibleMonth),
                     style: const TextStyle(
                       color: _RentalPeriodScreenState._text,
                       fontSize: 24,
@@ -538,14 +630,12 @@ class _CalendarCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       isLoading
-                          ? AppLocalizations.of(context).choose(
-                              'Verific disponibilitatea...',
-                              'Checking availability...',
-                            )
-                          : AppLocalizations.of(context).choose(
-                              'Nu am putut actualiza disponibilitatea.',
-                              'Could not refresh availability.',
-                            ),
+                          ? GeneratedLocalizations.of(
+                              context,
+                            ).checkingAvailability
+                          : GeneratedLocalizations.of(
+                              context,
+                            ).availabilityRefreshError,
                       style: const TextStyle(
                         color: _RentalPeriodScreenState._muted,
                         fontSize: 12,
@@ -557,6 +647,14 @@ class _CalendarCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 34),
+            if (hourlyMode)
+              Padding(
+                padding: EdgeInsets.only(top: 12),
+                child: Text(
+                  GeneratedLocalizations.of(context).selectDayAndTime,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ),
             const _WeekDaysRow(),
             const SizedBox(height: 12),
             GridView.builder(
@@ -643,7 +741,8 @@ class _DayCell extends StatelessWidget {
     if (!inVisibleMonth) {
       textColor = const Color(0x55737781);
     } else if (unavailable) {
-      textColor = const Color(0x66737781);
+      textColor = const Color(0x88737781);
+      background = const Color(0xFFE7E7E9);
     } else if (inRange) {
       textColor = _RentalPeriodScreenState._text;
       background = _RentalPeriodScreenState._primaryFixed;
@@ -673,6 +772,9 @@ class _DayCell extends StatelessWidget {
               color: textColor,
               fontSize: inVisibleMonth ? 14 : 12,
               fontWeight: inVisibleMonth ? FontWeight.w700 : FontWeight.w600,
+              decoration: unavailable && inVisibleMonth
+                  ? TextDecoration.lineThrough
+                  : null,
             ),
           ),
         ),
@@ -687,9 +789,11 @@ class _TimeSelectionCard extends StatelessWidget {
     required this.returnTime,
     required this.onPickupChanged,
     required this.onReturnChanged,
+    required this.isUnavailable,
+    required this.options,
   });
 
-  static const _timeOptions = [
+  static const timeOptions = [
     '06:00',
     '07:00',
     '08:00',
@@ -713,6 +817,8 @@ class _TimeSelectionCard extends StatelessWidget {
   final String returnTime;
   final ValueChanged<String> onPickupChanged;
   final ValueChanged<String> onReturnChanged;
+  final bool Function(String time) isUnavailable;
+  final List<String> options;
 
   @override
   Widget build(BuildContext context) {
@@ -732,9 +838,7 @@ class _TimeSelectionCard extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).choose('Alege orele', 'Choose hours'),
+                    GeneratedLocalizations.of(context).chooseHours,
                     style: const TextStyle(
                       color: _RentalPeriodScreenState._text,
                       fontSize: 20,
@@ -746,17 +850,19 @@ class _TimeSelectionCard extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _TimeSelector(
-              label: AppLocalizations.of(context).choose('Ridicare', 'Pickup'),
+              label: GeneratedLocalizations.of(context).pickup,
               value: pickupTime,
-              options: _timeOptions,
+              options: options,
               onChanged: onPickupChanged,
+              isUnavailable: isUnavailable,
             ),
             const SizedBox(height: 16),
             _TimeSelector(
-              label: AppLocalizations.of(context).choose('Retur', 'Return'),
+              label: GeneratedLocalizations.of(context).returnLabel,
               value: returnTime,
-              options: _timeOptions,
+              options: options,
               onChanged: onReturnChanged,
+              isUnavailable: isUnavailable,
             ),
           ],
         ),
@@ -771,12 +877,14 @@ class _TimeSelector extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    required this.isUnavailable,
   });
 
   final String label;
   final String value;
   final List<String> options;
   final ValueChanged<String> onChanged;
+  final bool Function(String time) isUnavailable;
 
   @override
   Widget build(BuildContext context) {
@@ -806,12 +914,16 @@ class _TimeSelector extends StatelessWidget {
                 label: Text(option),
                 selected: selected,
                 showCheckmark: false,
-                onSelected: (_) => onChanged(option),
+                onSelected: isUnavailable(option)
+                    ? null
+                    : (_) => onChanged(option),
                 selectedColor: _RentalPeriodScreenState._primary,
                 backgroundColor: Colors.white,
                 labelStyle: TextStyle(
                   color: selected
                       ? Colors.white
+                      : isUnavailable(option)
+                      ? _RentalPeriodScreenState._muted.withValues(alpha: 0.45)
                       : _RentalPeriodScreenState._text,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -863,27 +975,22 @@ class _SummarySection extends StatelessWidget {
         final wide = constraints.maxWidth >= 760;
         final cards = [
           _SummaryCard(
-            label: AppLocalizations.of(
-              context,
-            ).choose('Data inceput', 'Start date'),
+            label: GeneratedLocalizations.of(context).startDate,
             icon: Icons.calendar_today_rounded,
-            value: '${_formatFullDate(startDate)}\n$pickupTime',
+            value: '${_formatFullDate(context, startDate)}\n$pickupTime',
           ),
           _SummaryCard(
-            label: AppLocalizations.of(
-              context,
-            ).choose('Data sfarsit', 'End date'),
+            label: GeneratedLocalizations.of(context).endDate,
             icon: Icons.event_rounded,
-            value: '${_formatFullDate(endDate)}\n$returnTime',
+            value: '${_formatFullDate(context, endDate)}\n$returnTime',
           ),
           _SummaryCard(
-            label: AppLocalizations.of(context).choose(
+            label: GeneratedLocalizations.of(context).totalPriceWithDuration(
               rentalMode == RentalMode.hour
-                  ? 'Pret total ($rentalHours ore)'
-                  : 'Pret total ($rentalDays zile)',
-              rentalMode == RentalMode.hour
-                  ? 'Total price ($rentalHours hours)'
-                  : 'Total price ($rentalDays days)',
+                  ? GeneratedLocalizations.of(context).hoursCount(rentalHours)
+                  : rentalMode == RentalMode.month
+                  ? GeneratedLocalizations.of(context).oneMonth
+                  : GeneratedLocalizations.of(context).daysCount(rentalDays),
             ),
             value: '$totalPrice RON',
             highlighted: true,
@@ -1017,10 +1124,7 @@ class _TrustInfoCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppLocalizations.of(context).choose(
-                      'Protectie BorrowIt inclusa',
-                      'BorrowIt protection included',
-                    ),
+                    GeneratedLocalizations.of(context).lendProtectionIncluded,
                     style: const TextStyle(
                       color: _RentalPeriodScreenState._text,
                       fontSize: 14,
@@ -1029,10 +1133,7 @@ class _TrustInfoCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    AppLocalizations.of(context).choose(
-                      'Inchirierea ta este protejata impotriva daunelor accidentale. Procesul de predare si primire este documentat digital.',
-                      'Your rental is protected against accidental damage. Handover and return are documented digitally.',
-                    ),
+                    GeneratedLocalizations.of(context).lendProtectionBody,
                     style: const TextStyle(
                       color: _RentalPeriodScreenState._muted,
                       fontSize: 16,
@@ -1112,9 +1213,7 @@ class _PeriodActionBar extends StatelessWidget {
               ),
               icon: const Icon(Icons.shopping_cart_outlined),
               label: Text(
-                AppLocalizations.of(
-                  context,
-                ).choose('Adauga in cos', 'Add to cart'),
+                GeneratedLocalizations.of(context).addToCart,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
             ),
@@ -1160,9 +1259,7 @@ class _BottomPeriodSummary extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          AppLocalizations.of(
-            context,
-          ).choose('Perioada selectata', 'Selected period'),
+          GeneratedLocalizations.of(context).selectedPeriod,
           style: const TextStyle(
             color: Color(0xFF737781),
             fontSize: 12,
@@ -1172,14 +1269,12 @@ class _BottomPeriodSummary extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           hasSelection
-              ? AppLocalizations.of(context).choose(
-                  '${_formatShortDate(startDate!)} - ${_formatShortDate(endDate!)} ($rentalDays zile)',
-                  '${_formatShortDate(startDate!)} - ${_formatShortDate(endDate!)} ($rentalDays days)',
+              ? GeneratedLocalizations.of(context).selectedPeriodWithDays(
+                  _formatShortDate(context, startDate!),
+                  _formatShortDate(context, endDate!),
+                  rentalDays,
                 )
-              : AppLocalizations.of(context).choose(
-                  'Alege data de inceput si sfarsit',
-                  'Choose start and end date',
-                ),
+              : GeneratedLocalizations.of(context).chooseStartAndEndDate,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
@@ -1218,49 +1313,49 @@ String _dateKey(DateTime date) {
       '${date.day.toString().padLeft(2, '0')}';
 }
 
-String _formatMonth(DateTime date) {
-  const months = [
-    'Ianuarie',
-    'Februarie',
-    'Martie',
-    'Aprilie',
-    'Mai',
-    'Iunie',
-    'Iulie',
-    'August',
-    'Septembrie',
-    'Octombrie',
-    'Noiembrie',
-    'Decembrie',
+String _formatMonth(BuildContext context, DateTime date) {
+  final strings = GeneratedLocalizations.of(context);
+  final months = [
+    strings.january,
+    strings.february,
+    strings.march,
+    strings.april,
+    strings.may,
+    strings.june,
+    strings.july,
+    strings.august,
+    strings.september,
+    strings.october,
+    strings.november,
+    strings.december,
   ];
-
   return '${months[date.month - 1]} ${date.year}';
 }
 
-String _formatFullDate(DateTime? date) {
+String _formatFullDate(BuildContext context, DateTime? date) {
   if (date == null) {
-    return 'Neselectat';
+    return GeneratedLocalizations.of(context).notSelected;
   }
 
-  return '${date.day.toString().padLeft(2, '0')} ${_formatMonth(date)}';
+  return '${date.day.toString().padLeft(2, '0')} ${_formatMonth(context, date)}';
 }
 
-String _formatShortDate(DateTime date) {
-  const months = [
-    'Ian',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mai',
-    'Iun',
-    'Iul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Noi',
-    'Dec',
+String _formatShortDate(BuildContext context, DateTime date) {
+  final strings = GeneratedLocalizations.of(context);
+  final months = [
+    strings.janShort,
+    strings.febShort,
+    strings.marShort,
+    strings.aprShort,
+    strings.mayShort,
+    strings.junShort,
+    strings.julShort,
+    strings.augShort,
+    strings.sepShort,
+    strings.octShort,
+    strings.novShort,
+    strings.decShort,
   ];
-
   return '${date.day} ${months[date.month - 1]}';
 }
 

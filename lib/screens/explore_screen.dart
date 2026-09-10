@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/categories_api.dart';
@@ -401,12 +402,10 @@ class _NearbyGrid extends StatelessWidget {
 
     return Column(
       children: [
-        _SectionHeader(
-          title: strings.nearYou,
-          action: strings.map,
-          onAction: onOpenMap,
-        ),
+        _SectionHeader(title: strings.nearYou, action: '', onAction: onOpenMap),
         const SizedBox(height: 12),
+        _MapPreview(products: products, onTap: onOpenMap),
+        const SizedBox(height: 16),
         LayoutBuilder(
           builder: (context, constraints) {
             final crossAxisCount = constraints.maxWidth >= 900
@@ -463,20 +462,96 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
         ),
-        TextButton(
-          onPressed: onAction,
-          style: TextButton.styleFrom(
-            foregroundColor: _ExploreScreenState._text,
-            minimumSize: Size.zero,
-            padding: EdgeInsets.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        if (action.isNotEmpty)
+          TextButton(
+            onPressed: onAction,
+            style: TextButton.styleFrom(
+              foregroundColor: _ExploreScreenState._text,
+              minimumSize: Size.zero,
+              padding: EdgeInsets.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              action,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
           ),
-          child: Text(
-            action,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+      ],
+    );
+  }
+}
+
+class _MapPreview extends StatefulWidget {
+  const _MapPreview({required this.products, required this.onTap});
+  final List<LendProduct> products;
+  final VoidCallback onTap;
+
+  @override
+  State<_MapPreview> createState() => _MapPreviewState();
+}
+
+class _MapPreviewState extends State<_MapPreview> {
+  String? _mapStyle;
+  static const _cityCoordinates = <String, LatLng>{
+    'bucuresti': LatLng(44.4268, 26.1025),
+    'constanta': LatLng(44.1598, 28.6348),
+    'brasov': LatLng(45.6579, 25.6012),
+    'cluj napoca': LatLng(46.7712, 23.6236),
+    'iasi': LatLng(47.1585, 27.6014),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    rootBundle.loadString('assets/maps/altus_map_3.json').then((style) {
+      if (mounted) setState(() => _mapStyle = style);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final markers = <Marker>{};
+    for (final product in widget.products) {
+      final position = product.latitude != null && product.longitude != null
+          ? LatLng(product.latitude!, product.longitude!)
+          : (_cityCoordinates[product.city.toLowerCase()] ??
+                const LatLng(44.4268, 26.1025));
+      markers.add(
+        Marker(
+          markerId: MarkerId(product.id),
+          position: position,
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            BitmapDescriptor.hueAzure,
           ),
         ),
-      ],
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        height: 170,
+        child: Stack(
+          children: [
+            GoogleMap(
+              style: _mapStyle,
+              initialCameraPosition: const CameraPosition(
+                target: LatLng(44.4268, 26.1025),
+                zoom: 10.5,
+              ),
+              markers: markers,
+              zoomControlsEnabled: false,
+              myLocationButtonEnabled: false,
+              mapToolbarEnabled: false,
+            ),
+            Positioned.fill(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(onTap: widget.onTap),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

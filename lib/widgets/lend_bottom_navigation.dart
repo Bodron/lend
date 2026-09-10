@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 
 class LendBottomNavigation extends StatelessWidget {
   const LendBottomNavigation({
@@ -16,7 +16,7 @@ class LendBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final bottomPadding = bottomInset > 0 ? 14.0 : 8.0;
     final items = [
@@ -85,7 +85,7 @@ class LendBottomNavigation extends StatelessWidget {
                     child: Center(
                       child: _AddListingNavigationButton(
                         onPressed: onAddListing,
-                        label: strings.choose('Adauga anunt', 'Add listing'),
+                        label: strings.addListing,
                       ),
                     ),
                   ),
@@ -270,4 +270,3 @@ class _AddListingNavigationButton extends StatelessWidget {
     );
   }
 }
-

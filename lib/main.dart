@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'l10n/app_language.dart';
-import 'l10n/app_localizations.dart';
+import 'l10n/generated_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/main_shell.dart';
 import 'services/auth_api.dart';
@@ -41,11 +41,12 @@ class _LendAppState extends State<LendApp> {
         animation: _languageController,
         builder: (context, _) {
           return MaterialApp(
-            title: AppLocalizations(_languageController.locale).appName,
+            title: 'Lend',
             debugShowCheckedModeBanner: false,
             locale: _languageController.locale,
             supportedLocales: AppLanguageController.supportedLocales,
             localizationsDelegates: const [
+              GeneratedLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,

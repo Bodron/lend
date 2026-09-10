@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/products_api.dart';
 import '../widgets/lend_screen_frame.dart';
@@ -216,7 +217,7 @@ class _CartTitle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          strings.choose('Cosul meu', 'My cart'),
+          strings.myCart,
           style: const TextStyle(
             color: _CartScreenState._text,
             fontSize: 42,
@@ -227,10 +228,7 @@ class _CartTitle extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          strings.choose(
-            'Gestioneaza produsele tale pregatite pentru inchiriere.',
-            'Manage the items prepared for rental.',
-          ),
+          strings.cartSubtitle,
           style: const TextStyle(
             color: _CartScreenState._muted,
             fontSize: 16,
@@ -440,6 +438,8 @@ class _CartItemDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final unitPrice = rentalMode == RentalMode.hour
         ? (product.pricePerDay / 8).round().clamp(1, product.pricePerDay)
+        : rentalMode == RentalMode.month
+        ? (product.pricePerMonth ?? 0)
         : product.pricePerDay;
 
     return Column(
@@ -487,7 +487,7 @@ class _CartItemDetails extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _CartMetric(
-              label: AppLocalizations.of(context).choose('Perioada', 'Period'),
+              label: GeneratedLocalizations.of(context).period,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -498,7 +498,7 @@ class _CartItemDetails extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '${_formatShortDate(startDate)} - ${_formatShortDate(endDate)}',
+                    '${_formatShortDate(context, startDate)} - ${_formatShortDate(context, endDate)}',
                     style: const TextStyle(
                       color: _CartScreenState._text,
                       fontSize: 14,
@@ -509,7 +509,7 @@ class _CartItemDetails extends StatelessWidget {
               ),
             ),
             _CartMetric(
-              label: AppLocalizations.of(context).choose('Program', 'Schedule'),
+              label: GeneratedLocalizations.of(context).schedule,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -535,9 +535,9 @@ class _CartItemDetails extends StatelessWidget {
               ),
             ),
             _CartMetric(
-              label: AppLocalizations.of(context).choose(
-                rentalMode == RentalMode.hour ? 'Pret / ora' : 'Pret / zi',
-                rentalMode == RentalMode.hour ? 'Price / hour' : 'Price / day',
+              label: _unitPriceLabel(
+                GeneratedLocalizations.of(context),
+                rentalMode,
               ),
               bordered: true,
               child: Text(
@@ -550,16 +550,14 @@ class _CartItemDetails extends StatelessWidget {
               ),
             ),
             _CartMetric(
-              label: AppLocalizations.of(context).choose('Durata', 'Duration'),
+              label: GeneratedLocalizations.of(context).duration,
               bordered: true,
               child: Text(
-                AppLocalizations.of(context).choose(
-                  rentalMode == RentalMode.hour
-                      ? '$rentalHours ore'
-                      : '$rentalDays zile',
-                  rentalMode == RentalMode.hour
-                      ? '$rentalHours hours'
-                      : '$rentalDays days',
+                _durationLabel(
+                  GeneratedLocalizations.of(context),
+                  rentalMode,
+                  rentalHours,
+                  rentalDays,
                 ),
                 style: const TextStyle(
                   color: _CartScreenState._text,
@@ -664,9 +662,7 @@ class _OrderSummaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              AppLocalizations.of(
-                context,
-              ).choose('Sumar comanda', 'Order summary'),
+              GeneratedLocalizations.of(context).orderSummary,
               style: const TextStyle(
                 color: _CartScreenState._text,
                 fontSize: 24,
@@ -675,22 +671,18 @@ class _OrderSummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _SummaryRow(
-              label: AppLocalizations.of(
-                context,
-              ).choose('Subtotal', 'Subtotal'),
+              label: GeneratedLocalizations.of(context).subtotal,
               value: '$subtotal.00 RON',
             ),
             const SizedBox(height: 18),
             _SummaryRow(
-              label: AppLocalizations.of(
-                context,
-              ).choose('Taxa serviciu', 'Service fee'),
+              label: GeneratedLocalizations.of(context).serviceFee,
               value: '$serviceFee.00 RON',
               showInfo: true,
             ),
             const SizedBox(height: 18),
             _SummaryRow(
-              label: AppLocalizations.of(context).choose('Garantie', 'Deposit'),
+              label: GeneratedLocalizations.of(context).deposit,
               value: '$deposit.00 RON',
               showInfo: true,
             ),
@@ -702,7 +694,7 @@ class _OrderSummaryCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    AppLocalizations.of(context).choose('Total', 'Total'),
+                    GeneratedLocalizations.of(context).total,
                     style: const TextStyle(
                       color: _CartScreenState._text,
                       fontSize: 24,
@@ -724,9 +716,7 @@ class _OrderSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      AppLocalizations.of(
-                        context,
-                      ).choose('TVA inclus', 'VAT included'),
+                      GeneratedLocalizations.of(context).vatIncluded,
                       style: const TextStyle(
                         color: Color(0xFF9CA0AA),
                         fontSize: 12,
@@ -776,10 +766,7 @@ class _OrderSummaryCard extends StatelessWidget {
                   children: [
                     Flexible(
                       child: Text(
-                        AppLocalizations.of(context).choose(
-                          'Continua spre checkout',
-                          'Continue to checkout',
-                        ),
+                        GeneratedLocalizations.of(context).continueToCheckout,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
@@ -801,9 +788,7 @@ class _OrderSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  AppLocalizations.of(
-                    context,
-                  ).choose('PLATA SECURIZATA', 'SECURE PAYMENT'),
+                  GeneratedLocalizations.of(context).securePayment,
                   style: const TextStyle(
                     color: _CartScreenState._muted,
                     fontSize: 12,
@@ -890,9 +875,7 @@ class _EmptyCartState extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              AppLocalizations.of(
-                context,
-              ).choose('Cosul tau este gol', 'Your cart is empty'),
+              GeneratedLocalizations.of(context).emptyCart,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: _CartScreenState._text,
@@ -902,10 +885,7 @@ class _EmptyCartState extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              AppLocalizations.of(context).choose(
-                'Exploreaza comunitatea si gaseste ce ai nevoie.',
-                'Explore the community and find what you need.',
-              ),
+              GeneratedLocalizations.of(context).emptyCartBody,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: _CartScreenState._muted,
@@ -919,23 +899,44 @@ class _EmptyCartState extends StatelessWidget {
   }
 }
 
-String _formatShortDate(DateTime date) {
-  const months = [
-    'Ian',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mai',
-    'Iun',
-    'Iul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Noi',
-    'Dec',
+String _formatShortDate(BuildContext context, DateTime date) {
+  final strings = GeneratedLocalizations.of(context);
+  final months = [
+    strings.janShort,
+    strings.febShort,
+    strings.marShort,
+    strings.aprShort,
+    strings.mayShort,
+    strings.junShort,
+    strings.julShort,
+    strings.augShort,
+    strings.sepShort,
+    strings.octShort,
+    strings.novShort,
+    strings.decShort,
   ];
-
   return '${date.day} ${months[date.month - 1]}';
+}
+
+String _unitPriceLabel(GeneratedLocalizations strings, RentalMode rentalMode) {
+  return switch (rentalMode) {
+    RentalMode.hour => strings.pricePerHourShort,
+    RentalMode.month => strings.pricePerMonthShort,
+    RentalMode.day => strings.pricePerDayShort,
+  };
+}
+
+String _durationLabel(
+  GeneratedLocalizations strings,
+  RentalMode rentalMode,
+  int rentalHours,
+  int rentalDays,
+) {
+  return switch (rentalMode) {
+    RentalMode.hour => strings.hoursCount(rentalHours),
+    RentalMode.month => strings.oneMonth,
+    RentalMode.day => strings.daysCount(rentalDays),
+  };
 }
 
 final _cartCardDecoration = BoxDecoration(

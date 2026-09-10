@@ -6,7 +6,7 @@ import 'my_listings_screen.dart';
 import 'profile_screen.dart';
 import 'return_qr_screen.dart';
 import 'return_scan_screen.dart';
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
@@ -73,49 +73,63 @@ class _RentalsScreenState extends State<RentalsScreen> {
   static _RentalItem _rentalItemFromOrder(
     RentalOrder order,
     _RentalPerspective perspective,
+    GeneratedLocalizations strings,
   ) {
     final expiring = order.endDate != null && _isToday(order.endDate!);
     final ownerName = order.productOwnerName.isEmpty
-        ? 'Proprietar'
+        ? strings.ownerDefaultName
         : order.productOwnerName;
-    final renterName = order.renterName.isEmpty ? 'Chirias' : order.renterName;
+    final renterName = order.renterName.isEmpty
+        ? strings.renterDefaultName
+        : order.renterName;
 
     return _RentalItem(
       id: order.id,
       title: order.productTitle.isEmpty
-          ? 'Produs inchiriat'
+          ? strings.rentedProductDefaultTitle
           : order.productTitle,
       dateText: order.endDate == null
-          ? 'Comanda trimisa'
-          : 'Pana la ${_formatShortDate(order.endDate!)}',
+          ? strings.submittedOrder
+          : strings.untilDate(_formatShortDate(strings, order.endDate!)),
       scheduleText: order.startDate == null || order.endDate == null
-          ? 'Program: ${order.pickupTime} - ${order.returnTime}'
-          : 'Ridicare ${_formatShortDate(order.startDate!)} ${order.pickupTime} - retur ${_formatShortDate(order.endDate!)} ${order.returnTime}',
+          ? strings.rentalSchedule(order.pickupTime, order.returnTime)
+          : strings.pickupReturnSchedule(
+              _formatShortDate(strings, order.startDate!),
+              order.pickupTime,
+              _formatShortDate(strings, order.endDate!),
+              order.returnTime,
+            ),
       pickupTime: order.pickupTime,
       returnTime: order.returnTime,
       imageUrl: order.productImageUrl,
       imageContentType: order.productImageContentType,
       imageType: order.productImageType,
       detailText: perspective == _RentalPerspective.renting
-          ? 'De la $ownerName'
-          : 'Chirias: $renterName',
+          ? strings.fromOwner(ownerName)
+          : strings.renterLabel(renterName),
       statusRaw: order.status,
       paymentStatus: order.paymentStatus,
       status: expiring ? _RentalStatus.expiring : _RentalStatus.active,
     );
   }
 
-  static _RentalHistoryItem _historyItemFromOrder(RentalOrder order) {
+  static _RentalHistoryItem _historyItemFromOrder(
+    RentalOrder order,
+    GeneratedLocalizations strings,
+  ) {
     final start = order.startDate;
     final end = order.endDate;
 
     return _RentalHistoryItem(
       title: order.productTitle.isEmpty
-          ? 'Produs închiriat'
+          ? strings.rentedProductDefaultTitle
           : order.productTitle,
       dateText: start == null || end == null
-          ? 'Închiriere finalizată'
-          : 'Închiriat: ${_formatShortDate(start)} - ${_formatShortDate(end)}',
+          ? strings.completedRental
+          : strings.rentedDateRange(
+              _formatShortDate(strings, start),
+              _formatShortDate(strings, end),
+            ),
       imageUrl: order.productImageUrl,
       imageContentType: order.productImageContentType,
       imageType: order.productImageType,
@@ -129,22 +143,24 @@ class _RentalsScreenState extends State<RentalsScreen> {
         date.day == now.day;
   }
 
-  static String _formatShortDate(DateTime date) {
-    const months = [
-      'Ian',
-      'Feb',
-      'Mar',
-      'Apr',
-      'Mai',
-      'Iun',
-      'Iul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Noi',
-      'Dec',
+  static String _formatShortDate(
+    GeneratedLocalizations strings,
+    DateTime date,
+  ) {
+    final months = [
+      strings.janShort,
+      strings.febShort,
+      strings.marShort,
+      strings.aprShort,
+      strings.mayShort,
+      strings.junShort,
+      strings.julShort,
+      strings.augShort,
+      strings.sepShort,
+      strings.octShort,
+      strings.novShort,
+      strings.decShort,
     ];
-
     return '${date.day} ${months[date.month - 1]}';
   }
 
@@ -208,15 +224,13 @@ class _RentalsScreenState extends State<RentalsScreen> {
                       if (snapshot.hasError) {
                         return _RentalsMessage(
                           icon: Icons.cloud_off_rounded,
-                          title: AppLocalizations.of(context).choose(
-                            'Nu am putut incarca inchirierile',
-                            'Could not load rentals',
-                          ),
-                          body: AppLocalizations.of(context).choose(
-                            'Verifica backendul si incearca din nou.',
-                            'Check the backend and try again.',
-                          ),
-                          actionLabel: AppLocalizations.of(context).retry,
+                          title: GeneratedLocalizations.of(
+                            context,
+                          ).couldNotLoadRentals,
+                          body: GeneratedLocalizations.of(
+                            context,
+                          ).profileLoadErrorBody,
+                          actionLabel: GeneratedLocalizations.of(context).retry,
                           onAction: _reloadOrders,
                         );
                       }
@@ -228,43 +242,48 @@ class _RentalsScreenState extends State<RentalsScreen> {
                       final activeItems = orders
                           .where((order) => !_isHistoryOrder(order))
                           .map(
-                            (order) =>
-                                _rentalItemFromOrder(order, _perspective),
+                            (order) => _rentalItemFromOrder(
+                              order,
+                              _perspective,
+                              GeneratedLocalizations.of(context),
+                            ),
                           )
                           .toList();
                       final historyItems = orders
                           .where(_isHistoryOrder)
-                          .map(_historyItemFromOrder)
+                          .map(
+                            (order) => _historyItemFromOrder(
+                              order,
+                              GeneratedLocalizations.of(context),
+                            ),
+                          )
                           .toList();
 
                       if (!_showHistory && activeItems.isEmpty) {
                         return _RentalsMessage(
                           icon: Icons.handshake_outlined,
-                          title: AppLocalizations.of(context).choose(
-                            'Nu ai inchirieri active',
-                            'No active rentals',
-                          ),
-                          body: AppLocalizations.of(context).choose(
-                            _perspective == _RentalPerspective.renting
-                                ? 'Comenzile trimise pentru inchiriere vor aparea aici.'
-                                : 'Comenzile primite pe produsele tale vor aparea aici.',
-                            _perspective == _RentalPerspective.renting
-                                ? 'Submitted rental orders will appear here.'
-                                : 'Orders received for your items will appear here.',
-                          ),
+                          title: GeneratedLocalizations.of(
+                            context,
+                          ).noActiveRentals,
+                          body: _perspective == _RentalPerspective.renting
+                              ? GeneratedLocalizations.of(
+                                  context,
+                                ).rentingEmptyBody
+                              : GeneratedLocalizations.of(
+                                  context,
+                                ).lendingEmptyBody,
                         );
                       }
 
                       if (_showHistory && historyItems.isEmpty) {
                         return _RentalsMessage(
                           icon: Icons.history_rounded,
-                          title: AppLocalizations.of(
+                          title: GeneratedLocalizations.of(
                             context,
-                          ).choose('Nu ai istoric inca', 'No history yet'),
-                          body: AppLocalizations.of(context).choose(
-                            'Inchirierile finalizate vor aparea aici.',
-                            'Completed rentals will appear here.',
-                          ),
+                          ).noHistoryYet,
+                          body: GeneratedLocalizations.of(
+                            context,
+                          ).completedRentalsBody,
                         );
                       }
 
@@ -355,7 +374,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
       item,
       action: (token) =>
           _rentalOrdersApi.accept(accessToken: token, orderId: item.id),
-      successMessage: 'Cererea a fost acceptata.',
+      successMessage: GeneratedLocalizations.of(context).requestAccepted,
     );
   }
 
@@ -364,7 +383,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
       item,
       action: (token) =>
           _rentalOrdersApi.reject(accessToken: token, orderId: item.id),
-      successMessage: 'Cererea a fost refuzata.',
+      successMessage: GeneratedLocalizations.of(context).requestRejected,
     );
   }
 
@@ -373,11 +392,12 @@ class _RentalsScreenState extends State<RentalsScreen> {
     required Future<RentalOrder> Function(String token) action,
     required String successMessage,
   }) async {
+    final strings = GeneratedLocalizations.of(context);
     try {
       final token = await AuthSessionStore.getToken();
 
       if (token == null) {
-        throw RentalOrdersApiException('Trebuie sa fii autentificat.');
+        throw RentalOrdersApiException(strings.signInRequired);
       }
 
       await action(token);
@@ -398,6 +418,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
   }
 
   Future<void> _openScheduleEditor(_RentalItem item) async {
+    final strings = GeneratedLocalizations.of(context);
     final pickupController = TextEditingController(text: item.pickupTime);
     final returnController = TextEditingController(text: item.returnTime);
 
@@ -418,10 +439,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
               final returnTime = returnController.text.trim();
 
               if (!_isValidTime(pickupTime) || !_isValidTime(returnTime)) {
-                LendToast.info(
-                  context,
-                  message: 'Foloseste ore de forma 10:00.',
-                );
+                LendToast.info(context, message: strings.timeFormatHint);
                 return;
               }
 
@@ -434,9 +452,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                 final token = await AuthSessionStore.getToken();
 
                 if (token == null) {
-                  throw RentalOrdersApiException(
-                    'Trebuie sa fii autentificat.',
-                  );
+                  throw RentalOrdersApiException(strings.signInRequired);
                 }
 
                 await _rentalOrdersApi.updateSchedule(
@@ -692,7 +708,7 @@ class _PerspectiveTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -707,7 +723,7 @@ class _PerspectiveTabs extends StatelessWidget {
             Expanded(
               child: _PerspectiveTab(
                 icon: Icons.shopping_bag_outlined,
-                label: strings.choose('Eu inchiriez', 'I rent'),
+                label: strings.iRent,
                 selected: selected == _RentalPerspective.renting,
                 onTap: () => onChanged(_RentalPerspective.renting),
               ),
@@ -715,7 +731,7 @@ class _PerspectiveTabs extends StatelessWidget {
             Expanded(
               child: _PerspectiveTab(
                 icon: Icons.storefront_rounded,
-                label: strings.choose('De la mine', 'From me'),
+                label: strings.fromMe,
                 selected: selected == _RentalPerspective.lending,
                 onTap: () => onChanged(_RentalPerspective.lending),
               ),
@@ -789,7 +805,7 @@ class _RentalTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -798,13 +814,13 @@ class _RentalTabs extends StatelessWidget {
       child: Row(
         children: [
           _RentalTab(
-            label: strings.choose('Active', 'Active'),
+            label: strings.active,
             selected: !showHistory,
             onTap: () => onChanged(false),
           ),
           const SizedBox(width: 32),
           _RentalTab(
-            label: strings.choose('Istoric', 'History'),
+            label: strings.history,
             selected: showHistory,
             onTap: () => onChanged(true),
           ),
@@ -1103,7 +1119,9 @@ class _ActiveRentalCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                   ),
-                                  child: const Text('Refuza'),
+                                  child: Text(
+                                    GeneratedLocalizations.of(context).reject,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1121,7 +1139,9 @@ class _ActiveRentalCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(999),
                                     ),
                                   ),
-                                  child: const Text('Accepta'),
+                                  child: Text(
+                                    GeneratedLocalizations.of(context).accept,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1129,11 +1149,13 @@ class _ActiveRentalCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                       ] else if (isPendingRequest) ...[
-                        const Text(
-                          'Asteapta autorizarea platii',
+                        Text(
+                          GeneratedLocalizations.of(
+                            context,
+                          ).waitingPaymentAuthorization,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: _RentalsScreenState._muted,
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -1147,7 +1169,9 @@ class _ActiveRentalCard extends StatelessWidget {
                           child: OutlinedButton.icon(
                             onPressed: () => onEditSchedule(item),
                             icon: const Icon(Icons.schedule_rounded, size: 18),
-                            label: const Text('Modifica ora'),
+                            label: Text(
+                              GeneratedLocalizations.of(context).editTime,
+                            ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _RentalsScreenState._text,
                               side: const BorderSide(color: Color(0xFFC3C6D1)),
@@ -1196,18 +1220,17 @@ class _ActiveRentalCard extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            AppLocalizations.of(context).choose(
-                              perspective == _RentalPerspective.renting
-                                  ? isPendingRequest
-                                        ? 'Asteapta acceptul'
-                                        : 'Finalizeaza returul'
-                                  : 'Scaneaza cod retur',
-                              perspective == _RentalPerspective.renting
-                                  ? isPendingRequest
-                                        ? 'Waiting for approval'
-                                        : 'Complete return'
-                                  : 'Scan return code',
-                            ),
+                            perspective == _RentalPerspective.renting
+                                ? isPendingRequest
+                                      ? GeneratedLocalizations.of(
+                                          context,
+                                        ).waitingApproval
+                                      : GeneratedLocalizations.of(
+                                          context,
+                                        ).completeReturn
+                                : GeneratedLocalizations.of(
+                                    context,
+                                  ).scanReturnCode,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w800),
@@ -1362,10 +1385,9 @@ class _HistoryRentalCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          AppLocalizations.of(context).choose(
-                            'Returnat cu succes',
-                            'Returned successfully',
-                          ),
+                          GeneratedLocalizations.of(
+                            context,
+                          ).returnedSuccessfully,
                           style: const TextStyle(
                             color: _RentalsScreenState._text,
                             fontSize: 12,
@@ -1416,15 +1438,15 @@ class _StatusBadge extends StatelessWidget {
   }
 
   String _displayText(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
     final normalized = text.toLowerCase();
 
     if (normalized.contains('azi') || normalized.contains('today')) {
-      return strings.choose('Expira azi', 'Expires today');
+      return strings.expiresToday;
     }
 
     if (normalized.contains('curs') || normalized.contains('progress')) {
-      return strings.choose('In curs', 'In progress');
+      return strings.inProgress;
     }
 
     return text;
@@ -1453,7 +1475,7 @@ class _VerifiedBadge extends StatelessWidget {
             ),
             const SizedBox(width: 3),
             Text(
-              AppLocalizations.of(context).choose('Verificat', 'Verified'),
+              GeneratedLocalizations.of(context).verified,
               style: const TextStyle(
                 color: _RentalsScreenState._secondary,
                 fontSize: 10,

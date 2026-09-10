@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/rental_orders_api.dart';
 import '../widgets/lend_toast.dart';
@@ -40,6 +40,8 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
     if (_isCompleting || _isConfirming) {
       return;
     }
+
+    final strings = GeneratedLocalizations.of(context);
 
     final code = capture.barcodes
         .map((barcode) => barcode.rawValue?.trim())
@@ -81,7 +83,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
       final token = await AuthSessionStore.getToken();
 
       if (token == null) {
-        throw RentalOrdersApiException('Trebuie sa fii autentificat.');
+        throw RentalOrdersApiException(strings.signInRequired);
       }
 
       await _rentalOrdersApi.completeReturn(
@@ -116,7 +118,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
   }
 
   Future<bool?> _showReturnConfirmationDialog() {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return showDialog<bool>(
       context: context,
@@ -132,15 +134,12 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
             size: 34,
           ),
           title: Text(
-            strings.choose('Confirmi returul?', 'Confirm return?'),
+            strings.confirmReturnTitle,
             textAlign: TextAlign.center,
             style: const TextStyle(fontWeight: FontWeight.w900),
           ),
           content: Text(
-            strings.choose(
-              'Esti sigur ca vrei sa confirmi acest cod QR? Inchirierea va fi marcata ca finalizata.',
-              'Are you sure you want to confirm this QR code? The rental will be marked as completed.',
-            ),
+            strings.confirmReturnBody,
             textAlign: TextAlign.center,
             style: const TextStyle(height: 1.4, fontWeight: FontWeight.w600),
           ),
@@ -156,7 +155,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              child: Text(strings.choose('Decline', 'Decline')),
+              child: Text(strings.decline),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
@@ -167,7 +166,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              child: Text(strings.choose('Accept', 'Accept')),
+              child: Text(strings.accept),
             ),
           ],
         );
@@ -200,16 +199,13 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
     _lastInvalidScanAt = now;
     LendToast.warning(
       context,
-      message: AppLocalizations.of(context).choose(
-        'Codul QR nu este un cod de retur valid. Deschide din nou QR-ul din inchirierea activa.',
-        'This QR code is not a valid return code. Open the QR again from the active rental.',
-      ),
+      message: GeneratedLocalizations.of(context).invalidReturnQr,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -249,9 +245,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: _ScannerTopBar(
-                  title: strings.choose('Scaneaza returul', 'Scan return'),
-                ),
+                child: _ScannerTopBar(title: strings.scanReturn),
               ),
               Center(
                 child: Container(
@@ -287,18 +281,10 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
                         const SizedBox(height: 8),
                         Text(
                           _isCompleting || _isConfirming
-                              ? strings.choose(
-                                  _isConfirming
-                                      ? 'Astept confirmarea...'
-                                      : 'Confirm returul...',
-                                  _isConfirming
-                                      ? 'Waiting for confirmation...'
-                                      : 'Confirming return...',
-                                )
-                              : strings.choose(
-                                  'Scaneaza codul QR afisat de chirias.',
-                                  'Scan the QR code shown by the renter.',
-                                ),
+                              ? (_isConfirming
+                                    ? strings.waitingConfirmation
+                                    : strings.confirmingReturn)
+                              : strings.scanQrShownByRenter,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: _text,
@@ -308,10 +294,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          strings.choose(
-                            'Dupa scanare, inchirierea este marcata ca finalizata.',
-                            'After scanning, the rental is marked completed.',
-                          ),
+                          strings.scanReturnHelp,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: _muted,

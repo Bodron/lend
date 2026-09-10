@@ -3,9 +3,11 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'favorites_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/payments_api.dart';
 import '../services/products_api.dart';
@@ -83,6 +85,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    final strings = GeneratedLocalizations.of(context);
+
     final result = await FilePicker.pickFiles(
       type: FileType.image,
       allowMultiple: false,
@@ -99,10 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       LendToast.error(
         context,
-        message: AppLocalizations.of(context).choose(
-          'Nu am putut citi imaginea aleasa.',
-          'Could not read the selected image.',
-        ),
+        message: GeneratedLocalizations.of(context).avatarReadError,
       );
       return;
     }
@@ -115,10 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       LendToast.warning(
         context,
-        message: AppLocalizations.of(context).choose(
-          'Alege o imagine JPG, PNG sau WebP.',
-          'Choose a JPG, PNG, or WebP image.',
-        ),
+        message: GeneratedLocalizations.of(context).avatarTypeWarning,
       );
       return;
     }
@@ -131,7 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final token = await AuthSessionStore.getToken();
 
       if (token == null) {
-        throw AuthApiException('Trebuie sa fii autentificat.');
+        throw AuthApiException(strings.signInRequired);
       }
 
       final uploaded = await _storageApi.uploadMedia(
@@ -230,14 +228,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     if (snapshot.hasError) {
                       return _ProfileMessage(
                         icon: Icons.cloud_off_rounded,
-                        title: AppLocalizations.of(context).choose(
-                          'Nu am putut incarca profilul',
-                          'Could not load profile',
-                        ),
-                        body: AppLocalizations.of(context).choose(
-                          'Verifica backendul si incearca din nou.',
-                          'Check the backend and try again.',
-                        ),
+                        title: GeneratedLocalizations.of(
+                          context,
+                        ).profileLoadError,
+                        body: GeneratedLocalizations.of(
+                          context,
+                        ).profileLoadErrorBody,
                         actionLabel: AppLocalizations.of(context).retry,
                         onAction: _reloadProfile,
                       );
@@ -319,11 +315,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openPayoutOnboarding() async {
+    final strings = GeneratedLocalizations.of(context);
     try {
       final token = await AuthSessionStore.getToken();
 
       if (token == null) {
-        throw AuthApiException('Trebuie sa fii autentificat.');
+        throw AuthApiException(strings.signInRequired);
       }
 
       final result = await _paymentsApi.requestPayout(token);
@@ -333,7 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         if (uri == null ||
             !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-          throw PaymentsApiException('Nu am putut deschide Stripe onboarding.');
+          throw PaymentsApiException(strings.stripeOnboardingOpenError);
         }
         return;
       }
@@ -345,7 +342,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         LendToast.success(
           context,
-          message: '${result.amount} RON au fost trimisi catre Stripe.',
+          message: strings.payoutSentToStripe(result.amount),
         );
         _reloadProfile();
       }
@@ -436,7 +433,7 @@ class _ProfileHeader extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                strings.choose('Profilul meu', 'My profile'),
+                strings.myProfile,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -482,9 +479,9 @@ class _ProfileHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      strings.choose(
-                        '${data.ratingLabel} (${data.listings.length} anunturi)',
-                        '${data.ratingLabel} (${data.listings.length} listings)',
+                      strings.profileRatingListings(
+                        data.ratingLabel,
+                        data.listings.length,
                       ),
                       style: const TextStyle(
                         color: _ProfileScreenState._secondary,
@@ -503,14 +500,14 @@ class _ProfileHeader extends StatelessWidget {
           children: [
             Expanded(
               child: _MetricCard(
-                label: strings.choose('Obiecte oferite', 'Lent items'),
+                label: strings.listedItems,
                 value: '${data.listings.length}',
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _MetricCard(
-                label: strings.choose('Castigat', 'Earned'),
+                label: strings.earned,
                 value: '${data.earnedTotal} RON',
               ),
             ),
@@ -559,7 +556,7 @@ class _PayoutCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '$amount RON disponibili',
+                    GeneratedLocalizations.of(context).availablePayout(amount),
                     style: const TextStyle(
                       color: _ProfileScreenState._text,
                       fontSize: 18,
@@ -569,8 +566,8 @@ class _PayoutCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     payoutsEnabled
-                        ? 'Contul Stripe este pregatit pentru retrageri.'
-                        : 'Configureaza Stripe ca sa primesti banii.',
+                        ? GeneratedLocalizations.of(context).payoutStripeReady
+                        : GeneratedLocalizations.of(context).payoutStripeSetup,
                     style: const TextStyle(
                       color: _ProfileScreenState._muted,
                       fontSize: 13,
@@ -590,7 +587,7 @@ class _PayoutCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              child: const Text('Primeste banii'),
+              child: Text(GeneratedLocalizations.of(context).receiveMoney),
             ),
           ],
         ),
@@ -616,7 +613,7 @@ class _EditableProfileAvatar extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: strings.choose('Schimba poza de profil', 'Change profile photo'),
+      label: strings.changeProfilePhoto,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -766,7 +763,7 @@ class _AccountCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              strings.choose('CONT & SIGURANTA', 'ACCOUNT & SAFETY'),
+              strings.accountAndSafety,
               style: const TextStyle(
                 color: Color(0xFF737781),
                 fontSize: 12,
@@ -776,21 +773,30 @@ class _AccountCard extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _ActionRow(
+              icon: Icons.favorite_border_rounded,
+              label: strings.favorites,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const FavoritesScreen(),
+                ),
+              ),
+            ),
+            _ActionRow(
               icon: Icons.verified_user_outlined,
-              label: strings.choose('Verificare', 'Verification'),
+              label: strings.verification,
             ),
             _ActionRow(
               icon: Icons.payments_outlined,
-              label: strings.choose('Metode de plata', 'Payment methods'),
+              label: strings.paymentMethods,
             ),
             _ActionRow(
               icon: Icons.contact_support_outlined,
-              label: strings.choose('Suport', 'Support'),
+              label: strings.support,
             ),
             const Divider(height: 24, color: _ProfileScreenState._outline),
             _ActionRow(
               icon: Icons.logout_rounded,
-              label: strings.choose('Deconectare', 'Sign out'),
+              label: strings.signOut,
               color: const Color(0xFFBA1A1A),
               onTap: onLogout,
             ),
@@ -876,9 +882,7 @@ class _TrustBadge extends StatelessWidget {
           const Icon(Icons.verified_rounded, color: Colors.white, size: 42),
           const SizedBox(height: 8),
           Text(
-            AppLocalizations.of(
-              context,
-            ).choose('Utilizator verificat', 'Verified user'),
+            GeneratedLocalizations.of(context).verifiedUser,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
@@ -888,10 +892,7 @@ class _TrustBadge extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            AppLocalizations.of(context).choose(
-              'Datele sunt sincronizate cu profilul tau din baza de date.',
-              'Data is synchronized with your database profile.',
-            ),
+            GeneratedLocalizations.of(context).profileSyncBody,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,

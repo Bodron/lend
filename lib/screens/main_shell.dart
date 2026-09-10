@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
@@ -151,12 +151,12 @@ class _MainShellState extends State<MainShell> {
   }
 
   String _titleFor(BuildContext context, int index) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return switch (index) {
-      1 => strings.choose('Anunturile mele', 'My listings'),
-      2 => strings.choose('Inchirierile mele', 'My rentals'),
-      3 => strings.choose('Profilul meu', 'My profile'),
+      1 => strings.myListings,
+      2 => strings.myRentals,
+      3 => strings.myProfile,
       _ => strings.appName,
     };
   }

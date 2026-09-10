@@ -1,1 +1,1 @@
-enum RentalMode { day, hour }
+enum RentalMode { day, hour, month }

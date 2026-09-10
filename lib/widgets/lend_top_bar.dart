@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import 'language_toggle_button.dart';
 
 class LendTopBar extends StatelessWidget {
@@ -19,7 +19,7 @@ class LendTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return SizedBox(
       height: 82,
@@ -94,7 +94,7 @@ class LendTopBar extends StatelessWidget {
     );
   }
 
-  String _localizedTitle(AppLocalizations strings, String value) {
+  String _localizedTitle(GeneratedLocalizations strings, String value) {
     final normalized = value.toLowerCase();
 
     if (value == strings.appName || normalized == 'borrowit') {
@@ -102,15 +102,15 @@ class LendTopBar extends StatelessWidget {
     }
 
     if (normalized.contains('anun') || normalized.contains('listings')) {
-      return strings.choose('Anunturile mele', 'My listings');
+      return strings.myListings;
     }
 
     if (normalized.contains('inchir') || normalized.contains('rental')) {
-      return strings.choose('Inchirierile mele', 'My rentals');
+      return strings.myRentals;
     }
 
     if (normalized.contains('profil') || normalized.contains('profile')) {
-      return strings.choose('Profilul meu', 'My profile');
+      return strings.myProfile;
     }
 
     return value;

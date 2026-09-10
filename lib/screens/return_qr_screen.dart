@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_screen_frame.dart';
 import 'add_listing_screen.dart';
@@ -31,7 +31,7 @@ class ReturnQrScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return LendScreenFrame(
       backgroundColor: _background,
@@ -54,19 +54,13 @@ class ReturnQrScreen extends StatelessWidget {
                     const SizedBox(height: 20),
                     _SecondaryActionButton(
                       icon: Icons.report_problem_outlined,
-                      label: strings.choose(
-                        'Raporteaza o problema',
-                        'Report a problem',
-                      ),
+                      label: strings.reportProblem,
                       onPressed: () {},
                     ),
                     const SizedBox(height: 12),
                     _PrimaryActionButton(
                       icon: Icons.support_agent_rounded,
-                      label: strings.choose(
-                        'Contact support',
-                        'Contact support',
-                      ),
+                      label: strings.contactSupport,
                       onPressed: () {},
                     ),
                     const SizedBox(height: 34),
@@ -151,9 +145,7 @@ class _ReturnTopBar extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              AppLocalizations.of(
-                context,
-              ).choose('Finalizare retur', 'Complete return'),
+              GeneratedLocalizations.of(context).completeReturn,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
@@ -196,9 +188,7 @@ class _ReturnStatusBadge extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                AppLocalizations.of(
-                  context,
-                ).choose('Retur in curs', 'Return in progress'),
+                GeneratedLocalizations.of(context).returnInProgress,
                 style: const TextStyle(
                   color: ReturnQrScreen._text,
                   fontSize: 14,
@@ -226,7 +216,7 @@ class _ReturnQrCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -246,10 +236,7 @@ class _ReturnQrCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              strings.choose(
-                'Arata acest cod proprietarului',
-                'Show this code to the owner',
-              ),
+              strings.showCodeToOwner,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: ReturnQrScreen._text,
@@ -260,10 +247,7 @@ class _ReturnQrCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              strings.choose(
-                'Proprietarul trebuie sa scaneze codul pentru a confirma primirea produsului in bune conditii.',
-                'The owner needs to scan this code to confirm the item was received in good condition.',
-              ),
+              strings.showCodeToOwnerBody,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: ReturnQrScreen._muted,
@@ -383,9 +367,7 @@ class _ReturnItemSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppLocalizations.of(
-                      context,
-                    ).choose('Obiectul returnat', 'Returned item'),
+                    GeneratedLocalizations.of(context).returnedItem,
                     style: const TextStyle(
                       color: ReturnQrScreen._muted,
                       fontSize: 11,
@@ -500,7 +482,7 @@ class _SecurityNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return Column(
       children: [
@@ -510,7 +492,7 @@ class _SecurityNote extends StatelessWidget {
             const Icon(Icons.shield_rounded, color: ReturnQrScreen._secondary),
             const SizedBox(width: 8),
             Text(
-              strings.choose('Tranzactie securizata', 'Secure transaction'),
+              strings.secureTransaction,
               style: const TextStyle(
                 color: ReturnQrScreen._secondary,
                 fontSize: 14,
@@ -521,10 +503,7 @@ class _SecurityNote extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          strings.choose(
-            'Garantia ta va fi deblocata automat imediat ce proprietarul confirma starea obiectului.',
-            'Your deposit will be released automatically after the owner confirms the item condition.',
-          ),
+          strings.returnDepositReleaseNote,
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: ReturnQrScreen._muted,

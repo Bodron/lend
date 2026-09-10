@@ -32,7 +32,11 @@ class RentalOrdersApi {
             'productId': productId,
             'startDate': _dateKey(startDate),
             'endDate': _dateKey(endDate),
-            'rentalMode': rentalMode == RentalMode.hour ? 'hour' : 'day',
+            'rentalMode': rentalMode == RentalMode.hour
+                ? 'hour'
+                : rentalMode == RentalMode.month
+                ? 'month'
+                : 'day',
             'pickupTime': pickupTime,
             'returnTime': returnTime,
           }),
@@ -380,12 +384,16 @@ class AvailabilityReservation {
     required this.id,
     required this.startDate,
     required this.endDate,
+    required this.pickupTime,
+    required this.returnTime,
     required this.status,
   });
 
   final String id;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String pickupTime;
+  final String returnTime;
   final String status;
 
   factory AvailabilityReservation.fromJson(Map<String, dynamic> json) {
@@ -393,6 +401,8 @@ class AvailabilityReservation {
       id: (json['id'] ?? '').toString(),
       startDate: DateTime.tryParse((json['startDate'] ?? '').toString()),
       endDate: DateTime.tryParse((json['endDate'] ?? '').toString()),
+      pickupTime: (json['pickupTime'] ?? '00:00').toString(),
+      returnTime: (json['returnTime'] ?? '24:00').toString(),
       status: (json['status'] ?? '').toString(),
     );
   }

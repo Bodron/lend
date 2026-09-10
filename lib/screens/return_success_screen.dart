@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../widgets/lend_screen_frame.dart';
 
 class ReturnSuccessScreen extends StatelessWidget {
@@ -14,7 +14,7 @@ class ReturnSuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return LendScreenFrame(
       backgroundColor: _background,
@@ -39,10 +39,7 @@ class ReturnSuccessScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             Text(
-              strings.choose(
-                'Retur finalizat cu succes',
-                'Return completed successfully',
-              ),
+              strings.returnCompletedTitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: _text,
@@ -53,10 +50,7 @@ class ReturnSuccessScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              strings.choose(
-                'Multumim ca ai ales serviciile noastre. Inchirierea a fost inchisa, iar confirmarea a fost salvata in contul tau.',
-                'Thank you for choosing our services. The rental has been closed, and the confirmation was saved to your account.',
-              ),
+              strings.returnCompletedBody,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: _muted,
@@ -91,10 +85,7 @@ class ReturnSuccessScreen extends StatelessWidget {
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
-                        strings.choose(
-                          'Totul este in regula. Poti vedea inchirierea in istoricul tau.',
-                          'Everything is all set. You can find this rental in your history.',
-                        ),
+                        strings.returnCompletedNote,
                         style: const TextStyle(
                           color: _text,
                           fontSize: 14,
@@ -121,7 +112,7 @@ class ReturnSuccessScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  strings.choose('Inapoi la inchirieri', 'Back to rentals'),
+                  strings.backToRentals,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,

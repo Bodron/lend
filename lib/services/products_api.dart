@@ -130,6 +130,7 @@ class ProductSaveInput {
     required this.categorySlug,
     required this.description,
     required this.pricePerDay,
+    this.pricePerMonth,
     required this.deposit,
     required this.city,
     required this.address,
@@ -137,6 +138,7 @@ class ProductSaveInput {
     required this.longitude,
     required this.pickupTime,
     required this.returnTime,
+    this.rentalModes = const ['hour', 'day'],
     required this.media,
   });
 
@@ -145,6 +147,7 @@ class ProductSaveInput {
   final String categorySlug;
   final String description;
   final int pricePerDay;
+  final int? pricePerMonth;
   final int deposit;
   final String city;
   final String address;
@@ -152,6 +155,7 @@ class ProductSaveInput {
   final double? longitude;
   final String pickupTime;
   final String returnTime;
+  final List<String> rentalModes;
   final List<UploadedMedia> media;
 
   Map<String, dynamic> toJson() {
@@ -161,6 +165,7 @@ class ProductSaveInput {
       'categorySlug': categorySlug,
       'description': description,
       'pricePerDay': pricePerDay,
+      'pricePerMonth': pricePerMonth,
       'deposit': deposit,
       'city': city,
       'address': address,
@@ -168,6 +173,7 @@ class ProductSaveInput {
       'longitude': longitude,
       'pickupTime': pickupTime,
       'returnTime': returnTime,
+      'rentalModes': rentalModes,
       'media': media.map((item) => item.toJson()).toList(),
     };
   }
@@ -191,6 +197,7 @@ class LendProduct {
     required this.categorySlug,
     required this.description,
     required this.pricePerDay,
+    this.pricePerMonth,
     required this.deposit,
     required this.city,
     required this.address,
@@ -198,6 +205,7 @@ class LendProduct {
     required this.longitude,
     required this.pickupTime,
     required this.returnTime,
+    this.rentalModes = const ['hour', 'day'],
     required this.ownerName,
     required this.rating,
     required this.isAvailable,
@@ -211,6 +219,7 @@ class LendProduct {
   final String categorySlug;
   final String description;
   final int pricePerDay;
+  final int? pricePerMonth;
   final int deposit;
   final String city;
   final String address;
@@ -218,6 +227,7 @@ class LendProduct {
   final double? longitude;
   final String pickupTime;
   final String returnTime;
+  final List<String> rentalModes;
   final String ownerName;
   final double rating;
   final bool isAvailable;
@@ -252,6 +262,7 @@ class LendProduct {
       categorySlug: (json['categorySlug'] ?? '').toString(),
       description: (json['description'] ?? '').toString(),
       pricePerDay: _toInt(json['pricePerDay']),
+      pricePerMonth: _toNullableInt(json['pricePerMonth']),
       deposit: _toInt(json['deposit']),
       city: (json['city'] ?? '').toString(),
       address: (json['address'] ?? '').toString(),
@@ -259,6 +270,11 @@ class LendProduct {
       longitude: _toNullableDouble(json['longitude']),
       pickupTime: (json['pickupTime'] ?? '10:00').toString(),
       returnTime: (json['returnTime'] ?? '18:00').toString(),
+      rentalModes: (json['rentalModes'] is List)
+          ? (json['rentalModes'] as List)
+                .map((value) => value.toString())
+                .toList()
+          : const ['hour', 'day'],
       ownerName: (json['ownerName'] ?? '').toString(),
       rating: _toDouble(json['rating']),
       isAvailable: json['isAvailable'] != false,
@@ -305,6 +321,12 @@ class LendProduct {
     }
 
     return double.tryParse(value.toString());
+  }
+
+  static int? _toNullableInt(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString());
   }
 }
 

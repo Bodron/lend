@@ -15,7 +15,10 @@ if (localPropertiesFile.exists()) {
 
 android {
     namespace = "com.lend.ro"
-    compileSdk = flutter.compileSdkVersion
+    // Dependencies such as androidx.fragment 1.7.x require API 34+.
+    // Android SDK 36 is installed locally and keeps the project compatible
+    // with the current Flutter/Android toolchain.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

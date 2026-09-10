@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/products_api.dart';
 import '../widgets/product_media_preview.dart';
 import 'product_details_screen.dart';
@@ -53,7 +53,7 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final markers = _productMarkers
         .map(
@@ -109,21 +109,13 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
                   top: 12,
                   child: _MapTopBar(
                     title: strings.map,
-                    subtitle: strings.choose(
-                      '${widget.products.length} produse disponibile',
-                      '${widget.products.length} available items',
+                    subtitle: strings.availableItemsCount(
+                      widget.products.length,
                     ),
                   ),
                 ),
                 if (widget.products.isEmpty)
-                  Center(
-                    child: _EmptyMapMessage(
-                      text: strings.choose(
-                        'Nu exista produse de afisat pe harta.',
-                        'There are no items to show on the map.',
-                      ),
-                    ),
-                  )
+                  Center(child: _EmptyMapMessage(text: strings.emptyMapItems))
                 else
                   Positioned(
                     left: 0,
@@ -143,9 +135,8 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
                             onTap: () => _focusProduct(item),
                             onOpen: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
-                                builder: (_) => ProductDetailsScreen(
-                                  product: item.product,
-                                ),
+                                builder: (_) =>
+                                    ProductDetailsScreen(product: item.product),
                               ),
                             ),
                           );
@@ -423,9 +414,9 @@ class _MapProductCard extends StatelessWidget {
                             onPressed: onOpen,
                             icon: const Icon(Icons.arrow_forward_rounded),
                             color: _ExploreMapScreenState._text,
-                            tooltip: AppLocalizations.of(
+                            tooltip: GeneratedLocalizations.of(
                               context,
-                            ).choose('Deschide produsul', 'Open item'),
+                            ).openItem,
                           ),
                         ],
                       ),

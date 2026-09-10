@@ -6,9 +6,10 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/products_api.dart';
+import '../services/favorites_service.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/product_media_preview.dart';
 import 'rental_period_screen.dart';
@@ -35,13 +36,36 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   static const _ownerImageUrl =
       'https://lh3.googleusercontent.com/aida-public/AB6AXuAPgnU0_oFZ2TNOVbJqPytTt9gv2-H01VfNzs_FAujLByHdiiBrMuNQb5Z_Q_i5FDCmkBYt_se57sFT0HqRoSzbXvCti7x7DFSSFJZUvKb3Ql6bL1TxgtpdljGgWDu5IBUzPpxd_Ztl_yo1BYfrflbQliDHNGXA_to7j5gVKZIg-3uChyuKHD91dtGJCrbTFpklvdKBYW8JGFWu8BN24WPGtdALpY7eDL37sXVZv6fCl588rBrLOjl3Vr_Zz5d-ORanOp_Yu-c9tkg';
 
-  bool _perHour = true;
+  RentalMode _rentalMode = RentalMode.day;
+  bool _isFavorite = false;
   String? _mapStyle;
 
   @override
   void initState() {
     super.initState();
+    _rentalMode = _hasPriceForMode(widget.product, RentalMode.hour)
+        ? RentalMode.hour
+        : _hasPriceForMode(widget.product, RentalMode.day)
+        ? RentalMode.day
+        : RentalMode.month;
     _loadMapStyle();
+    FavoritesService.getIds().then((ids) {
+      if (mounted) {
+        setState(() => _isFavorite = ids.contains(widget.product.id));
+      }
+    });
+  }
+
+  static bool _hasPriceForMode(LendProduct product, RentalMode mode) {
+    return switch (mode) {
+      RentalMode.hour =>
+        product.rentalModes.contains('hour') && product.pricePerDay > 0,
+      RentalMode.day =>
+        product.rentalModes.contains('day') && product.pricePerDay > 0,
+      RentalMode.month =>
+        product.rentalModes.contains('month') &&
+            (product.pricePerMonth ?? 0) > 0,
+    };
   }
 
   Future<void> _loadMapStyle() async {
@@ -67,7 +91,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         children: [
           CustomScrollView(
             slivers: [
-              const SliverToBoxAdapter(child: _DetailsTopBar()),
+              SliverToBoxAdapter(
+                child: _DetailsTopBar(
+                  isFavorite: _isFavorite,
+                  onFavorite: () async {
+                    final value = await FavoritesService.toggle(product.id);
+                    if (mounted) setState(() => _isFavorite = value);
+                  },
+                ),
+              ),
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(12, 8, 12, bottomPadding + 116),
                 sliver: SliverList(
@@ -76,11 +108,17 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     const SizedBox(height: 8),
                     _DetailsInfoCard(
                       product: product,
-                      perHour: _perHour,
+                      rentalMode: _rentalMode,
                       mapStyle: _mapStyle,
                       onPriceModeChanged: (value) {
+                        if (!_ProductDetailsScreenState._hasPriceForMode(
+                          product,
+                          value,
+                        )) {
+                          return;
+                        }
                         setState(() {
-                          _perHour = value;
+                          _rentalMode = value;
                         });
                       },
                     ),
@@ -99,7 +137,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: _BottomActionBar(perHour: _perHour, product: product),
+            child: _BottomActionBar(rentalMode: _rentalMode, product: product),
           ),
         ],
       ),
@@ -108,7 +146,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 }
 
 class _DetailsTopBar extends StatelessWidget {
-  const _DetailsTopBar();
+  const _DetailsTopBar({required this.isFavorite, required this.onFavorite});
+  final bool isFavorite;
+  final VoidCallback onFavorite;
 
   @override
   Widget build(BuildContext context) {
@@ -135,9 +175,7 @@ class _DetailsTopBar extends StatelessWidget {
           const SizedBox(width: 4),
           Expanded(
             child: Text(
-              AppLocalizations.of(
-                context,
-              ).choose('Detalii produs', 'Product details'),
+              GeneratedLocalizations.of(context).productDetails,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: _ProductDetailsScreenState._text,
@@ -152,8 +190,12 @@ class _DetailsTopBar extends StatelessWidget {
             color: _ProductDetailsScreenState._text,
           ),
           IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.favorite_border_rounded),
+            onPressed: onFavorite,
+            icon: Icon(
+              isFavorite
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
+            ),
             color: _ProductDetailsScreenState._text,
           ),
         ],
@@ -264,15 +306,15 @@ class _HeroImageState extends State<_HeroImage> {
 class _DetailsInfoCard extends StatelessWidget {
   const _DetailsInfoCard({
     required this.product,
-    required this.perHour,
+    required this.rentalMode,
     required this.mapStyle,
     required this.onPriceModeChanged,
   });
 
   final LendProduct product;
-  final bool perHour;
+  final RentalMode rentalMode;
   final String? mapStyle;
-  final ValueChanged<bool> onPriceModeChanged;
+  final ValueChanged<RentalMode> onPriceModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +333,11 @@ class _DetailsInfoCard extends StatelessWidget {
             const SizedBox(height: 18),
             _ProductLocationMap(product: product, mapStyle: mapStyle),
             const SizedBox(height: 18),
-            _PriceSwitcher(perHour: perHour, onChanged: onPriceModeChanged),
+            _PriceSwitcher(
+              rentalMode: rentalMode,
+              product: product,
+              onChanged: onPriceModeChanged,
+            ),
             const SizedBox(height: 24),
             _DescriptionSection(product: product),
           ],
@@ -335,9 +381,7 @@ class _TitleBlock extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              AppLocalizations.of(
-                context,
-              ).choose('(produs verificat)', '(verified item)'),
+              GeneratedLocalizations.of(context).verifiedItem,
               style: const TextStyle(
                 color: _ProductDetailsScreenState._muted,
                 fontSize: 14,
@@ -364,16 +408,12 @@ class _StatusBadges extends StatelessWidget {
       children: [
         _StatusBadge(
           icon: Icons.verified_user_rounded,
-          label: AppLocalizations.of(
-            context,
-          ).choose('Asigurare inclusa', 'Insurance included'),
+          label: GeneratedLocalizations.of(context).insuranceIncluded,
           color: _ProductDetailsScreenState._text,
         ),
         _StatusBadge(
           icon: Icons.check_circle_outline_rounded,
-          label: AppLocalizations.of(
-            context,
-          ).choose('Disponibil acum', 'Available now'),
+          label: GeneratedLocalizations.of(context).availableNow,
           color: Color(0xFF575750),
         ),
       ],
@@ -493,7 +533,7 @@ class _ProductLocationMap extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
       ),
       builder: (sheetContext) {
-        final strings = AppLocalizations.of(sheetContext);
+        final strings = GeneratedLocalizations.of(sheetContext);
 
         return SafeArea(
           child: Padding(
@@ -503,7 +543,7 @@ class _ProductLocationMap extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  strings.choose('Deschide traseul', 'Open directions'),
+                  strings.openDirections,
                   style: const TextStyle(
                     color: _ProductDetailsScreenState._text,
                     fontSize: 18,
@@ -512,10 +552,7 @@ class _ProductLocationMap extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  strings.choose(
-                    'Porneste navigarea catre locatia produsului in Google Maps.',
-                    'Start navigation to this item location in Google Maps.',
-                  ),
+                  strings.directionsBody,
                   style: const TextStyle(
                     color: _ProductDetailsScreenState._muted,
                     fontSize: 14,
@@ -531,12 +568,7 @@ class _ProductLocationMap extends StatelessWidget {
                       _openGoogleMapsDirections(parentContext, position);
                     },
                     icon: const Icon(Icons.directions_rounded),
-                    label: Text(
-                      strings.choose(
-                        'Deschide in Google Maps',
-                        'Open in Google Maps',
-                      ),
-                    ),
+                    label: Text(strings.openInGoogleMaps),
                     style: FilledButton.styleFrom(
                       backgroundColor: _ProductDetailsScreenState._primary,
                       foregroundColor: Colors.white,
@@ -569,12 +601,7 @@ class _ProductLocationMap extends StatelessWidget {
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppLocalizations.of(context).choose(
-              'Nu am putut deschide Google Maps.',
-              'Could not open Google Maps.',
-            ),
-          ),
+          content: Text(GeneratedLocalizations.of(context).googleMapsOpenError),
         ),
       );
     }
@@ -582,10 +609,15 @@ class _ProductLocationMap extends StatelessWidget {
 }
 
 class _PriceSwitcher extends StatelessWidget {
-  const _PriceSwitcher({required this.perHour, required this.onChanged});
+  const _PriceSwitcher({
+    required this.rentalMode,
+    required this.product,
+    required this.onChanged,
+  });
 
-  final bool perHour;
-  final ValueChanged<bool> onChanged;
+  final RentalMode rentalMode;
+  final LendProduct product;
+  final ValueChanged<RentalMode> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -599,16 +631,33 @@ class _PriceSwitcher extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SwitchButton(
-              label: AppLocalizations.of(context).choose('Pe ora', 'Hourly'),
-              selected: perHour,
-              onTap: () => onChanged(true),
-            ),
-            _SwitchButton(
-              label: AppLocalizations.of(context).choose('Pe zi', 'Daily'),
-              selected: !perHour,
-              onTap: () => onChanged(false),
-            ),
+            if (_ProductDetailsScreenState._hasPriceForMode(
+              product,
+              RentalMode.hour,
+            ))
+              _SwitchButton(
+                label: GeneratedLocalizations.of(context).hourly,
+                selected: rentalMode == RentalMode.hour,
+                onTap: () => onChanged(RentalMode.hour),
+              ),
+            if (_ProductDetailsScreenState._hasPriceForMode(
+              product,
+              RentalMode.day,
+            ))
+              _SwitchButton(
+                label: GeneratedLocalizations.of(context).daily,
+                selected: rentalMode == RentalMode.day,
+                onTap: () => onChanged(RentalMode.day),
+              ),
+            if (_ProductDetailsScreenState._hasPriceForMode(
+              product,
+              RentalMode.month,
+            ))
+              _SwitchButton(
+                label: GeneratedLocalizations.of(context).monthly,
+                selected: rentalMode == RentalMode.month,
+                onTap: () => onChanged(RentalMode.month),
+              ),
           ],
         ),
       ),
@@ -673,9 +722,7 @@ class _DescriptionSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionTitle(
-          AppLocalizations.of(context).choose('Descriere', 'Description'),
-        ),
+        _SectionTitle(GeneratedLocalizations.of(context).description),
         const SizedBox(height: 12),
         Text(
           product.description,
@@ -701,30 +748,30 @@ class _SpecsGrid extends StatelessWidget {
     final items = [
       (
         Icons.category_rounded,
-        AppLocalizations.of(context).choose('Categorie', 'Category'),
+        GeneratedLocalizations.of(context).category,
         product.category,
       ),
       (
         Icons.location_on_rounded,
-        AppLocalizations.of(context).choose('Locatie', 'Location'),
+        GeneratedLocalizations.of(context).location,
         product.address.isEmpty
             ? product.city
             : '${product.address}\n${product.city}',
       ),
       (
         Icons.account_balance_wallet_rounded,
-        AppLocalizations.of(context).choose('Garantie', 'Deposit'),
+        GeneratedLocalizations.of(context).deposit,
         '${product.deposit} RON',
       ),
       (
         Icons.schedule_rounded,
-        AppLocalizations.of(context).choose('Program', 'Schedule'),
+        GeneratedLocalizations.of(context).schedule,
         '${product.pickupTime} - ${product.returnTime}',
       ),
       (
         Icons.cleaning_services_rounded,
-        AppLocalizations.of(context).choose('Stare', 'Condition'),
-        AppLocalizations.of(context).choose('Verificat', 'Verified'),
+        GeneratedLocalizations.of(context).condition,
+        GeneratedLocalizations.of(context).verified,
       ),
     ];
 
@@ -801,14 +848,13 @@ class _ReviewsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = GeneratedLocalizations.of(context);
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: _SectionTitle(
-                AppLocalizations.of(context).choose('Recenzii', 'Reviews'),
-              ),
+              child: _SectionTitle(GeneratedLocalizations.of(context).reviews),
             ),
             TextButton(
               onPressed: () {},
@@ -816,7 +862,7 @@ class _ReviewsSection extends StatelessWidget {
                 foregroundColor: _ProductDetailsScreenState._text,
               ),
               child: Text(
-                AppLocalizations.of(context).choose('Vezi toate', 'See all'),
+                GeneratedLocalizations.of(context).seeAll,
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
@@ -833,18 +879,18 @@ class _ReviewsSection extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       backgroundColor: Color(0xFFB7D3FE),
                       foregroundColor: _ProductDetailsScreenState._text,
-                      child: Text('M'),
+                      child: Text(strings.sampleReviewerInitial),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Mihai Popescu',
+                          Text(
+                            strings.sampleReviewerName,
                             style: TextStyle(
                               color: _ProductDetailsScreenState._text,
                               fontWeight: FontWeight.w800,
@@ -852,9 +898,7 @@ class _ReviewsSection extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            AppLocalizations.of(
-                              context,
-                            ).choose('Review verificat', 'Verified review'),
+                            GeneratedLocalizations.of(context).verifiedReview,
                             style: const TextStyle(
                               color: _ProductDetailsScreenState._muted,
                               fontSize: 12,
@@ -874,10 +918,9 @@ class _ReviewsSection extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  AppLocalizations.of(context).choose(
-                    'Totul a decurs perfect. ${product.ownerName} a predat produsul rapid, iar obiectul a fost conform descrierii.',
-                    'Everything went perfectly. ${product.ownerName} handed over the item quickly, and it matched the description.',
-                  ),
+                  GeneratedLocalizations.of(
+                    context,
+                  ).sampleReview(product.ownerName),
                   style: const TextStyle(
                     color: _ProductDetailsScreenState._muted,
                     fontSize: 15,
@@ -910,7 +953,7 @@ class _OwnerCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context).choose('PROPRIETAR', 'OWNER'),
+              GeneratedLocalizations.of(context).owner,
               style: const TextStyle(
                 color: _ProductDetailsScreenState._muted,
                 fontSize: 12,
@@ -981,10 +1024,9 @@ class _OwnerCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              AppLocalizations.of(context).choose(
-                                'Identitate verificata',
-                                'Verified identity',
-                              ),
+                              GeneratedLocalizations.of(
+                                context,
+                              ).verifiedIdentity,
                               style: const TextStyle(
                                 color: _ProductDetailsScreenState._muted,
                                 fontSize: 12,
@@ -1007,9 +1049,7 @@ class _OwnerCard extends StatelessWidget {
                 Expanded(
                   child: _OwnerStat(
                     value: '${product.ratingLabel}/5',
-                    label: AppLocalizations.of(
-                      context,
-                    ).choose('Rating', 'Rating'),
+                    label: GeneratedLocalizations.of(context).rating,
                   ),
                 ),
                 const SizedBox(
@@ -1021,9 +1061,7 @@ class _OwnerCard extends StatelessWidget {
                 Expanded(
                   child: _OwnerStat(
                     value: '42',
-                    label: AppLocalizations.of(
-                      context,
-                    ).choose('Inchirieri', 'Rentals'),
+                    label: GeneratedLocalizations.of(context).navRentals,
                   ),
                 ),
               ],
@@ -1044,9 +1082,7 @@ class _OwnerCard extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  AppLocalizations.of(
-                    context,
-                  ).choose('Trimite mesaj', 'Send message'),
+                  GeneratedLocalizations.of(context).sendMessage,
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -1092,10 +1128,7 @@ class _ProtectCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    AppLocalizations.of(context).choose(
-                      'Esti protejat impotriva daunelor accidentale pe toata durata inchirierii.',
-                      'You are protected against accidental damage for the entire rental period.',
-                    ),
+                    GeneratedLocalizations.of(context).lendProtectBody,
                     style: const TextStyle(
                       color: _ProductDetailsScreenState._secondary,
                       fontSize: 12,
@@ -1113,9 +1146,9 @@ class _ProtectCard extends StatelessWidget {
 }
 
 class _BottomActionBar extends StatelessWidget {
-  const _BottomActionBar({required this.perHour, required this.product});
+  const _BottomActionBar({required this.rentalMode, required this.product});
 
-  final bool perHour;
+  final RentalMode rentalMode;
   final LendProduct product;
 
   @override
@@ -1125,10 +1158,17 @@ class _BottomActionBar extends StatelessWidget {
       1,
       product.pricePerDay,
     );
-    final price = perHour ? '$hourlyPrice RON' : '${product.pricePerDay} RON';
-    final unit = perHour
-        ? AppLocalizations.of(context).choose('/ ora', '/ hour')
-        : AppLocalizations.of(context).choose('/ zi', '/ day');
+    final strings = GeneratedLocalizations.of(context);
+    final price = switch (rentalMode) {
+      RentalMode.hour => '$hourlyPrice RON',
+      RentalMode.day => '${product.pricePerDay} RON',
+      RentalMode.month => '${product.pricePerMonth ?? 0} RON',
+    };
+    final unit = switch (rentalMode) {
+      RentalMode.hour => strings.perHourSuffix,
+      RentalMode.day => strings.perDaySuffix,
+      RentalMode.month => strings.pricePerMonthShort,
+    };
 
     return Container(
       padding: EdgeInsets.fromLTRB(18, 10, 18, bottomPadding + 10),
@@ -1185,7 +1225,7 @@ class _BottomActionBar extends StatelessWidget {
                     MaterialPageRoute<void>(
                       builder: (_) => RentalPeriodScreen(
                         product: product,
-                        rentalMode: perHour ? RentalMode.hour : RentalMode.day,
+                        rentalMode: rentalMode,
                       ),
                     ),
                   );
@@ -1204,10 +1244,10 @@ class _BottomActionBar extends StatelessWidget {
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final strings = AppLocalizations.of(context);
+                    final strings = GeneratedLocalizations.of(context);
                     final label = constraints.maxWidth < 150
-                        ? strings.choose('Inchiriaza', 'Rent')
-                        : strings.choose('Inchiriaza acum', 'Rent now');
+                        ? strings.rent
+                        : strings.rentNow;
 
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1244,20 +1284,13 @@ String _normalizeCity(String city) {
   return city
       .trim()
       .toLowerCase()
-      .replaceAll('ă', 'a')
-      .replaceAll('â', 'a')
-      .replaceAll('î', 'i')
-      .replaceAll('ș', 's')
-      .replaceAll('ş', 's')
-      .replaceAll('ț', 't')
-      .replaceAll('ţ', 't')
-      .replaceAll('Äƒ', 'a')
-      .replaceAll('Ã¢', 'a')
-      .replaceAll('Ã®', 'i')
-      .replaceAll('È™', 's')
-      .replaceAll('ÅŸ', 's')
-      .replaceAll('È›', 't')
-      .replaceAll('Å£', 't');
+      .replaceAll('\\u0103', 'a')
+      .replaceAll('\\u00e2', 'a')
+      .replaceAll('\\u00ee', 'i')
+      .replaceAll('\\u0219', 's')
+      .replaceAll('\\u015f', 's')
+      .replaceAll('\\u021b', 't')
+      .replaceAll('\\u0163', 't');
 }
 
 const _productCityCoordinates = <String, LatLng>{

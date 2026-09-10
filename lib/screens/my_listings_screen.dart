@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/storage_api.dart';
@@ -67,9 +68,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
             if (widget.showChrome)
               SliverToBoxAdapter(
                 child: LendTopBar(
-                  title: AppLocalizations.of(
-                    context,
-                  ).choose('Anunturile mele', 'My listings'),
+                  title: GeneratedLocalizations.of(context).myListings,
                   avatarUrl: _MyListingsScreenState._avatarUrl,
                 ),
               )
@@ -207,26 +206,10 @@ class _StatsGrid extends StatelessWidget {
               .toStringAsFixed(1);
 
     return [
-      (
-        strings.choose('Active', 'Active'),
-        '$activeCount',
-        _MyListingsScreenState._primary,
-      ),
-      (
-        strings.choose('Inchiriate', 'Rented'),
-        '$rentedCount',
-        const Color(0xFF446085),
-      ),
-      (
-        strings.choose('Venit total', 'Total income'),
-        '$income lei',
-        _MyListingsScreenState._primary,
-      ),
-      (
-        strings.choose('Recenzii', 'Reviews'),
-        rating,
-        _MyListingsScreenState._primary,
-      ),
+      (strings.active, '$activeCount', _MyListingsScreenState._primary),
+      (strings.rented, '$rentedCount', const Color(0xFF446085)),
+      (strings.totalIncome, '$income lei', _MyListingsScreenState._primary),
+      (strings.reviews, rating, _MyListingsScreenState._primary),
     ];
   }
 }
@@ -277,10 +260,7 @@ class _StatCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (label ==
-                    AppLocalizations.of(
-                      context,
-                    ).choose('Recenzii', 'Reviews')) ...[
+                if (label == GeneratedLocalizations.of(context).reviews) ...[
                   const SizedBox(width: 4),
                   const Icon(
                     Icons.star_rounded,
@@ -452,9 +432,7 @@ class _ListingCard extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            AppLocalizations.of(
-                              context,
-                            ).choose('Editeaza', 'Edit'),
+                            GeneratedLocalizations.of(context).edit,
                             style: const TextStyle(fontWeight: FontWeight.w800),
                           ),
                         ),
@@ -509,9 +487,7 @@ class _StatusPill extends StatelessWidget {
         ? const Color(0xFF15803D)
         : const Color(0xFF2B486C);
     final strings = AppLocalizations.of(context);
-    final label = active
-        ? strings.choose('Activ', 'Active')
-        : strings.choose('Inchiriat', 'Rented');
+    final label = active ? strings.active : strings.rented;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -572,14 +548,8 @@ class _ListingsError extends StatelessWidget {
 
     return _MessagePanel(
       icon: Icons.cloud_off_rounded,
-      title: strings.choose(
-        'Nu am putut incarca anunturile',
-        'Could not load listings',
-      ),
-      body: strings.choose(
-        'Verifica daca backendul este pornit si incearca din nou.',
-        'Check that the backend is running and try again.',
-      ),
+      title: strings.couldNotLoadListings,
+      body: strings.couldNotLoadListingsBody,
       actionLabel: strings.retry,
       onAction: onRetry,
     );
@@ -595,11 +565,8 @@ class _EmptyListings extends StatelessWidget {
 
     return _MessagePanel(
       icon: Icons.inventory_2_outlined,
-      title: strings.choose('Nu ai anunturi inca', 'No listings yet'),
-      body: strings.choose(
-        'Anunturile create de contul tau vor aparea aici direct din baza de date.',
-        'Listings created by your account will appear here directly from the database.',
-      ),
+      title: strings.noListingsYet,
+      body: strings.emptyListingsBody,
     );
   }
 }

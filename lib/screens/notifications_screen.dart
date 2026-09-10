@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../widgets/lend_screen_frame.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -27,7 +27,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
     final visibleItems = _showUnreadOnly
         ? _items.where((item) => !item.isRead).toList()
         : _items;
@@ -59,12 +59,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 const SizedBox(height: 14),
                 if (visibleItems.isEmpty)
-                  _EmptyNotifications(
-                    title: strings.choose(
-                      'Nu ai notificari necitite',
-                      'No unread notifications',
-                    ),
-                  )
+                  _EmptyNotifications(title: strings.noUnreadNotifications)
                 else
                   ...visibleItems.map(
                     (item) => Padding(
@@ -86,10 +81,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _markRead(String id) {
     setState(() {
       final index = _items.indexWhere((item) => item.id == id);
-      if (index == -1) {
-        return;
-      }
-
+      if (index == -1) return;
       _items[index] = _items[index].copyWith(isRead: true);
     });
   }
@@ -108,58 +100,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         id: 'return-ready',
         icon: Icons.qr_code_scanner_rounded,
         color: _primary,
-        titleRo: 'Retur pregătit pentru scanare',
-        titleEn: 'Return ready to scan',
-        bodyRo: 'Apartament Berceni 2 așteaptă confirmarea prin cod QR.',
-        bodyEn: 'Apartament Berceni 2 is waiting for QR confirmation.',
-        timeRo: 'Acum 5 min',
-        timeEn: '5 min ago',
       ),
       _NotificationItem(
         id: 'avatar-updated',
         icon: Icons.account_circle_rounded,
         color: _success,
-        titleRo: 'Poza de profil a fost actualizată',
-        titleEn: 'Profile photo updated',
-        bodyRo: 'Avatarul tău este sincronizat în profil și în bara de sus.',
-        bodyEn: 'Your avatar is synced in profile and the top bar.',
-        timeRo: 'Azi',
-        timeEn: 'Today',
       ),
       _NotificationItem(
         id: 'payment-check',
         icon: Icons.payments_rounded,
         color: _warning,
-        titleRo: 'Verifică metoda de plată',
-        titleEn: 'Check payment method',
-        bodyRo: 'Adaugă sau confirmă cardul înainte de următoarea închiriere.',
-        bodyEn: 'Add or confirm your card before the next rental.',
-        timeRo: 'Ieri',
-        timeEn: 'Yesterday',
         isRead: true,
       ),
       _NotificationItem(
         id: 'listing-live',
         icon: Icons.inventory_2_rounded,
         color: _violet,
-        titleRo: 'Anunțul tău este activ',
-        titleEn: 'Your listing is live',
-        bodyRo: 'Apartament Berceni 2 apare acum în căutări.',
-        bodyEn: 'Apartament Berceni 2 now appears in search.',
-        timeRo: '2 zile',
-        timeEn: '2 days',
         isRead: true,
       ),
       _NotificationItem(
         id: 'security',
         icon: Icons.shield_rounded,
         color: _danger,
-        titleRo: 'Sesiune securizată',
-        titleEn: 'Secure session',
-        bodyRo: 'Dacă nu recunoști activitatea, deconectează-te din profil.',
-        bodyEn: 'If you do not recognize activity, sign out from profile.',
-        timeRo: '3 zile',
-        timeEn: '3 days',
         isRead: true,
       ),
     ];
@@ -177,7 +139,7 @@ class _NotificationsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
@@ -192,7 +154,7 @@ class _NotificationsTopBar extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                strings.choose('Notificari', 'Notifications'),
+                strings.notifications,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -204,10 +166,7 @@ class _NotificationsTopBar extends StatelessWidget {
             ),
             TextButton(
               onPressed: unreadCount == 0 ? null : onMarkAllRead,
-              child: Text(
-                strings.choose('Citeste tot', 'Read all'),
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(strings.readAll, overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
@@ -223,7 +182,7 @@ class _NotificationSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -260,11 +219,8 @@ class _NotificationSummary extends StatelessWidget {
                 children: [
                   Text(
                     unreadCount == 0
-                        ? strings.choose('Esti la zi', 'You are up to date')
-                        : strings.choose(
-                            '$unreadCount notificari noi',
-                            '$unreadCount new notifications',
-                          ),
+                        ? strings.youAreUpToDate
+                        : strings.newNotifications(unreadCount),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -275,10 +231,7 @@ class _NotificationSummary extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    strings.choose(
-                      'Activitatea importanta din cont apare aici.',
-                      'Important account activity appears here.',
-                    ),
+                    strings.notificationsSummaryBody,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -309,7 +262,7 @@ class _NotificationFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -323,14 +276,14 @@ class _NotificationFilters extends StatelessWidget {
           children: [
             Expanded(
               child: _FilterButton(
-                label: strings.choose('Toate', 'All'),
+                label: strings.all,
                 selected: !showUnreadOnly,
                 onTap: () => onChanged(false),
               ),
             ),
             Expanded(
               child: _FilterButton(
-                label: strings.choose('Necitite', 'Unread'),
+                label: strings.unread,
                 selected: showUnreadOnly,
                 onTap: () => onChanged(true),
               ),
@@ -389,7 +342,7 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return InkWell(
       onTap: onTap,
@@ -434,7 +387,7 @@ class _NotificationTile extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            strings.choose(item.titleRo, item.titleEn),
+                            item.title(strings),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -459,7 +412,7 @@ class _NotificationTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      strings.choose(item.bodyRo, item.bodyEn),
+                      item.body(strings),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -471,7 +424,7 @@ class _NotificationTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      strings.choose(item.timeRo, item.timeEn),
+                      item.time(strings),
                       style: TextStyle(
                         color: item.color,
                         fontSize: 12,
@@ -533,37 +486,52 @@ class _NotificationItem {
     required this.id,
     required this.icon,
     required this.color,
-    required this.titleRo,
-    required this.titleEn,
-    required this.bodyRo,
-    required this.bodyEn,
-    required this.timeRo,
-    required this.timeEn,
     this.isRead = false,
   });
 
   final String id;
   final IconData icon;
   final Color color;
-  final String titleRo;
-  final String titleEn;
-  final String bodyRo;
-  final String bodyEn;
-  final String timeRo;
-  final String timeEn;
   final bool isRead;
+
+  String title(GeneratedLocalizations strings) {
+    return switch (id) {
+      'return-ready' => strings.notificationReturnReadyTitle,
+      'avatar-updated' => strings.notificationAvatarUpdatedTitle,
+      'payment-check' => strings.notificationPaymentCheckTitle,
+      'listing-live' => strings.notificationListingLiveTitle,
+      'security' => strings.notificationSecurityTitle,
+      _ => strings.notifications,
+    };
+  }
+
+  String body(GeneratedLocalizations strings) {
+    return switch (id) {
+      'return-ready' => strings.notificationReturnReadyBody,
+      'avatar-updated' => strings.notificationAvatarUpdatedBody,
+      'payment-check' => strings.notificationPaymentCheckBody,
+      'listing-live' => strings.notificationListingLiveBody,
+      'security' => strings.notificationSecurityBody,
+      _ => '',
+    };
+  }
+
+  String time(GeneratedLocalizations strings) {
+    return switch (id) {
+      'return-ready' => strings.notificationReturnReadyTime,
+      'avatar-updated' => strings.notificationAvatarUpdatedTime,
+      'payment-check' => strings.notificationPaymentCheckTime,
+      'listing-live' => strings.notificationListingLiveTime,
+      'security' => strings.notificationSecurityTime,
+      _ => '',
+    };
+  }
 
   _NotificationItem copyWith({bool? isRead}) {
     return _NotificationItem(
       id: id,
       icon: icon,
       color: color,
-      titleRo: titleRo,
-      titleEn: titleEn,
-      bodyRo: bodyRo,
-      bodyEn: bodyEn,
-      timeRo: timeRo,
-      timeEn: timeEn,
       isRead: isRead ?? this.isRead,
     );
   }

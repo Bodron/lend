@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../l10n/app_localizations.dart';
+import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
@@ -227,9 +227,7 @@ class _AvailabilityManagementScreenState
       }
       LendToast.error(
         context,
-        message: AppLocalizations.of(
-          context,
-        ).choose('Trebuie sa fii autentificat.', 'You need to be signed in.'),
+        message: GeneratedLocalizations.of(context).signInRequired,
       );
       return;
     }
@@ -262,9 +260,7 @@ class _AvailabilityManagementScreenState
       }
       LendToast.success(
         context,
-        message: AppLocalizations.of(
-          context,
-        ).choose('Perioada a fost blocata.', 'The period has been blocked.'),
+        message: GeneratedLocalizations.of(context).periodBlocked,
       );
     } catch (error) {
       if (mounted) {
@@ -306,7 +302,7 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return Container(
       height: 64,
@@ -336,7 +332,7 @@ class _TopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  strings.choose('Disponibilitate', 'Availability'),
+                  strings.availability,
                   style: const TextStyle(
                     color: _AvailabilityManagementScreenState._text,
                     fontSize: 18,
@@ -399,7 +395,7 @@ class _CalendarCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    _formatMonth(visibleMonth),
+                    _formatMonth(context, visibleMonth),
                     style: const TextStyle(
                       color: _AvailabilityManagementScreenState._text,
                       fontSize: 22,
@@ -507,7 +503,7 @@ class _BlockForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: _cardDecoration,
@@ -517,7 +513,7 @@ class _BlockForm extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              strings.choose('Blocheaza manual zile', 'Manually block dates'),
+              strings.manualBlockDates,
               style: const TextStyle(
                 color: _AvailabilityManagementScreenState._text,
                 fontSize: 18,
@@ -527,11 +523,8 @@ class _BlockForm extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               startDate == null || endDate == null
-                  ? strings.choose(
-                      'Selecteaza inceputul si finalul perioadei.',
-                      'Select the start and end of the period.',
-                    )
-                  : '${_formatShortDate(startDate!)} - ${_formatShortDate(endDate!)}',
+                  ? strings.selectPeriodStartEnd
+                  : '${_formatShortDate(context, startDate!)} - ${_formatShortDate(context, endDate!)}',
               style: const TextStyle(
                 color: _AvailabilityManagementScreenState._muted,
                 fontSize: 14,
@@ -542,10 +535,7 @@ class _BlockForm extends StatelessWidget {
             TextField(
               controller: reasonController,
               decoration: InputDecoration(
-                hintText: strings.choose(
-                  'Motiv optional: service, uz personal',
-                  'Optional reason: service, personal use',
-                ),
+                hintText: strings.availabilityReasonHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -566,9 +556,7 @@ class _BlockForm extends StatelessWidget {
                         ),
                       )
                     : const Icon(Icons.block_rounded),
-                label: Text(
-                  strings.choose('Blocheaza perioada', 'Block period'),
-                ),
+                label: Text(strings.blockPeriod),
                 style: FilledButton.styleFrom(
                   backgroundColor: _AvailabilityManagementScreenState._primary,
                   foregroundColor: Colors.white,
@@ -590,7 +578,7 @@ class _BlocksList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: _cardDecoration,
@@ -600,7 +588,7 @@ class _BlocksList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              strings.choose('Blocaje manuale', 'Manual blocks'),
+              strings.manualBlocks,
               style: const TextStyle(
                 color: _AvailabilityManagementScreenState._text,
                 fontSize: 18,
@@ -610,10 +598,7 @@ class _BlocksList extends StatelessWidget {
             const SizedBox(height: 12),
             if (blocks.isEmpty)
               Text(
-                strings.choose(
-                  'Nu ai blocaje manuale in luna aceasta.',
-                  'No manual blocks this month.',
-                ),
+                strings.noManualBlocksThisMonth,
                 style: const TextStyle(
                   color: _AvailabilityManagementScreenState._muted,
                   fontWeight: FontWeight.w700,
@@ -628,13 +613,11 @@ class _BlocksList extends StatelessWidget {
                     color: _AvailabilityManagementScreenState._manualBlock,
                   ),
                   title: Text(
-                    '${_formatShortDate(block.startDate)} - ${_formatShortDate(block.endDate)}',
+                    '${_formatShortDate(context, block.startDate)} - ${_formatShortDate(context, block.endDate)}',
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   subtitle: Text(
-                    block.reason.isEmpty
-                        ? strings.choose('Indisponibil', 'Unavailable')
-                        : block.reason,
+                    block.reason.isEmpty ? strings.unavailable : block.reason,
                   ),
                   trailing: IconButton(
                     onPressed: () => onDelete(block),
@@ -749,16 +732,18 @@ class _Legend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    final strings = GeneratedLocalizations.of(context);
+
+    return Row(
       children: [
         _LegendItem(
           color: _AvailabilityManagementScreenState._reservation,
-          text: 'Inchiriat',
+          text: strings.rented,
         ),
-        SizedBox(width: 14),
+        const SizedBox(width: 14),
         _LegendItem(
           color: _AvailabilityManagementScreenState._manualBlock,
-          text: 'Blocat',
+          text: strings.blocked,
         ),
       ],
     );
@@ -821,45 +806,45 @@ bool _isInExclusiveRange(DateTime date, DateTime? start, DateTime? end) {
   return !current.isBefore(rangeStart) && current.isBefore(rangeEnd);
 }
 
-String _formatMonth(DateTime date) {
-  const months = [
-    'Ianuarie',
-    'Februarie',
-    'Martie',
-    'Aprilie',
-    'Mai',
-    'Iunie',
-    'Iulie',
-    'August',
-    'Septembrie',
-    'Octombrie',
-    'Noiembrie',
-    'Decembrie',
+String _formatMonth(BuildContext context, DateTime date) {
+  final strings = GeneratedLocalizations.of(context);
+  final months = [
+    strings.january,
+    strings.february,
+    strings.march,
+    strings.april,
+    strings.may,
+    strings.june,
+    strings.july,
+    strings.august,
+    strings.september,
+    strings.october,
+    strings.november,
+    strings.december,
   ];
-
   return '${months[date.month - 1]} ${date.year}';
 }
 
-String _formatShortDate(DateTime? date) {
+String _formatShortDate(BuildContext context, DateTime? date) {
   if (date == null) {
     return '-';
   }
 
-  const months = [
-    'Ian',
-    'Feb',
-    'Mar',
-    'Apr',
-    'Mai',
-    'Iun',
-    'Iul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Noi',
-    'Dec',
+  final strings = GeneratedLocalizations.of(context);
+  final months = [
+    strings.janShort,
+    strings.febShort,
+    strings.marShort,
+    strings.aprShort,
+    strings.mayShort,
+    strings.junShort,
+    strings.julShort,
+    strings.augShort,
+    strings.sepShort,
+    strings.octShort,
+    strings.novShort,
+    strings.decShort,
   ];
-
   return '${date.day} ${months[date.month - 1]}';
 }
 
