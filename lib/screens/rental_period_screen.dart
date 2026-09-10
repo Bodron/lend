@@ -12,10 +12,16 @@ class RentalPeriodScreen extends StatefulWidget {
     super.key,
     required this.product,
     this.rentalMode = RentalMode.day,
+    this.initialStartDate,
+    this.initialEndDate,
+    this.negotiatedSubtotal,
   });
 
   final LendProduct product;
   final RentalMode rentalMode;
+  final DateTime? initialStartDate;
+  final DateTime? initialEndDate;
+  final int? negotiatedSubtotal;
 
   @override
   State<RentalPeriodScreen> createState() => _RentalPeriodScreenState();
@@ -55,12 +61,12 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
             DateTime.now().day,
           )
         : DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
-    _startDate = initialDate;
+    _startDate = widget.initialStartDate ?? initialDate;
     _endDate = widget.rentalMode == RentalMode.hour
         ? initialDate
-        : widget.rentalMode == RentalMode.month
+        : widget.initialEndDate ?? (widget.rentalMode == RentalMode.month
         ? _sameDayNextMonth(initialDate)
-        : initialDate.add(const Duration(days: 3));
+        : initialDate.add(const Duration(days: 3)));
     _pickupTime = widget.product.pickupTime;
     _returnTime = widget.product.returnTime;
     _loadAvailabilityForVisibleMonth();
@@ -115,7 +121,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
       return _rentalHours * _hourlyPrice;
     }
 
-    return _totalPrice;
+    return widget.negotiatedSubtotal ?? _totalPrice;
   }
 
   List<String> get _availableTimeOptions {
@@ -376,6 +382,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                             rentalHours: _rentalHours,
                             rentalDays: _rentalDays,
                             totalPrice: _checkoutTotalPrice,
+                            negotiatedSubtotal: widget.negotiatedSubtotal,
                           ),
                         ),
                       );

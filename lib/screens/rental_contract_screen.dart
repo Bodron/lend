@@ -25,6 +25,7 @@ class RentalContractScreen extends StatefulWidget {
     required this.subtotal,
     required this.serviceFee,
     required this.total,
+    this.negotiatedSubtotal,
   });
 
   final LendProduct product;
@@ -38,6 +39,7 @@ class RentalContractScreen extends StatefulWidget {
   final int subtotal;
   final int serviceFee;
   final int total;
+  final int? negotiatedSubtotal;
 
   @override
   State<RentalContractScreen> createState() => _RentalContractScreenState();
@@ -126,6 +128,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         startDate: widget.startDate,
         endDate: widget.endDate,
         rentalMode: widget.rentalMode,
+        negotiatedSubtotal: widget.negotiatedSubtotal,
         pickupTime: widget.pickupTime,
         returnTime: widget.returnTime,
       );

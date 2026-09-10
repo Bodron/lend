@@ -18,6 +18,7 @@ class RentalOrdersApi {
     required DateTime startDate,
     required DateTime endDate,
     required RentalMode rentalMode,
+    int? negotiatedSubtotal,
     required String pickupTime,
     required String returnTime,
   }) async {
@@ -37,6 +38,7 @@ class RentalOrdersApi {
                 : rentalMode == RentalMode.month
                 ? 'month'
                 : 'day',
+            if (negotiatedSubtotal != null) 'negotiatedSubtotal': negotiatedSubtotal,
             'pickupTime': pickupTime,
             'returnTime': returnTime,
           }),

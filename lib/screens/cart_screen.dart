@@ -20,6 +20,7 @@ class CartScreen extends StatefulWidget {
     required this.rentalHours,
     required this.rentalDays,
     required this.totalPrice,
+    this.negotiatedSubtotal,
   });
 
   final LendProduct product;
@@ -31,6 +32,7 @@ class CartScreen extends StatefulWidget {
   final int rentalHours;
   final int rentalDays;
   final int totalPrice;
+  final int? negotiatedSubtotal;
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -101,6 +103,7 @@ class _CartScreenState extends State<CartScreen> {
                             serviceFee: _serviceFee,
                             deposit: _deposit,
                             total: _total,
+                            negotiatedSubtotal: widget.negotiatedSubtotal,
                             enabled: _hasItem,
                           ),
                         ],
@@ -141,6 +144,7 @@ class _CartScreenState extends State<CartScreen> {
                             serviceFee: _serviceFee,
                             deposit: _deposit,
                             total: _total,
+                            negotiatedSubtotal: widget.negotiatedSubtotal,
                             enabled: _hasItem,
                           ),
                         ),
@@ -633,6 +637,7 @@ class _OrderSummaryCard extends StatelessWidget {
     required this.serviceFee,
     required this.deposit,
     required this.total,
+    this.negotiatedSubtotal,
     required this.enabled,
   });
 
@@ -648,6 +653,7 @@ class _OrderSummaryCard extends StatelessWidget {
   final int serviceFee;
   final int deposit;
   final int total;
+  final int? negotiatedSubtotal;
   final bool enabled;
 
   @override
@@ -746,6 +752,7 @@ class _OrderSummaryCard extends StatelessWidget {
                               subtotal: subtotal,
                               serviceFee: serviceFee,
                               total: total,
+                              negotiatedSubtotal: negotiatedSubtotal,
                             ),
                           ),
                         );
