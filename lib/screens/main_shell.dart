@@ -24,12 +24,10 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   static const _background = Color(0xFFF5F5F7);
-  static const _avatarUrl =
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuAjckt39yhGH_YNEWoUmbXYYMQMctYpenv4ao2wyvCqeIUeKvR_KLOZ2ICz2VXNFVBoWxN3Tk3Y95Eg_PbtaBhRH8vX_vZ4HtStk-hQiK-xTgYACenslrsS991egJa7dNNA21VSeZYxwr6eC9bd1mcpjvb13V7JeJ9DH2YWlHFFMYoGLdsewDMPaYY36MgZ-5ctsmYioywxLYl5q_-pxR5zE3v4A_fnVaDTGQCU2CLBpYxMQ9xhXdfKEtFQuchnrja44C5pVFpxxII';
-
   final _authApi = AuthApi();
   late int _currentIndex = widget.initialIndex.clamp(0, 3);
-  String _topBarAvatarUrl = _avatarUrl;
+  String _topBarUserName = 'Pinlend';
+  String? _topBarAvatarUrl;
 
   @override
   void initState() {
@@ -90,12 +88,13 @@ class _MainShellState extends State<MainShell> {
     try {
       final user = await _authApi.me(token);
 
-      if (!mounted || user.avatarUrl == null) {
+      if (!mounted) {
         return;
       }
 
       setState(() {
-        _topBarAvatarUrl = user.avatarUrl!;
+        _topBarUserName = user.fullName;
+        _topBarAvatarUrl = user.avatarUrl;
       });
     } catch (_) {
       // Keep the bundled fallback avatar when the profile cannot be loaded.
@@ -173,6 +172,7 @@ class _MainShellState extends State<MainShell> {
                   alignment: Alignment.topCenter,
                   child: LendTopBar(
                     title: _titleFor(context, _currentIndex),
+                    userName: _topBarUserName,
                     avatarUrl: _topBarAvatarUrl,
                     hasUnreadNotifications: true,
                     onNotificationPressed: _openNotifications,

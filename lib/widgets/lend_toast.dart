@@ -59,6 +59,8 @@ class LendToast {
     required String message,
     String? title,
     Duration duration = const Duration(seconds: 3),
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     show(
       context,
@@ -66,6 +68,8 @@ class LendToast {
       title: title,
       message: message,
       duration: duration,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
   }
 
@@ -75,6 +79,8 @@ class LendToast {
     required String message,
     String? title,
     Duration duration = const Duration(seconds: 3),
+    String? actionLabel,
+    VoidCallback? onAction,
   }) {
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) {
@@ -92,6 +98,8 @@ class LendToast {
           title: title,
           message: message,
           duration: duration,
+          actionLabel: actionLabel,
+          onAction: onAction,
           onDismissed: () {
             if (_activeEntry == entry) {
               _activeEntry = null;
@@ -114,6 +122,8 @@ class _LendToastOverlay extends StatefulWidget {
     required this.duration,
     required this.onDismissed,
     this.title,
+    this.actionLabel,
+    this.onAction,
   });
 
   final LendToastType type;
@@ -121,6 +131,8 @@ class _LendToastOverlay extends StatefulWidget {
   final String? title;
   final Duration duration;
   final VoidCallback onDismissed;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   State<_LendToastOverlay> createState() => _LendToastOverlayState();
@@ -201,6 +213,8 @@ class _LendToastOverlayState extends State<_LendToastOverlay>
               type: widget.type,
               title: widget.title,
               message: widget.message,
+              actionLabel: widget.actionLabel,
+              onAction: widget.onAction,
             ),
           ),
         ),
@@ -214,11 +228,15 @@ class _LendToastContent extends StatelessWidget {
     required this.type,
     required this.message,
     this.title,
+    this.actionLabel,
+    this.onAction,
   });
 
   final LendToastType type;
   final String message;
   final String? title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -284,6 +302,22 @@ class _LendToastContent extends StatelessWidget {
                 ],
               ),
             ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: style.accent,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  actionLabel!,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
           ],
         ),
       ),

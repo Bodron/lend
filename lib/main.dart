@@ -44,8 +44,9 @@ class _LendAppState extends State<LendApp> {
         animation: _languageController,
         builder: (context, _) {
           return MaterialApp(
+            navigatorKey: PushNotifications.instance.navigatorKey,
             scaffoldMessengerKey: PushNotifications.instance.messengerKey,
-            title: 'Lend',
+            title: 'Pinlend',
             debugShowCheckedModeBanner: false,
             locale: _languageController.locale,
             supportedLocales: AppLanguageController.supportedLocales,

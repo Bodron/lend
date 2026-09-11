@@ -9,7 +9,7 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   GeneratedLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Lend';
+  String get appName => 'Pinlend';
 
   @override
   String get nearYou => 'Near you';

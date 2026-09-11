@@ -9,7 +9,7 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
   GeneratedLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
-  String get appName => 'Lend';
+  String get appName => 'Pinlend';
 
   @override
   String get nearYou => 'Aproape de tine';

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../firebase_options.dart';
+import '../widgets/lend_toast.dart';
 import 'auth_api.dart';
 
 @pragma('vm:entry-point')
@@ -20,6 +21,7 @@ class PushNotifications with WidgetsBindingObserver {
   static final instance = PushNotifications._();
   final pendingMessage = ValueNotifier<RemoteMessage?>(null);
   final messengerKey = GlobalKey<ScaffoldMessengerState>();
+  final navigatorKey = GlobalKey<NavigatorState>();
   bool _ready = false;
   bool _syncing = false;
   bool _paused = false;
@@ -53,16 +55,16 @@ class PushNotifications with WidgetsBindingObserver {
       );
       FirebaseMessaging.onMessage.listen((message) {
         if (defaultTargetPlatform != TargetPlatform.android) return;
-        messengerKey.currentState?.showSnackBar(
-          SnackBar(
-            content: Text(
-              message.notification?.body ?? 'Ai primit un mesaj nou.',
-            ),
-            action: SnackBarAction(
-              label: 'Deschide',
-              onPressed: () => pendingMessage.value = message,
-            ),
-          ),
+        final context = navigatorKey.currentState?.context;
+        if (context == null) return;
+        LendToast.info(
+          // The listener runs synchronously when a foreground message arrives.
+          // ignore: use_build_context_synchronously
+          context,
+          title: message.notification?.title ?? 'Mesaj nou',
+          message: message.notification?.body ?? 'Ai primit un mesaj nou.',
+          actionLabel: 'Deschide',
+          onAction: () => pendingMessage.value = message,
         );
       });
       pendingMessage.value = await FirebaseMessaging.instance

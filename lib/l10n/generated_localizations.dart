@@ -104,7 +104,7 @@ abstract class GeneratedLocalizations {
   /// No description provided for @appName.
   ///
   /// In en, this message translates to:
-  /// **'Lend'**
+  /// **'Pinlend'**
   String get appName;
 
   /// No description provided for @nearYou.

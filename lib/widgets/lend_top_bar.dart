@@ -7,13 +7,15 @@ class LendTopBar extends StatelessWidget {
   const LendTopBar({
     super.key,
     required this.title,
-    required this.avatarUrl,
+    required this.userName,
+    this.avatarUrl,
     this.onNotificationPressed,
     this.hasUnreadNotifications = false,
   });
 
   final String title;
-  final String avatarUrl;
+  final String userName;
+  final String? avatarUrl;
   final VoidCallback? onNotificationPressed;
   final bool hasUnreadNotifications;
 
@@ -33,16 +35,13 @@ class LendTopBar extends StatelessWidget {
                 child: SizedBox(
                   width: 38,
                   height: 38,
-                  child: Image.network(
-                    avatarUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const ColoredBox(
-                        color: Color(0xFF202020),
-                        child: Icon(Icons.person, color: Colors.white),
-                      );
-                    },
-                  ),
+                  child: avatarUrl == null || avatarUrl!.trim().isEmpty
+                      ? _initialAvatar()
+                      : Image.network(
+                          avatarUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => _initialAvatar(),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -88,6 +87,22 @@ class LendTopBar extends StatelessWidget {
               const SizedBox(width: 4),
               const LanguageToggleButton(dark: true),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _initialAvatar() {
+    return ColoredBox(
+      color: const Color(0xFFDCE8FA),
+      child: Center(
+        child: Text(
+          userName.trim().isEmpty ? '?' : userName.trim()[0].toUpperCase(),
+          style: const TextStyle(
+            color: Color(0xFF30578F),
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),

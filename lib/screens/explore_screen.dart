@@ -61,6 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
             SliverToBoxAdapter(
               child: LendTopBar(
                 title: AppLocalizations.of(context).appName,
+                userName: 'Pinlend',
                 avatarUrl: _ExploreScreenState._avatarUrl,
               ),
             )

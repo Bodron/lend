@@ -69,6 +69,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
               SliverToBoxAdapter(
                 child: LendTopBar(
                   title: GeneratedLocalizations.of(context).myListings,
+                  userName: 'Pinlend',
                   avatarUrl: _MyListingsScreenState._avatarUrl,
                 ),
               )

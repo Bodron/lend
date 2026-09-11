@@ -174,6 +174,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
               const SliverToBoxAdapter(
                 child: LendTopBar(
                   title: 'Închirierile Mele',
+                  userName: 'Pinlend',
                   avatarUrl: _RentalsScreenState._avatarUrl,
                 ),
               )

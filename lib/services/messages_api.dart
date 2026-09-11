@@ -73,32 +73,61 @@ class MessagesApi {
     return Message.fromJson(payload as Map<String, dynamic>);
   }
 
-  Future<RentalOffer> createOffer({required String accessToken, required String productId, required int amount, required DateTime startDate, required DateTime endDate, required String rentalMode}) async {
+  Future<RentalOffer> createOffer({
+    required String accessToken,
+    required String productId,
+    required int amount,
+    required DateTime startDate,
+    required DateTime endDate,
+    required String rentalMode,
+  }) async {
     final response = await _client.post(
       Uri.parse('${AuthApi.baseUrl}/messages/offers'),
-      headers: {'Authorization': 'Bearer $accessToken', 'Content-Type': 'application/json'},
-      body: jsonEncode({'productId': productId, 'amount': amount, 'startDate': startDate.toUtc().toIso8601String(), 'endDate': endDate.toUtc().toIso8601String(), 'rentalMode': rentalMode}),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'productId': productId,
+        'amount': amount,
+        'startDate': startDate.toUtc().toIso8601String(),
+        'endDate': endDate.toUtc().toIso8601String(),
+        'rentalMode': rentalMode,
+      }),
     );
     final payload = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300) throw MessagesApiException(_message(payload));
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw MessagesApiException(_message(payload));
     return RentalOffer.fromJson(payload as Map<String, dynamic>);
   }
 
-  Future<RentalOffer> updateOffer({required String accessToken, required String offerId, required bool accept}) async {
+  Future<RentalOffer> updateOffer({
+    required String accessToken,
+    required String offerId,
+    required bool accept,
+  }) async {
     final action = accept ? 'accept' : 'reject';
     final response = await _client.patch(
       Uri.parse('${AuthApi.baseUrl}/messages/offers/$offerId/$action'),
       headers: {'Authorization': 'Bearer $accessToken'},
     );
     final payload = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300) throw MessagesApiException(_message(payload));
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw MessagesApiException(_message(payload));
     return RentalOffer.fromJson(payload as Map<String, dynamic>);
   }
 
-  Future<RentalOffer> claimOffer({required String accessToken, required String offerId}) async {
-    final response = await _client.patch(Uri.parse('${AuthApi.baseUrl}/messages/offers/$offerId/claim'), headers: {'Authorization': 'Bearer $accessToken'});
+  Future<RentalOffer> claimOffer({
+    required String accessToken,
+    required String offerId,
+  }) async {
+    final response = await _client.patch(
+      Uri.parse('${AuthApi.baseUrl}/messages/offers/$offerId/claim'),
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
     final payload = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300) throw MessagesApiException(_message(payload));
+    if (response.statusCode < 200 || response.statusCode >= 300)
+      throw MessagesApiException(_message(payload));
     return RentalOffer.fromJson(payload as Map<String, dynamic>);
   }
 
@@ -146,10 +175,15 @@ class MessageThread {
       productTitle: (json['productTitle'] ?? '').toString(),
       ownerId: (json['ownerId'] ?? '').toString(),
       ownerName: (json['ownerName'] ?? '').toString(),
-      participantName: (json['participantName'] ?? json['ownerName'] ?? 'Utilizator').toString(),
+      participantName:
+          (json['participantName'] ?? json['ownerName'] ?? 'Utilizator')
+              .toString(),
       participantAvatarUrl: _optionalString(json['participantAvatarUrl']),
       offers: json['offers'] is List
-          ? (json['offers'] as List).whereType<Map<String, dynamic>>().map(RentalOffer.fromJson).toList()
+          ? (json['offers'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map(RentalOffer.fromJson)
+                .toList()
           : const [],
       messages: rawMessages is List
           ? rawMessages
@@ -169,6 +203,7 @@ class MessageThreadSummary {
     required this.participantName,
     required this.participantAvatarUrl,
     required this.latestMessage,
+    required this.latestSenderId,
     required this.latestCreatedAt,
     required this.unreadCount,
   });
@@ -179,6 +214,7 @@ class MessageThreadSummary {
   final String participantName;
   final String? participantAvatarUrl;
   final String latestMessage;
+  final String? latestSenderId;
   final DateTime? latestCreatedAt;
   final int unreadCount;
 
@@ -188,11 +224,16 @@ class MessageThreadSummary {
       productId: (json['productId'] ?? '').toString(),
       productTitle: (json['productTitle'] ?? '').toString(),
       ownerName: (json['ownerName'] ?? '').toString(),
-      participantName: (json['participantName'] ?? json['ownerName'] ?? 'Utilizator').toString(),
+      participantName:
+          (json['participantName'] ?? json['ownerName'] ?? 'Utilizator')
+              .toString(),
       participantAvatarUrl: _optionalString(json['participantAvatarUrl']),
       latestMessage: latest is Map<String, dynamic>
           ? (latest['body'] ?? '').toString()
           : '',
+      latestSenderId: latest is Map<String, dynamic>
+          ? _optionalString(latest['senderId'])
+          : null,
       latestCreatedAt: latest is Map<String, dynamic>
           ? DateTime.tryParse((latest['createdAt'] ?? '').toString())
           : null,
@@ -227,7 +268,15 @@ class Message {
 }
 
 class RentalOffer {
-  const RentalOffer({required this.id, required this.amount, required this.status, required this.senderId, required this.startDate, required this.endDate, required this.rentalMode});
+  const RentalOffer({
+    required this.id,
+    required this.amount,
+    required this.status,
+    required this.senderId,
+    required this.startDate,
+    required this.endDate,
+    required this.rentalMode,
+  });
 
   final String id;
   final int amount;
@@ -242,8 +291,12 @@ class RentalOffer {
     amount: (json['amount'] as num?)?.toInt() ?? 0,
     status: (json['status'] ?? 'pending').toString(),
     senderId: (json['senderId'] ?? '').toString(),
-    startDate: DateTime.tryParse((json['startDate'] ?? '').toString()) ?? DateTime.now(),
-    endDate: DateTime.tryParse((json['endDate'] ?? '').toString()) ?? DateTime.now().add(const Duration(days: 1)),
+    startDate:
+        DateTime.tryParse((json['startDate'] ?? '').toString()) ??
+        DateTime.now(),
+    endDate:
+        DateTime.tryParse((json['endDate'] ?? '').toString()) ??
+        DateTime.now().add(const Duration(days: 1)),
     rentalMode: (json['rentalMode'] ?? 'day').toString(),
   );
 }
