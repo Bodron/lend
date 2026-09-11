@@ -128,7 +128,7 @@ class PushNotifications with WidgetsBindingObserver {
   }
 
   void _scheduleRetry() {
-    if (_paused || _attempts >= 5) return;
+    if (_paused || _attempts >= 12) return;
     _retry?.cancel();
     _retry = Timer(Duration(seconds: 3 * ++_attempts), () => unawaited(sync()));
   }
