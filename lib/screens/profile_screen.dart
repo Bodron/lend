@@ -458,7 +458,7 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = AppLocalizations.of(context);
-    final avatarUrl = data.user.avatarUrl ?? _ProfileScreenState._avatarUrl;
+    final avatarUrl = data.user.avatarUrl;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,6 +468,7 @@ class _ProfileHeader extends StatelessWidget {
           children: [
             _EditableProfileAvatar(
               imageUrl: avatarUrl,
+              userName: data.user.fullName,
               uploading: uploadingAvatar,
               onPressed: onAvatarPressed,
             ),
@@ -640,11 +641,13 @@ class _PayoutCard extends StatelessWidget {
 class _EditableProfileAvatar extends StatelessWidget {
   const _EditableProfileAvatar({
     required this.imageUrl,
+    required this.userName,
     required this.uploading,
     required this.onPressed,
   });
 
-  final String imageUrl;
+  final String? imageUrl;
+  final String userName;
   final bool uploading;
   final VoidCallback onPressed;
 
@@ -668,20 +671,13 @@ class _EditableProfileAvatar extends StatelessWidget {
               children: [
                 Positioned.fill(
                   child: ClipOval(
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const ColoredBox(
-                          color: Color(0xFFE2E2E2),
-                          child: Icon(
-                            Icons.person_rounded,
-                            color: _ProfileScreenState._muted,
-                            size: 42,
+                    child: imageUrl == null || imageUrl!.trim().isEmpty
+                        ? _initialAvatar()
+                        : Image.network(
+                            imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => _initialAvatar(),
                           ),
-                        );
-                      },
-                    ),
                   ),
                 ),
                 Positioned(
@@ -720,6 +716,22 @@ class _EditableProfileAvatar extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _initialAvatar() {
+    return ColoredBox(
+      color: const Color(0xFFDCE8FA),
+      child: Center(
+        child: Text(
+          userName.trim().isEmpty ? '?' : userName.trim()[0].toUpperCase(),
+          style: const TextStyle(
+            color: Color(0xFF30578F),
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),
@@ -1022,13 +1034,13 @@ class _ProfileMessage extends StatelessWidget {
 
 final _profileCardDecoration = BoxDecoration(
   color: _ProfileScreenState._card,
-  border: Border.all(color: _ProfileScreenState._outline),
   borderRadius: BorderRadius.circular(12),
   boxShadow: [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.025),
-      blurRadius: 20,
-      offset: const Offset(0, 2),
+      color: Colors.black.withValues(alpha: 0.055),
+      blurRadius: 18,
+      spreadRadius: -2,
+      offset: const Offset(0, 6),
     ),
   ],
 );

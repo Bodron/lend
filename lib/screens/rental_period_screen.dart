@@ -64,12 +64,16 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
             DateTime.now().day,
           )
         : DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
-    _startDate = widget.initialStartDate ?? initialDate;
+    _startDate = widget.rentalMode == RentalMode.hour
+        ? initialDate
+        : widget.rentalMode == RentalMode.month
+        ? (widget.initialStartDate ?? initialDate)
+        : widget.initialStartDate;
     _endDate = widget.rentalMode == RentalMode.hour
         ? initialDate
-        : widget.initialEndDate ?? (widget.rentalMode == RentalMode.month
-        ? _sameDayNextMonth(initialDate)
-        : initialDate.add(const Duration(days: 3)));
+        : widget.rentalMode == RentalMode.month
+        ? (widget.initialEndDate ?? _sameDayNextMonth(initialDate))
+        : widget.initialEndDate;
     _pickupTime = widget.product.pickupTime;
     _returnTime = widget.product.returnTime;
     _loadAvailabilityForVisibleMonth();
@@ -317,9 +321,13 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                       visibleMonth: _visibleMonth,
                       startDate: _startDate,
                       endDate: _endDate,
-                      onPrevious: widget.lockSelection ? () {} : _goToPreviousMonth,
+                      onPrevious: widget.lockSelection
+                          ? () {}
+                          : _goToPreviousMonth,
                       onNext: widget.lockSelection ? () {} : _goToNextMonth,
-                      onDateSelected: widget.lockSelection ? (_) {} : _selectDate,
+                      onDateSelected: widget.lockSelection
+                          ? (_) {}
+                          : _selectDate,
                       isUnavailable: _isUnavailable,
                       isSelectedEndpoint: _isSelectedEndpoint,
                       isInRange: _isInRange,

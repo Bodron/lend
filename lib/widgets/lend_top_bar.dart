@@ -13,6 +13,8 @@ class LendTopBar extends StatelessWidget {
     this.hasUnreadNotifications = false,
   });
 
+  static const height = 82.0;
+
   final String title;
   final String userName;
   final String? avatarUrl;
@@ -24,7 +26,7 @@ class LendTopBar extends StatelessWidget {
     final strings = GeneratedLocalizations.of(context);
 
     return SizedBox(
-      height: 82,
+      height: height,
       child: CustomPaint(
         painter: _LendTopBarPainter(),
         child: Padding(

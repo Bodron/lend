@@ -11,8 +11,9 @@ class ReviewsApi {
       Uri.parse('${AuthApi.baseUrl}/reviews/product/$productId'),
     );
     final payload = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ReviewsApiException('Nu am putut încărca review-urile.');
+    }
     return (payload as List)
         .whereType<Map<String, dynamic>>()
         .map(ProductReview.fromJson)
@@ -22,7 +23,6 @@ class ReviewsApi {
   Future<ProductReview> create({
     required String token,
     required String productId,
-    required String orderId,
     required int rating,
     required String comment,
   }) async {
@@ -32,11 +32,7 @@ class ReviewsApi {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({
-        'rentalOrderId': orderId,
-        'rating': rating,
-        'comment': comment,
-      }),
+      body: jsonEncode({'rating': rating, 'comment': comment}),
     );
     final payload = jsonDecode(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -47,6 +43,50 @@ class ReviewsApi {
       );
     }
     return ProductReview.fromJson(payload as Map<String, dynamic>);
+  }
+
+  Future<ReviewEligibility> findEligibility({
+    required String token,
+    required String productId,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('${AuthApi.baseUrl}/reviews/product/$productId/eligibility'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final payload = jsonDecode(response.body);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ReviewsApiException(
+        'Nu am putut verifica eligibilitatea review-ului.',
+      );
+    }
+    if (payload is! Map<String, dynamic>) {
+      throw ReviewsApiException(
+        'Raspuns invalid pentru eligibilitatea review-ului.',
+      );
+    }
+    return ReviewEligibility.fromJson(payload);
+  }
+}
+
+class ReviewEligibility {
+  const ReviewEligibility({
+    required this.canReview,
+    required this.rentalOrderId,
+    required this.message,
+  });
+
+  final bool canReview;
+  final String? rentalOrderId;
+  final String? message;
+
+  factory ReviewEligibility.fromJson(Map<String, dynamic> json) {
+    final rawOrderId = json['rentalOrderId']?.toString();
+    final rawMessage = json['message']?.toString();
+    return ReviewEligibility(
+      canReview: json['canReview'] == true,
+      rentalOrderId: rawOrderId?.isEmpty == true ? null : rawOrderId,
+      message: rawMessage?.isEmpty == true ? null : rawMessage,
+    );
   }
 }
 

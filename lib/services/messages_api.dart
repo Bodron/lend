@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 
 import 'auth_api.dart';
 
@@ -14,18 +13,6 @@ class MessagesApi {
   MessagesApi({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
-
-  socket_io.Socket connectSocket(String accessToken) {
-    final serverUrl = AuthApi.baseUrl.replaceFirst(RegExp(r'/api$'), '');
-    return socket_io.io(
-      serverUrl,
-      socket_io.OptionBuilder()
-          .setTransports(['websocket'])
-          .setAuth({'token': accessToken})
-          .disableAutoConnect()
-          .build(),
-    )..connect();
-  }
 
   Future<List<MessageThreadSummary>> findThreads(String accessToken) async {
     final response = await _client.get(

@@ -48,7 +48,14 @@ class _MainShellState extends State<MainShell> {
     final message = PushNotifications.instance.pendingMessage.value;
     if (!mounted || message == null) return;
     PushNotifications.instance.pendingMessage.value = null;
-    if (message.data['type'] != 'chat_message') return;
+    final type = message.data['type'];
+    if (type == 'rental_received' ||
+        type == 'rental_request' ||
+        type == 'rental_order_received') {
+      _selectTab(2);
+      return;
+    }
+    if (type != 'chat_message') return;
     final productId = message.data['productId'];
     if (productId == null || productId.isEmpty) return;
     try {

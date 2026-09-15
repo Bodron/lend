@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'add_listing_screen.dart';
@@ -9,6 +11,7 @@ import 'return_scan_screen.dart';
 import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
+import '../services/realtime_socket_service.dart';
 import '../services/rental_orders_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_screen_frame.dart';
@@ -41,7 +44,58 @@ class _RentalsScreenState extends State<RentalsScreen> {
   _RentalPerspective _perspective = _RentalPerspective.renting;
   bool _showHistory = false;
   final _rentalOrdersApi = RentalOrdersApi();
+  final _realtime = RealtimeSocketService.instance;
+  RealtimeSubscription? _rentalSubscription;
+  RealtimeSubscription? _connectionSubscription;
+  Timer? _socketRefreshDebounce;
   late Future<_RentalsData> _orders = _loadOrders();
+
+  @override
+  void initState() {
+    super.initState();
+    _connectRentalSocket();
+  }
+
+  @override
+  void dispose() {
+    _socketRefreshDebounce?.cancel();
+    _rentalSubscription?.cancel();
+    _connectionSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _connectRentalSocket() async {
+    final token = await AuthSessionStore.getToken();
+
+    if (!mounted || token == null) {
+      return;
+    }
+
+    try {
+      _rentalSubscription = await _realtime.subscribeToEvents(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        events: RealtimeEvents.rentalOrderEvents,
+        onData: (_, _) => _refreshOrdersFromSocket(),
+      );
+      _connectionSubscription = await _realtime.subscribe(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        event: 'connect',
+        onData: (_) => _refreshOrdersFromSocket(),
+      );
+    } catch (error) {
+      debugPrint('Realtime rentals unavailable: $error');
+    }
+  }
+
+  void _refreshOrdersFromSocket() {
+    _socketRefreshDebounce?.cancel();
+    _socketRefreshDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      _reloadOrders();
+    });
+  }
 
   Future<_RentalsData> _loadOrders() async {
     final token = await AuthSessionStore.getToken();
@@ -179,7 +233,9 @@ class _RentalsScreenState extends State<RentalsScreen> {
                 ),
               )
             else
-              const SliverToBoxAdapter(child: SizedBox(height: 110)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: LendTopBar.height),
+              ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 20,
@@ -909,6 +965,18 @@ class _ActiveRentalsGrid extends StatelessWidget {
             ? 2
             : 1;
 
+        if (crossAxisCount == 1) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var index = 0; index < items.length; index++) ...[
+                _buildCard(items[index]),
+                if (index < items.length - 1) const SizedBox(height: 20),
+              ],
+            ],
+          );
+        }
+
         return GridView.builder(
           itemCount: items.length,
           shrinkWrap: true,
@@ -918,21 +986,23 @@ class _ActiveRentalsGrid extends StatelessWidget {
             crossAxisSpacing: 20,
             mainAxisSpacing: 20,
             mainAxisExtent: perspective == _RentalPerspective.lending
-                ? 444
-                : 452,
+                ? 512
+                : 464,
           ),
-          itemBuilder: (context, index) {
-            return _ActiveRentalCard(
-              item: items[index],
-              perspective: perspective,
-              onScanReturn: onScanReturn,
-              onEditSchedule: onEditSchedule,
-              onAccept: onAccept,
-              onReject: onReject,
-            );
-          },
+          itemBuilder: (context, index) => _buildCard(items[index]),
         );
       },
+    );
+  }
+
+  Widget _buildCard(_RentalItem item) {
+    return _ActiveRentalCard(
+      item: item,
+      perspective: perspective,
+      onScanReturn: onScanReturn,
+      onEditSchedule: onEditSchedule,
+      onAccept: onAccept,
+      onReject: onReject,
     );
   }
 }

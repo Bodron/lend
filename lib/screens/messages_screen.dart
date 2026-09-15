@@ -1,14 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 
 import '../services/auth_api.dart';
 import '../services/messages_api.dart';
 import '../services/products_api.dart';
+import '../services/realtime_socket_service.dart';
 import '../services/rental_orders_api.dart';
 import '../models/rental_mode.dart';
 import '../widgets/lend_screen_frame.dart';
+import 'product_details_screen.dart';
 import 'rental_period_screen.dart';
 
 class MessagesScreen extends StatefulWidget {
@@ -964,12 +965,14 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
   static const _blue = Color(0xFF30578F);
   final _api = MessagesApi();
   final _authApi = AuthApi();
+  final _realtime = RealtimeSocketService.instance;
   final _composer = TextEditingController();
   List<Message> _messages = const [];
   List<RentalOffer> _offers = const [];
   String? _token;
   String? _userId;
-  socket_io.Socket? _socket;
+  RealtimeSubscription? _messageSubscription;
+  RealtimeSubscription? _offerSubscription;
   bool _loading = true;
   bool _sending = false;
   bool _isOwner = false;
@@ -986,7 +989,9 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
 
   @override
   void dispose() {
-    _socket?.dispose();
+    _realtime.emit('conversation.leave', {'productId': widget.productId});
+    _messageSubscription?.cancel();
+    _offerSubscription?.cancel();
     _composer.dispose();
     super.dispose();
   }
@@ -1014,23 +1019,30 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         _loading = false;
       });
       unawaited(_loadProductImage());
-      final socket = _api.connectSocket(token);
-      _socket = socket;
-      socket.onConnect((_) {
-        socket.emit('conversation.join', {'productId': widget.productId});
-      });
-      socket.on('message.new', (data) {
-        if (data is! Map) return;
-        final message = Message.fromJson(Map<String, dynamic>.from(data));
-        if (!mounted || _messages.any((item) => item.id == message.id)) return;
-        setState(() => _messages = [..._messages, message]);
-      });
-      socket.on('offer.updated', (data) {
-        if (data is! Map) return;
-        final offer = RentalOffer.fromJson(Map<String, dynamic>.from(data));
-        if (!mounted) return;
-        _upsertOffer(offer);
-      });
+      _messageSubscription = await _realtime.subscribe(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        event: RealtimeEvents.messageNew,
+        onData: (data) {
+          if (data is! Map) return;
+          final message = Message.fromJson(Map<String, dynamic>.from(data));
+          if (!mounted || _messages.any((item) => item.id == message.id))
+            return;
+          setState(() => _messages = [..._messages, message]);
+        },
+      );
+      _offerSubscription = await _realtime.subscribe(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        event: RealtimeEvents.offerUpdated,
+        onData: (data) {
+          if (data is! Map) return;
+          final offer = RentalOffer.fromJson(Map<String, dynamic>.from(data));
+          if (!mounted) return;
+          _upsertOffer(offer);
+        },
+      );
+      _realtime.emit('conversation.join', {'productId': widget.productId});
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -1050,6 +1062,34 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
     } catch (_) {
       // The conversation remains usable with the generic fallback icon.
     }
+  }
+
+  Future<void> _openProductDetails() async {
+    var product = _chatProduct;
+    if (product == null) {
+      try {
+        final products = await ProductsApi().findAll();
+        product = products
+            .where((item) => item.id == widget.productId)
+            .firstOrNull;
+      } catch (_) {
+        product = null;
+      }
+    }
+
+    if (!mounted) return;
+    if (product == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Anunțul nu mai este disponibil.')),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ProductDetailsScreen(product: product!),
+      ),
+    );
   }
 
   Future<void> _send() async {
@@ -1335,59 +1375,66 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       ),
       body: Column(
         children: [
-          Container(
-            margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: _productImageUrl == null
-                        ? const ColoredBox(
-                            color: Color(0xFFE2EBFA),
-                            child: Icon(Icons.home_work_outlined, color: _blue),
-                          )
-                        : Image.network(
-                            _productImageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => const ColoredBox(
+          InkWell(
+            onTap: _openProductDetails,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: _productImageUrl == null
+                          ? const ColoredBox(
                               color: Color(0xFFE2EBFA),
                               child: Icon(
                                 Icons.home_work_outlined,
                                 color: _blue,
                               ),
+                            )
+                          : Image.network(
+                              _productImageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const ColoredBox(
+                                color: Color(0xFFE2EBFA),
+                                child: Icon(
+                                  Icons.home_work_outlined,
+                                  color: _blue,
+                                ),
+                              ),
                             ),
-                          ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.productTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 3),
-                      const Text(
-                        'Conversație despre acest anunț',
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.productTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 3),
+                        const Text(
+                          'Conversație despre acest anunț',
+                          style: TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.black45),
-              ],
+                  const Icon(Icons.chevron_right, color: Colors.black45),
+                ],
+              ),
             ),
           ),
           Expanded(

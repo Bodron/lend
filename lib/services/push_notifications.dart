@@ -61,8 +61,8 @@ class PushNotifications with WidgetsBindingObserver {
           // The listener runs synchronously when a foreground message arrives.
           // ignore: use_build_context_synchronously
           context,
-          title: message.notification?.title ?? 'Mesaj nou',
-          message: message.notification?.body ?? 'Ai primit un mesaj nou.',
+          title: _titleFor(message),
+          message: _bodyFor(message),
           actionLabel: 'Deschide',
           onAction: () => pendingMessage.value = message,
         );
@@ -203,5 +203,34 @@ class PushNotifications with WidgetsBindingObserver {
     } finally {
       client.close();
     }
+  }
+
+  String _titleFor(RemoteMessage message) {
+    if (message.notification?.title != null &&
+        message.notification!.title!.isNotEmpty) {
+      return message.notification!.title!;
+    }
+
+    return _isRentalNotification(message)
+        ? 'Ai primit o închiriere nouă'
+        : 'Mesaj nou';
+  }
+
+  String _bodyFor(RemoteMessage message) {
+    if (message.notification?.body != null &&
+        message.notification!.body!.isNotEmpty) {
+      return message.notification!.body!;
+    }
+
+    return _isRentalNotification(message)
+        ? 'Ai primit o solicitare nouă pentru unul dintre produsele tale.'
+        : 'Ai primit un mesaj nou.';
+  }
+
+  bool _isRentalNotification(RemoteMessage message) {
+    final type = message.data['type'];
+    return type == 'rental_received' ||
+        type == 'rental_request' ||
+        type == 'rental_order_received';
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../services/products_api.dart';
@@ -22,15 +23,21 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
   static const _bucharest = LatLng(44.4268, 26.1025);
+  static const _nearbyRadiusKm = 50.0;
 
   GoogleMapController? _mapController;
   String? _mapStyle;
-  late final List<_ProductMarker> _productMarkers = _buildProductMarkers();
+  late List<_ProductMarker> _productMarkers;
+  LatLng? _userLocation;
+  bool _locationLoading = true;
+  String? _locationError;
 
   @override
   void initState() {
     super.initState();
+    _productMarkers = _buildProductMarkers();
     _loadMapStyle();
+    _loadNearbyProducts();
   }
 
   @override
@@ -49,6 +56,62 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
     setState(() {
       _mapStyle = mapStyle;
     });
+  }
+
+  Future<void> _loadNearbyProducts() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        throw const _LocationException('activează serviciul de localizare');
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw const _LocationException(
+          'permisiunea de localizare nu este disponibilă',
+        );
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      final userLocation = LatLng(position.latitude, position.longitude);
+      final allMarkers = _buildProductMarkers();
+      final nearbyMarkers = allMarkers.where((item) {
+        final distance = Geolocator.distanceBetween(
+          userLocation.latitude,
+          userLocation.longitude,
+          item.position.latitude,
+          item.position.longitude,
+        );
+        return distance <= _nearbyRadiusKm * 1000;
+      }).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _userLocation = userLocation;
+        _productMarkers = nearbyMarkers;
+        _locationLoading = false;
+      });
+      await _showNearbyArea();
+    } on _LocationException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _locationLoading = false;
+        _locationError = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _locationLoading = false;
+        _locationError = 'localizarea nu a putut fi obținută';
+      });
+    }
   }
 
   @override
@@ -91,16 +154,17 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
                   style: _mapStyle,
                   initialCameraPosition: CameraPosition(
                     target: _initialTarget,
-                    zoom: widget.products.isEmpty ? 6 : 11.5,
+                    zoom: widget.products.isEmpty ? 6 : 10,
                   ),
                   markers: markers,
-                  myLocationButtonEnabled: false,
+                  myLocationEnabled: _userLocation != null,
+                  myLocationButtonEnabled: _userLocation != null,
                   mapToolbarEnabled: false,
                   zoomControlsEnabled: false,
                   compassEnabled: false,
                   onMapCreated: (controller) {
                     _mapController = controller;
-                    _fitMarkers();
+                    _showNearbyArea();
                   },
                 ),
                 Positioned(
@@ -110,11 +174,28 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
                   child: _MapTopBar(
                     title: strings.map,
                     subtitle: strings.availableItemsCount(
-                      widget.products.length,
+                      _productMarkers.length,
                     ),
                   ),
                 ),
-                if (widget.products.isEmpty)
+                if (_locationLoading)
+                  const Positioned(
+                    top: 92,
+                    left: 24,
+                    right: 24,
+                    child: _LocationStatus(text: 'Caut locația ta…'),
+                  ),
+                if (!_locationLoading && _locationError != null)
+                  Positioned(
+                    top: 92,
+                    left: 24,
+                    right: 24,
+                    child: _LocationStatus(
+                      text:
+                          'Nu pot folosi locația: $_locationError. Sunt afișate toate produsele.',
+                    ),
+                  ),
+                if (_productMarkers.isEmpty)
                   Center(child: _EmptyMapMessage(text: strings.emptyMapItems))
                 else
                   Positioned(
@@ -153,6 +234,9 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
   }
 
   LatLng get _initialTarget {
+    if (_userLocation != null) {
+      return _userLocation!;
+    }
     if (_productMarkers.isEmpty) {
       return _bucharest;
     }
@@ -214,6 +298,20 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
     );
   }
 
+  Future<void> _showNearbyArea() async {
+    if (_mapController == null) return;
+    if (_productMarkers.length >= 2) {
+      await _fitMarkers();
+      return;
+    }
+    final target = _userLocation ?? _initialTarget;
+    await _mapController!.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(target: target, zoom: _userLocation == null ? 10 : 11.5),
+      ),
+    );
+  }
+
   LatLngBounds _boundsFor(Iterable<LatLng> points) {
     final iterator = points.iterator..moveNext();
     var minLat = iterator.current.latitude;
@@ -266,6 +364,47 @@ class _ProductMarker {
 
   final LendProduct product;
   final LatLng position;
+}
+
+class _LocationException implements Exception {
+  const _LocationException(this.message);
+
+  final String message;
+}
+
+class _LocationStatus extends StatelessWidget {
+  const _LocationStatus({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: _ExploreMapScreenState._muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _MapTopBar extends StatelessWidget {
