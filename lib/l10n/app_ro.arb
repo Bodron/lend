@@ -423,7 +423,7 @@
   "stripeNotConfigured": "Stripe nu este configurat. Lipse\u0219te cheia public\u0103.",
   "stripePaymentConfirmationMissing": "Nu am primit confirmarea pl\u0103\u021bii de la Stripe.",
   "stripeOnboardingOpenError": "Nu am putut deschide onboardingul Stripe.",
-  "requestSentToOwner": "Cererea #{id} a fost trimis\u0103 proprietarului.",
+  "requestSentToOwner": "Cererea ta a fost trimis\u0103 proprietarului.",
   "timeFormatHint": "Folose\u0219te ore de forma 10:00.",
   "payoutSentToStripe": "{amount} RON au fost trimiși către Stripe.",
   "lendOwnerName": "Proprietar Lend",

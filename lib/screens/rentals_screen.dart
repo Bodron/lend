@@ -20,10 +20,20 @@ import '../widgets/lend_top_bar.dart';
 import '../widgets/product_media_preview.dart';
 
 class RentalsScreen extends StatefulWidget {
-  const RentalsScreen({super.key, this.showChrome = true, this.onNavigate});
+  const RentalsScreen({
+    super.key,
+    this.showChrome = true,
+    this.onNavigate,
+    this.initialRentalOrderId,
+    this.initialShowOwnedRentals = false,
+    this.onRentalOpened,
+  });
 
   final bool showChrome;
   final ValueChanged<int>? onNavigate;
+  final String? initialRentalOrderId;
+  final bool initialShowOwnedRentals;
+  final VoidCallback? onRentalOpened;
 
   @override
   State<RentalsScreen> createState() => _RentalsScreenState();
@@ -49,10 +59,30 @@ class _RentalsScreenState extends State<RentalsScreen> {
   RealtimeSubscription? _connectionSubscription;
   Timer? _socketRefreshDebounce;
   late Future<_RentalsData> _orders = _loadOrders();
+  String? _pendingRentalOrderId;
+  final Map<String, GlobalKey> _rentalKeys = {};
+
+  @override
+  void didUpdateWidget(covariant RentalsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialRentalOrderId != oldWidget.initialRentalOrderId &&
+        widget.initialRentalOrderId != null) {
+      _pendingRentalOrderId = widget.initialRentalOrderId;
+    }
+    if (widget.initialShowOwnedRentals != oldWidget.initialShowOwnedRentals &&
+        widget.initialShowOwnedRentals) {
+      _perspective = _RentalPerspective.lending;
+      _showHistory = false;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _pendingRentalOrderId = widget.initialRentalOrderId;
+    _perspective = widget.initialShowOwnedRentals
+        ? _RentalPerspective.lending
+        : _RentalPerspective.renting;
     _connectRentalSocket();
   }
 
@@ -116,6 +146,27 @@ class _RentalsScreenState extends State<RentalsScreen> {
     setState(() {
       _orders = _loadOrders();
     });
+  }
+
+  void _focusPendingRental(List<_RentalItem> items) {
+    final orderId = _pendingRentalOrderId;
+    if (!mounted || orderId == null) return;
+
+    final item = items.where((value) => value.id == orderId).firstOrNull;
+    if (item == null) return;
+
+    final key = _rentalKeys.putIfAbsent(orderId, GlobalKey.new);
+    final targetContext = key.currentContext;
+    if (targetContext == null) return;
+
+    _pendingRentalOrderId = null;
+    widget.onRentalOpened?.call();
+    Scrollable.ensureVisible(
+      targetContext,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      alignment: 0.12,
+    );
   }
 
   static bool _isHistoryOrder(RentalOrder order) {
@@ -316,6 +367,10 @@ class _RentalsScreenState extends State<RentalsScreen> {
                           )
                           .toList();
 
+                      WidgetsBinding.instance.addPostFrameCallback(
+                        (_) => _focusPendingRental(activeItems),
+                      );
+
                       if (!_showHistory && activeItems.isEmpty) {
                         return _RentalsMessage(
                           icon: Icons.handshake_outlined,
@@ -355,6 +410,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                                 key: const ValueKey('active-rentals'),
                                 items: activeItems,
                                 perspective: _perspective,
+                                itemKeys: _rentalKeys,
                                 onScanReturn: _openReturnScanner,
                                 onEditSchedule: _openScheduleEditor,
                                 onAccept: _acceptRentalRequest,
@@ -491,6 +547,18 @@ class _RentalsScreenState extends State<RentalsScreen> {
 
         return StatefulBuilder(
           builder: (context, setModalState) {
+            Future<void> pickTime(TextEditingController controller) async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: _parseTime(controller.text) ?? TimeOfDay.now(),
+                initialEntryMode: TimePickerEntryMode.dial,
+              );
+              if (picked == null || !context.mounted) return;
+              setModalState(() {
+                controller.text = _formatTime(picked);
+              });
+            }
+
             Future<void> save() async {
               final pickupTime = pickupController.text.trim();
               final returnTime = returnController.text.trim();
@@ -580,6 +648,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                           controller: pickupController,
                           label: 'Ridicare',
                           hint: '10:00',
+                          onTap: () => pickTime(pickupController),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -588,6 +657,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                           controller: returnController,
                           label: 'Retur',
                           hint: '18:00',
+                          onTap: () => pickTime(returnController),
                         ),
                       ),
                     ],
@@ -634,6 +704,21 @@ class _RentalsScreenState extends State<RentalsScreen> {
   static bool _isValidTime(String value) {
     return RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(value);
   }
+
+  static TimeOfDay? _parseTime(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null || hour > 23 || minute > 59) {
+      return null;
+    }
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  static String _formatTime(TimeOfDay time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
 }
 
 class _ScheduleTextField extends StatelessWidget {
@@ -641,11 +726,13 @@ class _ScheduleTextField extends StatelessWidget {
     required this.controller,
     required this.label,
     required this.hint,
+    required this.onTap,
   });
 
   final TextEditingController controller;
   final String label;
   final String hint;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -663,9 +750,12 @@ class _ScheduleTextField extends StatelessWidget {
         const SizedBox(height: 8),
         TextField(
           controller: controller,
-          keyboardType: TextInputType.datetime,
+          readOnly: true,
+          showCursor: false,
+          onTap: onTap,
           decoration: InputDecoration(
             hintText: hint,
+            suffixIcon: const Icon(Icons.schedule_rounded),
             filled: true,
             fillColor: const Color(0xFFF5F5F7),
             contentPadding: const EdgeInsets.symmetric(
@@ -942,6 +1032,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
     super.key,
     required this.items,
     required this.perspective,
+    required this.itemKeys,
     required this.onScanReturn,
     required this.onEditSchedule,
     required this.onAccept,
@@ -950,6 +1041,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
 
   final List<_RentalItem> items;
   final _RentalPerspective perspective;
+  final Map<String, GlobalKey> itemKeys;
   final VoidCallback onScanReturn;
   final ValueChanged<_RentalItem> onEditSchedule;
   final ValueChanged<_RentalItem> onAccept;
@@ -997,6 +1089,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
 
   Widget _buildCard(_RentalItem item) {
     return _ActiveRentalCard(
+      key: itemKeys[item.id],
       item: item,
       perspective: perspective,
       onScanReturn: onScanReturn,
@@ -1009,6 +1102,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
 
 class _ActiveRentalCard extends StatelessWidget {
   const _ActiveRentalCard({
+    super.key,
     required this.item,
     required this.perspective,
     required this.onScanReturn,
@@ -1273,6 +1367,7 @@ class _ActiveRentalCard extends StatelessWidget {
                               Navigator.of(context).push(
                                 MaterialPageRoute<void>(
                                   builder: (_) => ReturnQrScreen(
+                                    orderId: item.id,
                                     itemTitle: item.title,
                                     itemImageUrl: item.imageUrl,
                                     returnCode: 'borrowit:return:${item.id}',

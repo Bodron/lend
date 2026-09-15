@@ -423,7 +423,7 @@
   "stripeNotConfigured": "Stripe is not configured. The publishable key is missing.",
   "stripePaymentConfirmationMissing": "Stripe did not return payment confirmation.",
   "stripeOnboardingOpenError": "Could not open Stripe onboarding.",
-  "requestSentToOwner": "Request #{id} was sent to the owner.",
+  "requestSentToOwner": "Your request was sent to the owner.",
   "timeFormatHint": "Use times like 10:00.",
   "payoutSentToStripe": "{amount} RON was sent to Stripe.",
   "lendOwnerName": "Lend owner",

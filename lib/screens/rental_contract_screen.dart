@@ -165,7 +165,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         return;
       }
 
-      LendToast.success(context, message: strings.requestSentToOwner(order.id));
+      LendToast.success(context, message: strings.requestSentToOwner);
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute<void>(

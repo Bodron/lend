@@ -26,6 +26,8 @@ class _MainShellState extends State<MainShell> {
   static const _background = Color(0xFFF5F5F7);
   final _authApi = AuthApi();
   late int _currentIndex = widget.initialIndex.clamp(0, 3);
+  String? _pendingRentalOrderId;
+  bool _pendingOwnedRental = false;
   String _topBarUserName = 'Pinlend';
   String? _topBarAvatarUrl;
 
@@ -52,7 +54,11 @@ class _MainShellState extends State<MainShell> {
     if (type == 'rental_received' ||
         type == 'rental_request' ||
         type == 'rental_order_received') {
-      _selectTab(2);
+      setState(() {
+        _pendingRentalOrderId = message.data['rentalOrderId'];
+        _pendingOwnedRental = message.data['rentalPerspective'] != 'renting';
+        _currentIndex = 2;
+      });
       return;
     }
     if (type != 'chat_message') return;
@@ -165,6 +171,15 @@ class _MainShellState extends State<MainShell> {
                         RentalsScreen(
                           showChrome: false,
                           onNavigate: _selectTab,
+                          initialRentalOrderId: _pendingRentalOrderId,
+                          initialShowOwnedRentals: _pendingOwnedRental,
+                          onRentalOpened: () {
+                            if (!mounted) return;
+                            setState(() {
+                              _pendingRentalOrderId = null;
+                              _pendingOwnedRental = false;
+                            });
+                          },
                         ),
                         ProfileScreen(
                           showChrome: false,

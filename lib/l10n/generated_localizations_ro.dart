@@ -1043,9 +1043,7 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
       'Nu am putut deschide onboardingul Stripe.';
 
   @override
-  String requestSentToOwner(Object id) {
-    return 'Cererea #$id a fost trimisă proprietarului.';
-  }
+  String get requestSentToOwner => 'Cererea ta a fost trimisă proprietarului.';
 
   @override
   String get timeFormatHint => 'Folosește ore de forma 10:00.';

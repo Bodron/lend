@@ -2005,8 +2005,8 @@ abstract class GeneratedLocalizations {
   /// No description provided for @requestSentToOwner.
   ///
   /// In en, this message translates to:
-  /// **'Request #{id} was sent to the owner.'**
-  String requestSentToOwner(Object id);
+  /// **'Your request was sent to the owner.'**
+  String get requestSentToOwner;
 
   /// No description provided for @timeFormatHint.
   ///

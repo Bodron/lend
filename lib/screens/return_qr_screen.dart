@@ -2,19 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../l10n/generated_localizations.dart';
+import '../services/auth_api.dart';
+import '../services/realtime_socket_service.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_screen_frame.dart';
 import 'add_listing_screen.dart';
 import 'main_shell.dart';
 
-class ReturnQrScreen extends StatelessWidget {
+class ReturnQrScreen extends StatefulWidget {
   const ReturnQrScreen({
     super.key,
+    required this.orderId,
     required this.itemTitle,
     required this.itemImageUrl,
     required this.returnCode,
   });
 
+  final String orderId;
   final String itemTitle;
   final String itemImageUrl;
   final String returnCode;
@@ -30,16 +34,71 @@ class ReturnQrScreen extends StatelessWidget {
   static const _outlineVariant = Color(0xFFC3C6D1);
 
   @override
+  State<ReturnQrScreen> createState() => _ReturnQrScreenState();
+}
+
+class _ReturnQrScreenState extends State<ReturnQrScreen> {
+  RealtimeSubscription? _rentalSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectRealtime();
+  }
+
+  @override
+  void dispose() {
+    _rentalSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _connectRealtime() async {
+    final token = await AuthSessionStore.getToken();
+    if (!mounted || token == null) return;
+
+    try {
+      final subscription = await RealtimeSocketService.instance
+          .subscribeToEvents(
+            accessToken: token,
+            apiBaseUrl: AuthApi.baseUrl,
+            events: RealtimeEvents.rentalOrderEvents,
+            onData: (_, data) => _handleRentalEvent(data),
+          );
+      if (!mounted) {
+        subscription.cancel();
+        return;
+      }
+      _rentalSubscription = subscription;
+    } catch (_) {
+      // The rentals screen REST reload remains the fallback.
+    }
+  }
+
+  void _handleRentalEvent(dynamic data) {
+    if (!mounted || data is! Map) return;
+    final payload = Map<String, dynamic>.from(data);
+    final nested = payload['order'] ?? payload['rentalOrder'];
+    final order = nested is Map ? Map<String, dynamic>.from(nested) : payload;
+    final orderId = (order['_id'] ?? order['id'] ?? order['orderId'])
+        ?.toString();
+    final status = order['status']?.toString();
+    if (orderId != widget.orderId || status != 'completed') return;
+
+    _rentalSubscription?.cancel();
+    Navigator.of(context).pop(true);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final strings = GeneratedLocalizations.of(context);
 
     return LendScreenFrame(
-      backgroundColor: _background,
+      backgroundColor: ReturnQrScreen._background,
       child: Stack(
         children: [
           CustomScrollView(
             slivers: [
-              SliverToBoxAdapter(child: _ReturnTopBar(title: itemTitle)),
+              SliverToBoxAdapter(child: _ReturnTopBar(title: widget.itemTitle)),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 138),
                 sliver: SliverList(
@@ -47,9 +106,9 @@ class ReturnQrScreen extends StatelessWidget {
                     const _ReturnStatusBadge(),
                     const SizedBox(height: 8),
                     _ReturnQrCard(
-                      itemTitle: itemTitle,
-                      itemImageUrl: itemImageUrl,
-                      returnCode: returnCode,
+                      itemTitle: widget.itemTitle,
+                      itemImageUrl: widget.itemImageUrl,
+                      returnCode: widget.returnCode,
                     ),
                     const SizedBox(height: 20),
                     _SecondaryActionButton(

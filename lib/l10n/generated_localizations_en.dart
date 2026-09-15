@@ -1034,9 +1034,7 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   String get stripeOnboardingOpenError => 'Could not open Stripe onboarding.';
 
   @override
-  String requestSentToOwner(Object id) {
-    return 'Request #$id was sent to the owner.';
-  }
+  String get requestSentToOwner => 'Your request was sent to the owner.';
 
   @override
   String get timeFormatHint => 'Use times like 10:00.';

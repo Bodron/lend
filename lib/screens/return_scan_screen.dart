@@ -6,7 +6,6 @@ import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/rental_orders_api.dart';
 import '../widgets/lend_toast.dart';
-import 'return_success_screen.dart';
 
 class ReturnScanScreen extends StatefulWidget {
   const ReturnScanScreen({super.key});
@@ -95,14 +94,9 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
         return;
       }
 
-      final acknowledged = await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(builder: (_) => const ReturnSuccessScreen()),
-      );
-      if (!mounted) {
-        return;
-      }
-
-      Navigator.of(context).pop(acknowledged == true);
+      // The scan flow is complete. Return directly to the rentals screen;
+      // its socket subscription will refresh both perspectives immediately.
+      Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) {
         return;
