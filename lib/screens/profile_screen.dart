@@ -529,6 +529,11 @@ class _ProfileData {
         .fold<int>(0, (sum, order) => sum + order.ownerEarnings);
   }
 
+  bool get shouldShowPayoutCard {
+    return availablePayout > 0 ||
+        (earnedTotal > 0 && user.stripeAccountId == null);
+  }
+
   String get ratingLabel {
     if (listings.isEmpty) {
       return '-';
@@ -658,11 +663,12 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ],
         ),
-        if (data.availablePayout > 0) ...[
+        if (data.shouldShowPayoutCard) ...[
           const SizedBox(height: 16),
           _PayoutCard(
             amount: data.availablePayout,
             payoutsEnabled: data.user.stripePayoutsEnabled,
+            hasStripeAccount: data.user.stripeAccountId != null,
             onPressed: onPayoutPressed,
           ),
         ],
@@ -731,11 +737,13 @@ class _PayoutCard extends StatelessWidget {
   const _PayoutCard({
     required this.amount,
     required this.payoutsEnabled,
+    required this.hasStripeAccount,
     required this.onPressed,
   });
 
   final int amount;
   final bool payoutsEnabled;
+  final bool hasStripeAccount;
   final VoidCallback onPressed;
 
   @override
@@ -788,7 +796,11 @@ class _PayoutCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              child: Text(GeneratedLocalizations.of(context).receiveMoney),
+              child: Text(
+                hasStripeAccount
+                    ? GeneratedLocalizations.of(context).receiveMoney
+                    : 'Configureaza Stripe',
+              ),
             ),
           ],
         ),
