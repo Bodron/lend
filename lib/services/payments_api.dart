@@ -8,6 +8,7 @@ class PaymentsApi {
   PaymentsApi({http.Client? client}) : _client = client ?? http.Client();
 
   static const _requestTimeout = Duration(seconds: 8);
+  static const _payoutRequestTimeout = Duration(seconds: 20);
 
   final http.Client _client;
 
@@ -15,10 +16,12 @@ class PaymentsApi {
     final response = await _client
         .get(Uri.parse('${AuthApi.baseUrl}/payments/config'))
         .timeout(_requestTimeout);
-    final payload = jsonDecode(response.body);
+    final payload = _decodePayload(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw PaymentsApiException('Nu am putut incarca setarile Stripe.');
+      throw PaymentsApiException(
+        _errorMessage(payload, 'Nu am putut incarca setarile Stripe.'),
+      );
     }
 
     if (payload is! Map<String, dynamic>) {
@@ -35,10 +38,12 @@ class PaymentsApi {
           headers: {'Authorization': 'Bearer $accessToken'},
         )
         .timeout(_requestTimeout);
-    final payload = jsonDecode(response.body);
+    final payload = _decodePayload(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw PaymentsApiException('Nu am putut porni configurarea platilor.');
+      throw PaymentsApiException(
+        _errorMessage(payload, 'Nu am putut porni configurarea platilor.'),
+      );
     }
 
     if (payload is! Map<String, dynamic>) {
@@ -48,17 +53,29 @@ class PaymentsApi {
     return (payload['url'] ?? '').toString();
   }
 
-  Future<PayoutRequestResult> requestPayout(String accessToken) async {
+  Future<PayoutRequestResult> requestPayout(
+    String accessToken, {
+    String? businessType,
+  }) async {
+    final headers = <String, String>{
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    };
     final response = await _client
         .post(
           Uri.parse('${AuthApi.baseUrl}/payments/payouts/request'),
-          headers: {'Authorization': 'Bearer $accessToken'},
+          headers: headers,
+          body: jsonEncode(
+            businessType == null ? {} : {'businessType': businessType},
+          ),
         )
-        .timeout(_requestTimeout);
-    final payload = jsonDecode(response.body);
+        .timeout(_payoutRequestTimeout);
+    final payload = _decodePayload(response.body);
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw PaymentsApiException('Nu am putut porni retragerea banilor.');
+      throw PaymentsApiException(
+        _errorMessage(payload, 'Nu am putut porni retragerea banilor.'),
+      );
     }
 
     if (payload is! Map<String, dynamic>) {
@@ -66,6 +83,40 @@ class PaymentsApi {
     }
 
     return PayoutRequestResult.fromJson(payload);
+  }
+
+  Object? _decodePayload(String body) {
+    if (body.trim().isEmpty) {
+      return null;
+    }
+
+    try {
+      return jsonDecode(body);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  String _errorMessage(Object? payload, String fallback) {
+    if (payload is! Map<String, dynamic>) {
+      return fallback;
+    }
+
+    final message = payload['message'];
+    if (message is String && message.trim().isNotEmpty) {
+      return message;
+    }
+
+    if (message is List && message.isNotEmpty) {
+      return message.whereType<String>().join('\n');
+    }
+
+    final error = payload['error'];
+    if (error is String && error.trim().isNotEmpty) {
+      return error;
+    }
+
+    return fallback;
   }
 }
 

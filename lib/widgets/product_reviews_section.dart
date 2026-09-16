@@ -224,8 +224,113 @@ class _AnimatedReviewStar extends StatelessWidget {
   }
 }
 
+class _ReviewAvatar extends StatelessWidget {
+  const _ReviewAvatar({required this.review});
+
+  final ProductReview review;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmedName = review.reviewerName.trim();
+    final initial = trimmedName.isNotEmpty
+        ? trimmedName.substring(0, 1).toUpperCase()
+        : 'U';
+    final avatarUrl = review.reviewerAvatarUrl;
+
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: const Color(0xFFE7F0FD),
+      backgroundImage: avatarUrl == null ? null : NetworkImage(avatarUrl),
+      child: avatarUrl == null
+          ? Text(
+              initial,
+              style: const TextStyle(
+                color: Color(0xFF30578F),
+                fontWeight: FontWeight.w800,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _ReviewStars extends StatelessWidget {
+  const _ReviewStars({required this.rating});
+
+  final int rating;
+
+  @override
+  Widget build(BuildContext context) {
+    final clampedRating = rating.clamp(0, 5);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var value = 1; value <= 5; value++)
+          Icon(
+            value <= clampedRating
+                ? Icons.star_rounded
+                : Icons.star_border_rounded,
+            size: 18,
+            color: const Color(0xFFFFB020),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReviewCard extends StatelessWidget {
+  const _ReviewCard({required this.review});
+
+  final ProductReview review;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _ReviewAvatar(review: review),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    review.reviewerName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _ReviewStars(rating: review.rating),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              review.comment,
+              style: const TextStyle(
+                color: Color(0xFF434750),
+                fontSize: 15,
+                height: 1.45,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ProductReviewsSectionState extends State<ProductReviewsSection> {
   static const _cacheLifetime = Duration(minutes: 2);
+  static const _collapsedReviewCount = 3;
   static final Map<String, _ReviewsCacheEntry> _cache = {};
 
   final _api = ReviewsApi();
@@ -414,7 +519,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final first = _reviews.firstOrNull;
+    final visibleReviews = _reviews.take(_collapsedReviewCount).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -454,47 +559,17 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
         const SizedBox(height: 12),
         if (_loading)
           const Center(child: CircularProgressIndicator())
-        else if (first == null)
+        else if (_reviews.isEmpty)
           const Text('Nu există review-uri încă.')
         else
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(child: Icon(Icons.person_outline)),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Text(
-                          'Utilizator verificat',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      Text(
-                        '${first.rating}.0',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    first.comment,
-                    style: const TextStyle(
-                      color: Color(0xFF434750),
-                      fontSize: 15,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final review in visibleReviews) ...[
+                _ReviewCard(review: review),
+                const SizedBox(height: 10),
+              ],
+            ],
           ),
       ],
     );

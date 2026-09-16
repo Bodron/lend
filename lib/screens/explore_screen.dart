@@ -578,14 +578,7 @@ class _RecommendedCard extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: Stack(
                 fit: StackFit.expand,
-                children: [
-                  ProductMediaPreview(product: product),
-                  const Positioned(
-                    top: 16,
-                    right: 16,
-                    child: _Badge(text: 'DB'),
-                  ),
-                ],
+                children: [ProductMediaPreview(product: product)],
               ),
             ),
             const SizedBox(height: 8),
@@ -744,33 +737,6 @@ void _openProductDetails(BuildContext context, LendProduct product) {
       builder: (_) => ProductDetailsScreen(product: product),
     ),
   );
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.90),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: _ExploreScreenState._text,
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _DistanceBadge extends StatelessWidget {

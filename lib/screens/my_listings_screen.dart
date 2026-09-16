@@ -406,6 +406,7 @@ class _ListingCard extends StatelessWidget {
                                     address: item.address,
                                     latitude: item.latitude,
                                     longitude: item.longitude,
+                                    availabilityScope: item.availabilityScope,
                                     pickupTime: item.pickupTime,
                                     returnTime: item.returnTime,
                                     imageUrl: item.imageUrl,

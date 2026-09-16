@@ -42,6 +42,7 @@ class ListingFormData {
     this.address = '',
     this.latitude,
     this.longitude,
+    this.availabilityScope = 'local',
     this.media = const [],
     this.pricePerHour = '',
     this.pickupTime = '10:00',
@@ -61,6 +62,7 @@ class ListingFormData {
   final String address;
   final double? latitude;
   final double? longitude;
+  final String availabilityScope;
   final List<UploadedMedia> media;
   final String pickupTime;
   final String returnTime;
@@ -82,6 +84,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
   bool _hourlyEnabled = true;
   bool _dailyEnabled = true;
   bool _monthlyEnabled = false;
+  String _availabilityScope = 'local';
   Timer? _addressDebounce;
   String _category = 'choose';
   late final TextEditingController _titleController;
@@ -106,6 +109,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
     super.initState();
     final initialData = widget.initialData;
     _category = _supportedCategory(initialData?.category ?? 'choose');
+    _availabilityScope =
+        initialData?.availabilityScope ??
+        _defaultAvailabilityScopeForCategory(_category);
     _titleController = TextEditingController(text: initialData?.title ?? '');
     _descriptionController = TextEditingController(
       text: initialData?.description ?? '',
@@ -294,6 +300,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
         address: address,
         latitude: _selectedLocation.latitude,
         longitude: _selectedLocation.longitude,
+        availabilityScope: _availabilityScope,
         pickupTime: pickupTime,
         returnTime: returnTime,
         rentalModes: [
@@ -359,6 +366,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
       'tools' => strings.toolsDiy,
       'unelte' => strings.tools,
       'home' => strings.homeGarden,
+      'casa-gradina' => strings.homeGarden,
+      'masini' => 'Mașini',
+      'imobiliare' => 'Imobiliare',
       'electronics' || 'electronice' => strings.electronics,
       'sport' || 'sport-outdoor' => strings.sportOutdoor,
       'gaming-console' => strings.gamingConsole,
@@ -379,11 +389,19 @@ class _AddListingScreenState extends State<AddListingScreen> {
       'drone',
       'tools',
       'home',
+      'casa-gradina',
+      'masini',
+      'imobiliare',
       'electronics',
       'sport',
     };
 
     return supported.contains(value) ? value : 'choose';
+  }
+
+  static String _defaultAvailabilityScopeForCategory(String category) {
+    const nationalCategories = {'masini', 'imobiliare', 'auto', 'real-estate'};
+    return nationalCategories.contains(category) ? 'national' : 'local';
   }
 
   void _selectLocation(LatLng location) {
@@ -449,6 +467,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
                           const SizedBox(height: 32),
                           _BasicInfoSection(
                             category: _category,
+                            availabilityScope: _availabilityScope,
                             titleController: _titleController,
                             descriptionController: _descriptionController,
                             cityController: _cityController,
@@ -459,6 +478,13 @@ class _AddListingScreenState extends State<AddListingScreen> {
                               if (value == null) return;
                               setState(() {
                                 _category = value;
+                                _availabilityScope =
+                                    _defaultAvailabilityScopeForCategory(value);
+                              });
+                            },
+                            onAvailabilityScopeChanged: (value) {
+                              setState(() {
+                                _availabilityScope = value;
                               });
                             },
                             onLocationChanged: _selectLocation,
@@ -1055,6 +1081,7 @@ class _PlayOverlay extends StatelessWidget {
 class _BasicInfoSection extends StatelessWidget {
   const _BasicInfoSection({
     required this.category,
+    required this.availabilityScope,
     required this.titleController,
     required this.descriptionController,
     required this.cityController,
@@ -1062,11 +1089,13 @@ class _BasicInfoSection extends StatelessWidget {
     required this.selectedLocation,
     required this.mapStyle,
     required this.onCategoryChanged,
+    required this.onAvailabilityScopeChanged,
     required this.onLocationChanged,
     required this.onCenterPinOnCity,
   });
 
   final String category;
+  final String availabilityScope;
   final TextEditingController titleController;
   final TextEditingController descriptionController;
   final TextEditingController cityController;
@@ -1074,6 +1103,7 @@ class _BasicInfoSection extends StatelessWidget {
   final LatLng selectedLocation;
   final String? mapStyle;
   final ValueChanged<String?> onCategoryChanged;
+  final ValueChanged<String> onAvailabilityScopeChanged;
   final ValueChanged<LatLng> onLocationChanged;
   final VoidCallback onCenterPinOnCity;
 
@@ -1103,6 +1133,9 @@ class _BasicInfoSection extends StatelessWidget {
             'drone',
             'tools',
             'home',
+            'casa-gradina',
+            'masini',
+            'imobiliare',
             'electronics',
             'sport',
           ],
@@ -1110,6 +1143,9 @@ class _BasicInfoSection extends StatelessWidget {
             'tools' => strings.toolsDiy,
             'unelte' => strings.tools,
             'home' => strings.homeGarden,
+            'casa-gradina' => strings.homeGarden,
+            'masini' => 'Mașini',
+            'imobiliare' => 'Imobiliare',
             'electronics' || 'electronice' => strings.electronics,
             'sport' || 'sport-outdoor' => strings.sportOutdoor,
             'gaming-console' => strings.gamingConsole,
@@ -1118,6 +1154,10 @@ class _BasicInfoSection extends StatelessWidget {
             _ => strings.chooseCategory,
           },
           onChanged: onCategoryChanged,
+        ),
+        _AvailabilityScopeSelector(
+          value: availabilityScope,
+          onChanged: onAvailabilityScopeChanged,
         ),
         _LabeledField(
           controller: cityController,
@@ -1142,6 +1182,71 @@ class _BasicInfoSection extends StatelessWidget {
           maxLines: 4,
         ),
       ],
+    );
+  }
+}
+
+class _AvailabilityScopeSelector extends StatelessWidget {
+  const _AvailabilityScopeSelector({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isNational = value == 'national';
+
+    return DecoratedBox(
+      decoration: _addListingCardDecoration,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.public_rounded,
+                  color: _AddListingScreenState._secondary,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Unde apare anunțul?',
+                    style: TextStyle(
+                      color: _AddListingScreenState._text,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: isNational,
+                  activeThumbColor: Colors.white,
+                  activeTrackColor: _AddListingScreenState._primary,
+                  onChanged: (enabled) =>
+                      onChanged(enabled ? 'national' : 'local'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isNational
+                  ? 'Vizibil peste tot. Utilizatorii din orice oraș pot vedea și închiria acest anunț.'
+                  : 'Vizibil local. Anunțul este destinat utilizatorilor din orașul sau zona produsului.',
+              style: const TextStyle(
+                color: _AddListingScreenState._muted,
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

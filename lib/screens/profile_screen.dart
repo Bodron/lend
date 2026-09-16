@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'favorites_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../l10n/generated_localizations.dart';
@@ -22,6 +21,7 @@ import 'explore_screen.dart';
 import 'home_screen.dart';
 import 'my_listings_screen.dart';
 import 'rentals_screen.dart';
+import 'stripe_onboarding_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -169,6 +169,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _editProfileCity(AuthUser user) async {
+    final signInRequiredMessage = GeneratedLocalizations.of(
+      context,
+    ).signInRequired;
+    var cityValue = user.city?.trim() ?? '';
+    final city = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Orașul tău'),
+        content: TextField(
+          textInputAction: TextInputAction.done,
+          autofocus: true,
+          onChanged: (value) => cityValue = value,
+          decoration: const InputDecoration(
+            labelText: 'Oraș',
+            hintText: 'Ex: Iași',
+          ),
+          onSubmitted: (_) => Navigator.of(context).pop(cityValue.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Anulează'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(cityValue.trim()),
+            child: const Text('Salvează'),
+          ),
+        ],
+      ),
+    );
+    if (city == null || city.isEmpty) {
+      return;
+    }
+
+    try {
+      final token = await AuthSessionStore.getToken();
+      if (token == null) {
+        throw AuthApiException(signInRequiredMessage);
+      }
+      await _authApi.updateLocation(accessToken: token, city: city);
+      if (!mounted) return;
+      LendToast.success(context, message: 'Orașul a fost salvat.');
+      _reloadProfile();
+    } catch (error) {
+      if (!mounted) return;
+      LendToast.error(context, message: error.toString());
+    }
+  }
+
   String? _avatarContentType(String? extension) {
     return switch (extension?.toLowerCase()) {
       'jpg' || 'jpeg' => 'image/jpeg',
@@ -249,6 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           uploadingAvatar: _uploadingAvatar,
                           onAvatarPressed: _uploadAvatar,
                           onPayoutPressed: _openPayoutOnboarding,
+                          onLocationPressed: () => _editProfileCity(data.user),
                         ),
                         const SizedBox(height: 32),
                         _ProfileSidebar(
@@ -364,14 +415,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
         throw AuthApiException(strings.signInRequired);
       }
 
-      final result = await _paymentsApi.requestPayout(token);
+      final profile = await _profileFuture;
+      final businessType = profile.user.stripeAccountId == null
+          ? await _selectStripeBusinessType()
+          : null;
+
+      if (!mounted || (profile.user.stripeAccountId == null && businessType == null)) {
+        return;
+      }
+
+      final result = await _paymentsApi.requestPayout(
+        token,
+        businessType: businessType,
+      );
 
       if (result.requiresOnboarding) {
         final uri = Uri.tryParse(result.url);
 
-        if (uri == null ||
-            !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
           throw PaymentsApiException(strings.stripeOnboardingOpenError);
+        }
+
+        if (!mounted) return;
+        final onboardingResult = await Navigator.of(context)
+            .push<StripeOnboardingResult>(
+          MaterialPageRoute(
+            builder: (_) => StripeOnboardingScreen(url: result.url),
+          ),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        _reloadProfile();
+
+        if (onboardingResult == StripeOnboardingResult.refreshRequested) {
+          await _openPayoutOnboarding();
         }
         return;
       }
@@ -394,6 +474,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       LendToast.error(context, message: error.toString());
     }
+  }
+
+  Future<String?> _selectStripeBusinessType() {
+    return showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cum primești banii?'),
+        content: const Text(
+          'Alege tipul de entitate pentru contul tău Stripe. Această alegere se face o singură dată.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('individual'),
+            child: const Text('Persoană fizică'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop('company'),
+            child: const Text('Persoană juridică'),
+          ),
+        ],
+      ),
+    );
   }
 
   static void _replaceWith(BuildContext context, Widget screen) {
@@ -448,12 +550,14 @@ class _ProfileHeader extends StatelessWidget {
     required this.uploadingAvatar,
     required this.onAvatarPressed,
     required this.onPayoutPressed,
+    required this.onLocationPressed,
   });
 
   final _ProfileData data;
   final bool uploadingAvatar;
   final VoidCallback onAvatarPressed;
   final VoidCallback onPayoutPressed;
+  final VoidCallback onLocationPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -538,6 +642,8 @@ class _ProfileHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
+        _ProfileCityCard(user: data.user, onPressed: onLocationPressed),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
@@ -564,6 +670,62 @@ class _ProfileHeader extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ProfileCityCard extends StatelessWidget {
+  const _ProfileCityCard({required this.user, required this.onPressed});
+
+  final AuthUser user;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final city = user.city?.trim();
+
+    return DecoratedBox(
+      decoration: _profileCardDecoration,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: _ProfileScreenState._secondaryContainer,
+              foregroundColor: _ProfileScreenState._secondary,
+              child: Icon(Icons.location_city_rounded),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    city == null || city.isEmpty ? 'Completează orașul' : city,
+                    style: const TextStyle(
+                      color: _ProfileScreenState._text,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Îl folosim ca rezervă când nu putem folosi locația telefonului.',
+                    style: TextStyle(
+                      color: _ProfileScreenState._muted,
+                      fontSize: 13,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            TextButton(onPressed: onPressed, child: const Text('Editează')),
+          ],
+        ),
+      ),
     );
   }
 }

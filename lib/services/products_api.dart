@@ -136,6 +136,7 @@ class ProductSaveInput {
     required this.address,
     required this.latitude,
     required this.longitude,
+    required this.availabilityScope,
     required this.pickupTime,
     required this.returnTime,
     this.rentalModes = const ['hour', 'day'],
@@ -153,6 +154,7 @@ class ProductSaveInput {
   final String address;
   final double? latitude;
   final double? longitude;
+  final String availabilityScope;
   final String pickupTime;
   final String returnTime;
   final List<String> rentalModes;
@@ -171,6 +173,7 @@ class ProductSaveInput {
       'address': address,
       'latitude': latitude,
       'longitude': longitude,
+      'availabilityScope': availabilityScope,
       'pickupTime': pickupTime,
       'returnTime': returnTime,
       'rentalModes': rentalModes,
@@ -203,6 +206,7 @@ class LendProduct {
     required this.address,
     required this.latitude,
     required this.longitude,
+    this.availabilityScope = 'local',
     required this.pickupTime,
     required this.returnTime,
     this.rentalModes = const ['hour', 'day'],
@@ -227,6 +231,7 @@ class LendProduct {
   final String address;
   final double? latitude;
   final double? longitude;
+  final String availabilityScope;
   final String pickupTime;
   final String returnTime;
   final List<String> rentalModes;
@@ -254,6 +259,7 @@ class LendProduct {
   String get priceLabel => '$pricePerDay lei';
   String get pricePerDayLabel => '$pricePerDay lei/zi';
   String get ratingLabel => rating.toStringAsFixed(1);
+  bool get isNationallyAvailable => availabilityScope == 'national';
 
   factory LendProduct.fromJson(Map<String, dynamic> json) {
     final imagesPayload = json['images'];
@@ -273,6 +279,7 @@ class LendProduct {
       address: (json['address'] ?? '').toString(),
       latitude: _toNullableDouble(json['latitude']),
       longitude: _toNullableDouble(json['longitude']),
+      availabilityScope: (json['availabilityScope'] ?? 'local').toString(),
       pickupTime: (json['pickupTime'] ?? '10:00').toString(),
       returnTime: (json['returnTime'] ?? '18:00').toString(),
       rentalModes: (json['rentalModes'] is List)

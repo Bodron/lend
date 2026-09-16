@@ -94,22 +94,37 @@ class ProductReview {
   const ProductReview({
     required this.id,
     required this.reviewerId,
+    required this.reviewerName,
+    required this.reviewerAvatarUrl,
     required this.rating,
     required this.comment,
     required this.createdAt,
   });
   final String id;
   final String reviewerId;
+  final String reviewerName;
+  final String? reviewerAvatarUrl;
   final int rating;
   final String comment;
   final DateTime? createdAt;
-  factory ProductReview.fromJson(Map<String, dynamic> json) => ProductReview(
-    id: (json['_id'] ?? json['id'] ?? '').toString(),
-    reviewerId: (json['reviewerId'] ?? '').toString(),
-    rating: json['rating'] is num ? (json['rating'] as num).toInt() : 0,
-    comment: (json['comment'] ?? '').toString(),
-    createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
-  );
+  factory ProductReview.fromJson(Map<String, dynamic> json) {
+    final reviewer = json['reviewer'] is Map
+        ? Map<String, dynamic>.from(json['reviewer'] as Map)
+        : const <String, dynamic>{};
+    final reviewerId = (json['reviewerId'] ?? reviewer['id'] ?? '').toString();
+    final reviewerName = (reviewer['fullName'] ?? '').toString().trim();
+    final avatarUrl = (reviewer['avatarUrl'] ?? '').toString().trim();
+
+    return ProductReview(
+      id: (json['_id'] ?? json['id'] ?? '').toString(),
+      reviewerId: reviewerId,
+      reviewerName: reviewerName.isEmpty ? 'Utilizator' : reviewerName,
+      reviewerAvatarUrl: avatarUrl.isEmpty ? null : avatarUrl,
+      rating: json['rating'] is num ? (json['rating'] as num).toInt() : 0,
+      comment: (json['comment'] ?? '').toString(),
+      createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
+    );
+  }
 }
 
 class ReviewsApiException implements Exception {

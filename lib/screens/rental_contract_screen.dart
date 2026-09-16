@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
@@ -116,6 +117,10 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         throw PaymentsApiException(strings.stripeNotConfigured);
       }
 
+      final renterPosition = widget.product.isNationallyAvailable
+          ? null
+          : await _tryGetRenterPosition();
+
       Stripe.publishableKey = paymentsConfig.publishableKey;
       if (_stripeMerchantIdentifier.isNotEmpty) {
         Stripe.merchantIdentifier = _stripeMerchantIdentifier;
@@ -131,6 +136,8 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         negotiatedSubtotal: widget.negotiatedSubtotal,
         pickupTime: widget.pickupTime,
         returnTime: widget.returnTime,
+        renterLatitude: renterPosition?.latitude,
+        renterLongitude: renterPosition?.longitude,
       );
 
       if (order.paymentClientSecret.isEmpty) {
@@ -185,6 +192,32 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
           _submitting = false;
         });
       }
+    }
+  }
+
+  Future<Position?> _tryGetRenterPosition() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return null;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
+      }
+
+      return Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+    } catch (_) {
+      return null;
     }
   }
 

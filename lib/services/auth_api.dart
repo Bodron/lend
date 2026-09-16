@@ -134,6 +134,36 @@ class AuthApi {
     return AuthUser.fromJson(payload);
   }
 
+  Future<AuthUser> updateLocation({
+    required String accessToken,
+    required String city,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final body = <String, dynamic>{'city': city};
+    if (latitude != null) body['latitude'] = latitude;
+    if (longitude != null) body['longitude'] = longitude;
+
+    final response = await _client
+        .patch(
+          Uri.parse('$baseUrl/auth/me/location'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(_requestTimeout);
+
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AuthApiException(_extractMessage(payload));
+    }
+
+    return AuthUser.fromJson(payload);
+  }
+
   Future<void> requestAccountDeletion(String accessToken) async {
     final response = await _client.post(
       Uri.parse('$baseUrl/auth/me/deletion-request'),
@@ -210,6 +240,9 @@ class AuthUser {
     required this.phone,
     this.avatarUrl,
     this.avatarKey,
+    this.city,
+    this.latitude,
+    this.longitude,
     this.stripeAccountId,
     this.stripePayoutsEnabled = false,
     this.stripeDetailsSubmitted = false,
@@ -221,6 +254,9 @@ class AuthUser {
   final String phone;
   final String? avatarUrl;
   final String? avatarKey;
+  final String? city;
+  final double? latitude;
+  final double? longitude;
   final String? stripeAccountId;
   final bool stripePayoutsEnabled;
   final bool stripeDetailsSubmitted;
@@ -233,6 +269,9 @@ class AuthUser {
       phone: json['phone'] as String,
       avatarUrl: _optionalString(json['avatarUrl']),
       avatarKey: _optionalString(json['avatarKey']),
+      city: _optionalString(json['city']),
+      latitude: _optionalDouble(json['latitude']),
+      longitude: _optionalDouble(json['longitude']),
       stripeAccountId: _optionalString(json['stripeAccountId']),
       stripePayoutsEnabled: json['stripePayoutsEnabled'] == true,
       stripeDetailsSubmitted: json['stripeDetailsSubmitted'] == true,
@@ -242,6 +281,11 @@ class AuthUser {
   static String? _optionalString(Object? value) {
     final text = value?.toString().trim();
     return text == null || text.isEmpty ? null : text;
+  }
+
+  static double? _optionalDouble(Object? value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
   }
 }
 

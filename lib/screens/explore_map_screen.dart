@@ -83,6 +83,9 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
       final userLocation = LatLng(position.latitude, position.longitude);
       final allMarkers = _buildProductMarkers();
       final nearbyMarkers = allMarkers.where((item) {
+        if (item.product.isNationallyAvailable) {
+          return true;
+        }
         final distance = Geolocator.distanceBetween(
           userLocation.latitude,
           userLocation.longitude,

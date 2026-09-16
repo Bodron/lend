@@ -21,7 +21,27 @@ class RentalOrdersApi {
     int? negotiatedSubtotal,
     required String pickupTime,
     required String returnTime,
+    double? renterLatitude,
+    double? renterLongitude,
   }) async {
+    final body = <String, dynamic>{
+      'productId': productId,
+      'startDate': _dateKey(startDate),
+      'endDate': _dateKey(endDate),
+      'rentalMode': rentalMode == RentalMode.hour
+          ? 'hour'
+          : rentalMode == RentalMode.month
+          ? 'month'
+          : 'day',
+      'pickupTime': pickupTime,
+      'returnTime': returnTime,
+    };
+    if (negotiatedSubtotal != null) {
+      body['negotiatedSubtotal'] = negotiatedSubtotal;
+    }
+    if (renterLatitude != null) body['renterLatitude'] = renterLatitude;
+    if (renterLongitude != null) body['renterLongitude'] = renterLongitude;
+
     final response = await _client
         .post(
           Uri.parse('${AuthApi.baseUrl}/rental-orders'),
@@ -29,19 +49,7 @@ class RentalOrdersApi {
             'Authorization': 'Bearer $accessToken',
             'Content-Type': 'application/json',
           },
-          body: jsonEncode({
-            'productId': productId,
-            'startDate': _dateKey(startDate),
-            'endDate': _dateKey(endDate),
-            'rentalMode': rentalMode == RentalMode.hour
-                ? 'hour'
-                : rentalMode == RentalMode.month
-                ? 'month'
-                : 'day',
-            if (negotiatedSubtotal != null) 'negotiatedSubtotal': negotiatedSubtotal,
-            'pickupTime': pickupTime,
-            'returnTime': returnTime,
-          }),
+          body: jsonEncode(body),
         )
         .timeout(_requestTimeout);
 

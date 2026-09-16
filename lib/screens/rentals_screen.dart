@@ -1721,6 +1721,7 @@ const _emptyProduct = LendProduct(
   address: '',
   latitude: null,
   longitude: null,
+  availabilityScope: 'local',
   pickupTime: '10:00',
   returnTime: '18:00',
   ownerName: '',
