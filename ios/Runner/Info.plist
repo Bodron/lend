@@ -47,6 +47,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Lend Everything uses the camera so you can take photos or videos for your item listings.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Lend Everything uses your location to show nearby items, verify rental availability in your area, and improve rental search results when this feature is enabled.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Lend Everything uses your location to show nearby items and improve rental search results when this feature is enabled.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

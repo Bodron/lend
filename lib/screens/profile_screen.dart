@@ -69,7 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final user = await _authApi.me(token);
     final listings = await _productsApi.findMine(token);
-    final rentals = await _rentalOrdersApi.findMine(token);
+    final rentals = await _rentalOrdersApi.findOwned(token);
 
     return _ProfileData(user: user, listings: listings, rentals: rentals);
   }
@@ -523,13 +523,10 @@ class _ProfileData {
   }
 
   int get availablePayout {
+    final now = DateTime.now();
     return rentals
-        .where(
-          (order) =>
-              order.paymentStatus == 'captured' &&
-              order.payoutStatus != 'paid_out',
-        )
-        .fold<int>(0, (sum, order) => sum + order.subtotal);
+        .where((order) => order.isPayoutEligible(now))
+        .fold<int>(0, (sum, order) => sum + order.ownerEarnings);
   }
 
   String get ratingLabel {

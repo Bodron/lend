@@ -462,8 +462,10 @@ class RentalOrder {
     required this.paymentStatus,
     required this.paymentClientSecret,
     required this.payoutStatus,
+    required this.payoutEligibleAt,
     required this.rentalDays,
     required this.subtotal,
+    required this.ownerEarnings,
     required this.serviceFee,
     required this.deposit,
     required this.total,
@@ -488,11 +490,30 @@ class RentalOrder {
   final String paymentStatus;
   final String paymentClientSecret;
   final String payoutStatus;
+  final DateTime? payoutEligibleAt;
   final int rentalDays;
   final int subtotal;
+  final int ownerEarnings;
   final int serviceFee;
   final int deposit;
   final int total;
+
+  bool isPayoutEligible(DateTime now) {
+    if (status != 'completed' || paymentStatus != 'captured') {
+      return false;
+    }
+
+    if (payoutStatus == 'eligible') {
+      return true;
+    }
+
+    if (payoutStatus != 'held_until_return') {
+      return false;
+    }
+
+    final eligibleAt = payoutEligibleAt;
+    return eligibleAt != null && !eligibleAt.isAfter(now);
+  }
 
   factory RentalOrder.fromJson(Map<String, dynamic> json) {
     final snapshot = json['productSnapshot'];
@@ -525,8 +546,12 @@ class RentalOrder {
       paymentStatus: (json['paymentStatus'] ?? '').toString(),
       paymentClientSecret: (json['stripePaymentClientSecret'] ?? '').toString(),
       payoutStatus: (json['payoutStatus'] ?? '').toString(),
+      payoutEligibleAt: DateTime.tryParse(
+        (json['payoutEligibleAt'] ?? '').toString(),
+      ),
       rentalDays: _toInt(json['rentalDays']),
       subtotal: _toInt(json['subtotal']),
+      ownerEarnings: _toInt(json['ownerEarnings']),
       serviceFee: _toInt(json['serviceFee']),
       deposit: _toInt(json['deposit']),
       total: _toInt(json['total']),
