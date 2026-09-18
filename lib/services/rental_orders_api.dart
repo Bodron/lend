@@ -187,6 +187,40 @@ class RentalOrdersApi {
     );
   }
 
+  Future<RentalOrder> attachSignedContract({
+    required String accessToken,
+    required String orderId,
+    required String key,
+    required String url,
+    String contentType = 'application/pdf',
+  }) async {
+    final response = await _client
+        .patch(
+          Uri.parse('${AuthApi.baseUrl}/rental-orders/$orderId/contract'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'key': key,
+            'url': url,
+            'contentType': contentType,
+          }),
+        )
+        .timeout(_requestTimeout);
+    final payload = jsonDecode(response.body);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw RentalOrdersApiException(_extractMessage(payload));
+    }
+
+    if (payload is! Map<String, dynamic>) {
+      throw RentalOrdersApiException('Raspuns invalid pentru contract.');
+    }
+
+    return RentalOrder.fromJson(payload);
+  }
+
   Future<RentalOrder> accept({
     required String accessToken,
     required String orderId,
@@ -469,6 +503,8 @@ class RentalOrder {
     required this.serviceFee,
     required this.deposit,
     required this.total,
+    this.contractPdfUrl,
+    this.contractSignedAt,
   });
 
   final String id;
@@ -497,6 +533,8 @@ class RentalOrder {
   final int serviceFee;
   final int deposit;
   final int total;
+  final String? contractPdfUrl;
+  final DateTime? contractSignedAt;
 
   bool isPayoutEligible(DateTime now) {
     if (status != 'completed' || paymentStatus != 'captured') {
@@ -555,7 +593,16 @@ class RentalOrder {
       serviceFee: _toInt(json['serviceFee']),
       deposit: _toInt(json['deposit']),
       total: _toInt(json['total']),
+      contractPdfUrl: _optionalString(json['contractPdfUrl']),
+      contractSignedAt: DateTime.tryParse(
+        (json['contractSignedAt'] ?? '').toString(),
+      ),
     );
+  }
+
+  static String? _optionalString(Object? value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
   }
 
   static int _toInt(Object? value) {

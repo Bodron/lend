@@ -15,6 +15,7 @@ import '../widgets/product_media_preview.dart';
 import '../widgets/product_reviews_section.dart';
 import 'messages_screen.dart';
 import 'rental_period_screen.dart';
+import 'roommate_posts_screen.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key, required this.product});
@@ -142,6 +143,82 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             child: _BottomActionBar(rentalMode: _rentalMode, product: product),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RoommateInviteCard extends StatelessWidget {
+  const _RoommateInviteCard({required this.product});
+
+  final LendProduct product;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: _cardDecoration.copyWith(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(
+                  Icons.groups_2_rounded,
+                  color: _ProductDetailsScreenState._primary,
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Cauti coleg pentru apartamentul asta?',
+                    style: TextStyle(
+                      color: _ProductDetailsScreenState._text,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Publica un mini-anunt atasat apartamentului si oamenii interesati iti pot trimite cerere.',
+              style: TextStyle(
+                color: _ProductDetailsScreenState._muted,
+                fontSize: 14,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<bool>(
+                      builder: (_) =>
+                          CreateRoommatePostScreen(product: product),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.group_add_rounded, size: 18),
+                label: const Text('Cauta coleg'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _ProductDetailsScreenState._primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -332,6 +409,10 @@ class _DetailsInfoCard extends StatelessWidget {
             _TitleBlock(product: product),
             const SizedBox(height: 16),
             _StatusBadges(product: product),
+            if (_isRealEstateProduct(product)) ...[
+              const SizedBox(height: 18),
+              _RoommateInviteCard(product: product),
+            ],
             const SizedBox(height: 18),
             _ProductLocationMap(product: product, mapStyle: mapStyle),
             const SizedBox(height: 18),
@@ -843,101 +924,6 @@ class _SpecCard extends StatelessWidget {
   }
 }
 
-class _ReviewsSection extends StatelessWidget {
-  const _ReviewsSection({required this.product});
-
-  final LendProduct product;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = GeneratedLocalizations.of(context);
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _SectionTitle(GeneratedLocalizations.of(context).reviews),
-            ),
-            TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                foregroundColor: _ProductDetailsScreenState._text,
-              ),
-              child: Text(
-                GeneratedLocalizations.of(context).seeAll,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        DecoratedBox(
-          decoration: _cardDecoration,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: Color(0xFFB7D3FE),
-                      foregroundColor: _ProductDetailsScreenState._text,
-                      child: Text(strings.sampleReviewerInitial),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            strings.sampleReviewerName,
-                            style: TextStyle(
-                              color: _ProductDetailsScreenState._text,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            GeneratedLocalizations.of(context).verifiedReview,
-                            style: const TextStyle(
-                              color: _ProductDetailsScreenState._muted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      product.ratingLabel,
-                      style: const TextStyle(
-                        color: _ProductDetailsScreenState._text,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  GeneratedLocalizations.of(
-                    context,
-                  ).sampleReview(product.ownerName),
-                  style: const TextStyle(
-                    color: _ProductDetailsScreenState._muted,
-                    fontSize: 15,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _OwnerCard extends StatelessWidget {
   const _OwnerCard({required this.product});
 
@@ -1304,6 +1290,23 @@ String _normalizeCity(String city) {
       .replaceAll('\\u015f', 's')
       .replaceAll('\\u021b', 't')
       .replaceAll('\\u0163', 't');
+}
+
+bool _isRealEstateProduct(LendProduct product) {
+  return _normalizeCategory(product.categorySlug) == 'imobiliare';
+}
+
+String _normalizeCategory(String value) {
+  return value
+      .trim()
+      .toLowerCase()
+      .replaceAll('ă', 'a')
+      .replaceAll('â', 'a')
+      .replaceAll('î', 'i')
+      .replaceAll('ș', 's')
+      .replaceAll('ş', 's')
+      .replaceAll('ț', 't')
+      .replaceAll('ţ', 't');
 }
 
 const _productCityCoordinates = <String, LatLng>{

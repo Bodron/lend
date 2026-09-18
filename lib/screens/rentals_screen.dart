@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'add_listing_screen.dart';
 import 'explore_screen.dart';
@@ -214,6 +215,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
           : strings.renterLabel(renterName),
       statusRaw: order.status,
       paymentStatus: order.paymentStatus,
+      contractPdfUrl: order.contractPdfUrl,
       status: expiring ? _RentalStatus.expiring : _RentalStatus.active,
     );
   }
@@ -1078,8 +1080,8 @@ class _ActiveRentalsGrid extends StatelessWidget {
             crossAxisSpacing: 20,
             mainAxisSpacing: 20,
             mainAxisExtent: perspective == _RentalPerspective.lending
-                ? 512
-                : 464,
+                ? 560
+                : 512,
           ),
           itemBuilder: (context, index) => _buildCard(items[index]),
         );
@@ -1399,12 +1401,47 @@ class _ActiveRentalCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                if (item.contractPdfUrl != null) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 40,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _openContract(context, item),
+                      icon: const Icon(Icons.description_outlined, size: 18),
+                      label: const Text('Contract PDF'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _RentalsScreenState._primary,
+                        side: BorderSide(
+                          color: _RentalsScreenState._primary.withValues(
+                            alpha: 0.35,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _openContract(BuildContext context, _RentalItem item) async {
+    final url = item.contractPdfUrl;
+    final uri = url == null ? null : Uri.tryParse(url);
+    if (uri == null) {
+      return;
+    }
+
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      LendToast.error(context, message: 'Nu am putut deschide contractul.');
+    }
   }
 }
 
@@ -1663,6 +1700,7 @@ class _RentalItem {
     required this.detailText,
     required this.statusRaw,
     required this.paymentStatus,
+    required this.contractPdfUrl,
     required this.status,
   });
 
@@ -1678,6 +1716,7 @@ class _RentalItem {
   final String detailText;
   final String statusRaw;
   final String paymentStatus;
+  final String? contractPdfUrl;
   final _RentalStatus status;
 }
 

@@ -45,6 +45,22 @@ class StorageApi {
     );
   }
 
+  Future<UploadedMedia> uploadDocument({
+    required String accessToken,
+    required String fileName,
+    required String contentType,
+    required Uint8List bytes,
+    required String alt,
+  }) {
+    return uploadMedia(
+      accessToken: accessToken,
+      fileName: fileName,
+      contentType: contentType,
+      bytes: bytes,
+      alt: alt,
+    );
+  }
+
   Future<_PresignedUpload> _createUploadUrl({
     required String accessToken,
     required String fileName,

@@ -14,6 +14,7 @@ import 'my_listings_screen.dart';
 import 'product_details_screen.dart';
 import 'profile_screen.dart';
 import 'rentals_screen.dart';
+import 'roommate_posts_screen.dart';
 import 'search_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -91,6 +92,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       categories: categories,
                       selectedIndex: selectedIndex,
                       onSearch: () => _openSearch(products),
+                      onRoommates: _openRoommates,
                       onSelected: (index) {
                         setState(() {
                           _selectedCategoryIndex = index;
@@ -215,6 +217,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  void _openRoommates() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const RoommatePostsScreen()),
+    );
+  }
+
   void _reloadProducts() {
     setState(() {
       _exploreFuture = _loadExploreData();
@@ -274,12 +282,14 @@ class _ExploreHeader extends StatelessWidget {
     required this.categories,
     required this.selectedIndex,
     required this.onSearch,
+    required this.onRoommates,
     required this.onSelected,
   });
 
   final List<_CategoryFilter> categories;
   final int selectedIndex;
   final VoidCallback onSearch;
+  final VoidCallback onRoommates;
   final ValueChanged<int> onSelected;
 
   @override
@@ -313,6 +323,25 @@ class _ExploreHeader extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 46,
+          child: OutlinedButton.icon(
+            onPressed: onRoommates,
+            icon: const Icon(Icons.groups_2_rounded),
+            label: const Text('Caut coleg de apartament'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _ExploreScreenState._text,
+              side: BorderSide(
+                color: _ExploreScreenState._primary.withValues(alpha: 0.35),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         SizedBox(

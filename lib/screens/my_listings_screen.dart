@@ -399,6 +399,8 @@ class _ListingCard extends StatelessWidget {
                                     title: item.title,
                                     description: item.description,
                                     pricePerDay: item.pricePerDay.toString(),
+                                    pricePerMonth:
+                                        item.pricePerMonth?.toString() ?? '',
                                     category: item.categorySlug,
                                     categoryLabel: item.category,
                                     deposit: item.deposit.toString(),
@@ -409,6 +411,7 @@ class _ListingCard extends StatelessWidget {
                                     availabilityScope: item.availabilityScope,
                                     pickupTime: item.pickupTime,
                                     returnTime: item.returnTime,
+                                    rentalModes: item.rentalModes,
                                     imageUrl: item.imageUrl,
                                     media: item.images
                                         .map(

@@ -1,13 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:printing/printing.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/auth_api.dart';
 import '../services/payments_api.dart';
 import '../services/products_api.dart';
+import '../services/rental_contract_pdf.dart';
 import '../services/rental_orders_api.dart';
+import '../services/storage_api.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
@@ -63,9 +68,11 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
   final _rentalOrdersApi = RentalOrdersApi();
   final _paymentsApi = PaymentsApi();
+  final _storageApi = StorageApi();
   final List<Offset?> _signaturePoints = [];
   bool _isSigning = false;
   bool _submitting = false;
+  bool _downloadingContract = false;
 
   void _addPoint(Offset point) {
     setState(() {
@@ -140,6 +147,24 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         renterLongitude: renterPosition?.longitude,
       );
 
+      final contractBytes = await _buildContractPdfBytes();
+      final contractFileName =
+          'contract-lend-${_safeFilePart(widget.product.slug)}-${order.id}.pdf';
+      final uploadedContract = await _storageApi.uploadDocument(
+        accessToken: token,
+        fileName: contractFileName,
+        contentType: 'application/pdf',
+        bytes: contractBytes,
+        alt: 'Contract semnat ${widget.product.title}',
+      );
+      order = await _rentalOrdersApi.attachSignedContract(
+        accessToken: token,
+        orderId: order.id,
+        key: uploadedContract.key,
+        url: uploadedContract.url,
+        contentType: uploadedContract.contentType,
+      );
+
       if (order.paymentClientSecret.isEmpty) {
         throw RentalOrdersApiException(
           strings.stripePaymentConfirmationMissing,
@@ -195,6 +220,56 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
     }
   }
 
+  Future<void> _downloadContractPdf() async {
+    if (_signaturePoints.isEmpty || _downloadingContract) {
+      return;
+    }
+
+    setState(() {
+      _downloadingContract = true;
+    });
+
+    try {
+      final bytes = await _buildContractPdfBytes();
+
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'contract-lend-${_safeFilePart(widget.product.slug)}.pdf',
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      LendToast.error(context, message: error.toString());
+    } finally {
+      if (mounted) {
+        setState(() {
+          _downloadingContract = false;
+        });
+      }
+    }
+  }
+
+  Future<Uint8List> _buildContractPdfBytes() {
+    return buildMockRentalContractPdf(
+      RentalContractPdfInput(
+        product: widget.product,
+        rentalMode: widget.rentalMode,
+        startDate: widget.startDate,
+        endDate: widget.endDate,
+        pickupTime: widget.pickupTime,
+        returnTime: widget.returnTime,
+        rentalHours: widget.rentalHours,
+        rentalDays: widget.rentalDays,
+        subtotal: widget.subtotal,
+        serviceFee: widget.serviceFee,
+        total: widget.total,
+        signaturePoints: List<Offset?>.from(_signaturePoints),
+      ),
+    );
+  }
+
   Future<Position?> _tryGetRenterPosition() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
@@ -234,7 +309,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
             slivers: [
               const SliverToBoxAdapter(child: _ContractTopBar()),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 188),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 252),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _LegalDocumentCard(
@@ -302,14 +377,27 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
               rentalMode: widget.rentalMode,
               total: widget.total,
               canSubmit: _signaturePoints.isNotEmpty && !_submitting,
+              canDownload: _signaturePoints.isNotEmpty && !_downloadingContract,
               submitting: _submitting,
+              downloading: _downloadingContract,
               onSubmit: _submitOrder,
+              onDownload: _downloadContractPdf,
             ),
           ),
         ],
       ),
     );
   }
+}
+
+String _safeFilePart(String value) {
+  final normalized = value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9-]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+  return normalized.isEmpty ? 'contract' : normalized;
 }
 
 class _ContractTopBar extends StatelessWidget {
@@ -838,8 +926,11 @@ class _PricingBar extends StatelessWidget {
     required this.rentalMode,
     required this.total,
     required this.canSubmit,
+    required this.canDownload,
     required this.submitting,
+    required this.downloading,
     required this.onSubmit,
+    required this.onDownload,
   });
 
   final int rentalDays;
@@ -847,8 +938,11 @@ class _PricingBar extends StatelessWidget {
   final RentalMode rentalMode;
   final int total;
   final bool canSubmit;
+  final bool canDownload;
   final bool submitting;
+  final bool downloading;
   final VoidCallback onSubmit;
+  final VoidCallback onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -893,7 +987,39 @@ class _PricingBar extends StatelessWidget {
             ],
           );
 
-          final button = SizedBox(
+          final downloadButton = SizedBox(
+            width: compact ? double.infinity : 180,
+            height: 54,
+            child: OutlinedButton.icon(
+              onPressed: canDownload ? onDownload : null,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: _RentalContractScreenState._primary,
+                disabledForegroundColor: _RentalContractScreenState._muted,
+                side: BorderSide(
+                  color: _RentalContractScreenState._primary.withValues(
+                    alpha: 0.35,
+                  ),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              label: Text(
+                downloading ? 'Se pregateste...' : 'Descarca PDF',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              icon: downloading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_rounded),
+            ),
+          );
+
+          final submitButton = SizedBox(
             width: compact ? double.infinity : 230,
             height: 54,
             child: FilledButton.icon(
@@ -931,14 +1057,23 @@ class _PricingBar extends StatelessWidget {
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [totals, const SizedBox(height: 16), button],
+              children: [
+                totals,
+                const SizedBox(height: 12),
+                downloadButton,
+                const SizedBox(height: 10),
+                submitButton,
+              ],
             );
           }
 
           return Row(
             children: [
               Expanded(child: totals),
-              button,
+              const SizedBox(width: 12),
+              downloadButton,
+              const SizedBox(width: 12),
+              submitButton,
             ],
           );
         },

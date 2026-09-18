@@ -11,6 +11,7 @@ import 'package:video_player/video_player.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
+import '../services/categories_api.dart';
 import '../services/products_api.dart';
 import '../services/storage_api.dart';
 import '../widgets/language_toggle_button.dart';
@@ -45,8 +46,10 @@ class ListingFormData {
     this.availabilityScope = 'local',
     this.media = const [],
     this.pricePerHour = '',
+    this.pricePerMonth = '',
     this.pickupTime = '10:00',
     this.returnTime = '18:00',
+    this.rentalModes = const ['hour', 'day'],
   });
 
   final String? productId;
@@ -54,6 +57,7 @@ class ListingFormData {
   final String description;
   final String pricePerDay;
   final String pricePerHour;
+  final String pricePerMonth;
   final String imageUrl;
   final String category;
   final String categoryLabel;
@@ -66,6 +70,7 @@ class ListingFormData {
   final List<UploadedMedia> media;
   final String pickupTime;
   final String returnTime;
+  final List<String> rentalModes;
 }
 
 class _AddListingScreenState extends State<AddListingScreen> {
@@ -99,7 +104,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
   late final TextEditingController _returnTimeController;
   final _productsApi = ProductsApi();
   final _storageApi = StorageApi();
+  final _categoriesApi = CategoriesApi();
   final List<_SelectedMedia> _selectedMedia = [];
+  List<LendCategory> _categories = const [];
   LatLng _selectedLocation = _bucharest;
   String? _mapStyle;
   bool _submitting = false;
@@ -108,6 +115,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
   void initState() {
     super.initState();
     final initialData = widget.initialData;
+    _hourlyEnabled = initialData?.rentalModes.contains('hour') ?? true;
+    _dailyEnabled = initialData?.rentalModes.contains('day') ?? true;
+    _monthlyEnabled = initialData?.rentalModes.contains('month') ?? false;
     _category = _supportedCategory(initialData?.category ?? 'choose');
     _availabilityScope =
         initialData?.availabilityScope ??
@@ -122,7 +132,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _pricePerHourController = TextEditingController(
       text: initialData?.pricePerHour ?? '',
     );
-    _pricePerMonthController = TextEditingController();
+    _pricePerMonthController = TextEditingController(
+      text: initialData?.pricePerMonth ?? '',
+    );
     _depositController = TextEditingController(
       text: initialData?.deposit ?? '0',
     );
@@ -150,6 +162,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
       _selectedLocation = _cityCenterFor(_cityController.text);
     }
     _loadMapStyle();
+    _loadCategories();
   }
 
   @override
@@ -199,6 +212,31 @@ class _AddListingScreenState extends State<AddListingScreen> {
     });
   }
 
+  Future<void> _loadCategories() async {
+    try {
+      final categories = await _categoriesApi.findAll();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _categories = categories;
+        _category = _supportedCategory(_category);
+        if (_category != 'choose' &&
+            !categories.any((category) => category.slug == _category)) {
+          _category = 'choose';
+          _availabilityScope = _defaultAvailabilityScopeForCategory(_category);
+        }
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      _showMessage(error.toString());
+    }
+  }
+
   Future<void> _pickMedia() async {
     final result = await FilePicker.pickFiles(
       allowMultiple: true,
@@ -243,7 +281,10 @@ class _AddListingScreenState extends State<AddListingScreen> {
         int.tryParse(_pricePerMonthController.text.trim()) ?? 0;
     final deposit = int.tryParse(_depositController.text.trim()) ?? 0;
     final city = _cityController.text.trim();
-    final address = _addressController.text.trim();
+    final rawAddress = _addressController.text.trim();
+    final address = rawAddress.isNotEmpty || !widget.isEditing
+        ? rawAddress
+        : city;
     final pickupTime = _pickupTimeController.text.trim();
     final returnTime = _returnTimeController.text.trim();
     final category = _categoryLabel(_category);
@@ -361,42 +402,24 @@ class _AddListingScreenState extends State<AddListingScreen> {
 
   String _categoryLabel(String value) {
     final strings = GeneratedLocalizations.of(context);
+    for (final category in _categories) {
+      if (category.slug == value) {
+        return category.name;
+      }
+    }
 
-    return switch (value) {
-      'tools' => strings.toolsDiy,
-      'unelte' => strings.tools,
-      'home' => strings.homeGarden,
-      'casa-gradina' => strings.homeGarden,
-      'masini' => 'Mașini',
-      'imobiliare' => 'Imobiliare',
-      'electronics' || 'electronice' => strings.electronics,
-      'sport' || 'sport-outdoor' => strings.sportOutdoor,
-      'gaming-console' => strings.gamingConsole,
-      'foto-video' => strings.photoVideo,
-      'drone' => strings.drones,
-      _ => strings.other,
-    };
+    return strings.other;
   }
 
   String _supportedCategory(String value) {
-    const supported = {
-      'choose',
-      'unelte',
-      'electronice',
-      'sport-outdoor',
-      'gaming-console',
-      'foto-video',
-      'drone',
-      'tools',
-      'home',
-      'casa-gradina',
-      'masini',
-      'imobiliare',
-      'electronics',
-      'sport',
+    return switch (value.trim()) {
+      '' => 'choose',
+      'home' => 'casa-gradina',
+      'tools' => 'unelte',
+      'electronics' => 'electronice',
+      'sport' => 'sport-outdoor',
+      _ => value.trim(),
     };
-
-    return supported.contains(value) ? value : 'choose';
   }
 
   static String _defaultAvailabilityScopeForCategory(String category) {
@@ -467,6 +490,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
                           const SizedBox(height: 32),
                           _BasicInfoSection(
                             category: _category,
+                            categories: _categories,
                             availabilityScope: _availabilityScope,
                             titleController: _titleController,
                             descriptionController: _descriptionController,
@@ -1081,6 +1105,7 @@ class _PlayOverlay extends StatelessWidget {
 class _BasicInfoSection extends StatelessWidget {
   const _BasicInfoSection({
     required this.category,
+    required this.categories,
     required this.availabilityScope,
     required this.titleController,
     required this.descriptionController,
@@ -1095,6 +1120,7 @@ class _BasicInfoSection extends StatelessWidget {
   });
 
   final String category;
+  final List<LendCategory> categories;
   final String availabilityScope;
   final TextEditingController titleController;
   final TextEditingController descriptionController;
@@ -1123,35 +1149,19 @@ class _BasicInfoSection extends StatelessWidget {
         _LabeledDropdown(
           label: strings.category,
           value: category,
-          values: const [
-            'choose',
-            'unelte',
-            'electronice',
-            'sport-outdoor',
-            'gaming-console',
-            'foto-video',
-            'drone',
-            'tools',
-            'home',
-            'casa-gradina',
-            'masini',
-            'imobiliare',
-            'electronics',
-            'sport',
-          ],
-          labelForValue: (value) => switch (value) {
-            'tools' => strings.toolsDiy,
-            'unelte' => strings.tools,
-            'home' => strings.homeGarden,
-            'casa-gradina' => strings.homeGarden,
-            'masini' => 'Mașini',
-            'imobiliare' => 'Imobiliare',
-            'electronics' || 'electronice' => strings.electronics,
-            'sport' || 'sport-outdoor' => strings.sportOutdoor,
-            'gaming-console' => strings.gamingConsole,
-            'foto-video' => strings.photoVideo,
-            'drone' => strings.drones,
-            _ => strings.chooseCategory,
+          values: ['choose', ...categories.map((category) => category.slug)],
+          labelForValue: (value) {
+            if (value == 'choose') {
+              return strings.chooseCategory;
+            }
+
+            for (final category in categories) {
+              if (category.slug == value) {
+                return category.name;
+              }
+            }
+
+            return strings.chooseCategory;
           },
           onChanged: onCategoryChanged,
         ),
@@ -1799,16 +1809,19 @@ class _LabeledDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uniqueValues = values.toSet().toList();
+    final selectedValue = uniqueValues.contains(value) ? value : 'choose';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _FieldLabel(label),
         DropdownButtonFormField<String>(
-          initialValue: value,
+          initialValue: selectedValue,
           icon: const Icon(Icons.expand_more_rounded),
           decoration: _inputDecoration(''),
           items: [
-            for (final item in values)
+            for (final item in uniqueValues)
               DropdownMenuItem<String>(
                 value: item,
                 child: Text(labelForValue(item)),
