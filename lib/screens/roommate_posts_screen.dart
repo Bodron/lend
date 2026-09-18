@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
@@ -10,6 +12,7 @@ import '../services/products_api.dart';
 import '../services/roommate_posts_api.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
+import 'messages_screen.dart';
 
 class RoommatePostsScreen extends StatefulWidget {
   const RoommatePostsScreen({super.key});
@@ -120,6 +123,7 @@ class _RoommatePostsScreenState extends State<RoommatePostsScreen> {
   Future<void> _sendInterest(RoommatePost post) async {
     final message = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -138,18 +142,57 @@ class _RoommatePostsScreenState extends State<RoommatePostsScreen> {
         throw RoommatePostsApiException('Trebuie sa fii autentificat.');
       }
 
-      await _api.sendInterest(
+      final result = await _api.sendInterest(
         accessToken: token,
         postId: post.id,
         message: message,
       );
 
       if (!mounted) return;
-      LendToast.info(context, message: 'Cererea a fost trimisa.');
+      final openedChat = await _openChatForPost(
+        post,
+        productId: result.productId,
+        roommateInterestId: result.interestId,
+      );
+      if (!mounted) return;
+      if (!openedChat) {
+        LendToast.info(context, message: 'Cererea a fost trimisa.');
+      }
     } catch (error) {
       if (!mounted) return;
+      final message = error.toString();
+      if (message.contains('Ai trimis deja')) {
+        final openedChat = await _openChatForPost(post);
+        if (openedChat || !mounted) {
+          return;
+        }
+      }
       LendToast.info(context, message: error.toString());
     }
+  }
+
+  Future<bool> _openChatForPost(
+    RoommatePost post, {
+    String? productId,
+    String? roommateInterestId,
+  }) async {
+    final targetProductId = productId ?? post.product?.id;
+    if (targetProductId == null || targetProductId.isEmpty) {
+      return false;
+    }
+
+    await Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => ProductChatScreen(
+          productId: targetProductId,
+          roommateInterestId: roommateInterestId,
+          contextLabel: 'Cerere caut coleg',
+          productTitle: post.product?.title ?? post.title,
+          ownerName: post.authorName,
+        ),
+      ),
+    );
+    return true;
   }
 
   @override
@@ -879,6 +922,11 @@ class _RoommateLocationSheetState extends State<_RoommateLocationSheet> {
                 },
                 onTap: _setPosition,
                 onMapCreated: (controller) => _controller = controller,
+                gestureRecognizers: {
+                  Factory<OneSequenceGestureRecognizer>(
+                    () => EagerGestureRecognizer(),
+                  ),
+                },
                 myLocationButtonEnabled: false,
                 mapToolbarEnabled: false,
                 zoomControlsEnabled: false,
@@ -1327,43 +1375,51 @@ class _InterestSheetState extends State<_InterestSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Scrie-i lui ${widget.post.authorName}',
-              style: const TextStyle(
-                color: _RoommatePostsScreenState._text,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _controller,
-              maxLines: 4,
-              decoration: _roommateInputDecoration(
-                'Salut! Sunt interesat de anuntul tau...',
-              ),
-            ),
-            const SizedBox(height: 14),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(_controller.text),
-              style: FilledButton.styleFrom(
-                backgroundColor: _RoommatePostsScreenState._primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.fromLTRB(20, 6, 20, 20 + keyboardInset),
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Scrie-i lui ${widget.post.authorName}',
+                style: const TextStyle(
+                  color: _RoommatePostsScreenState._text,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              child: const Text('Trimite cererea'),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: _controller,
+                maxLines: 4,
+                autofocus: true,
+                decoration: _roommateInputDecoration(
+                  'Salut! Sunt interesat de anuntul tau...',
+                ),
+              ),
+              const SizedBox(height: 14),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(_controller.text),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _RoommatePostsScreenState._primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text('Trimite cererea'),
+              ),
+            ],
+          ),
         ),
       ),
     );

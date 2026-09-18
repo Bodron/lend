@@ -79,6 +79,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                     MaterialPageRoute<void>(
                       builder: (_) => ProductChatScreen(
                         productId: thread.productId,
+                        roommateInterestId: thread.roommateInterestId,
                         productTitle: thread.productTitle,
                         ownerName: thread.participantName,
                       ),
@@ -597,8 +598,9 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
     final days = _start == null || _end == null
         ? 1
         : _end!.difference(_start!).inDays.clamp(1, 365);
-    if (_mode == 'month')
+    if (_mode == 'month') {
       return widget.product.pricePerMonth ?? days * widget.product.pricePerDay;
+    }
     return days * widget.product.pricePerDay;
   }
 
@@ -951,11 +953,15 @@ class ProductChatScreen extends StatefulWidget {
     required this.productId,
     required this.productTitle,
     required this.ownerName,
+    this.roommateInterestId,
+    this.contextLabel,
   });
 
   final String productId;
   final String productTitle;
   final String ownerName;
+  final String? roommateInterestId;
+  final String? contextLabel;
 
   @override
   State<ProductChatScreen> createState() => _ProductChatScreenState();
@@ -980,6 +986,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
   LendProduct? _chatProduct;
   String _chatParticipantName = '';
   String? _chatParticipantAvatarUrl;
+  bool get _isRoommateRequestChat => widget.roommateInterestId != null;
 
   @override
   void initState() {
@@ -1004,6 +1011,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       final thread = await _api.getForProduct(
         accessToken: token,
         productId: widget.productId,
+        roommateInterestId: widget.roommateInterestId,
       );
       if (!mounted) return;
       setState(() {
@@ -1026,22 +1034,26 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         onData: (data) {
           if (data is! Map) return;
           final message = Message.fromJson(Map<String, dynamic>.from(data));
-          if (!mounted || _messages.any((item) => item.id == message.id))
+          if (!mounted || _messages.any((item) => item.id == message.id)) {
             return;
+          }
+          if (message.roommateInterestId != widget.roommateInterestId) return;
           setState(() => _messages = [..._messages, message]);
         },
       );
-      _offerSubscription = await _realtime.subscribe(
-        accessToken: token,
-        apiBaseUrl: AuthApi.baseUrl,
-        event: RealtimeEvents.offerUpdated,
-        onData: (data) {
-          if (data is! Map) return;
-          final offer = RentalOffer.fromJson(Map<String, dynamic>.from(data));
-          if (!mounted) return;
-          _upsertOffer(offer);
-        },
-      );
+      if (!_isRoommateRequestChat) {
+        _offerSubscription = await _realtime.subscribe(
+          accessToken: token,
+          apiBaseUrl: AuthApi.baseUrl,
+          event: RealtimeEvents.offerUpdated,
+          onData: (data) {
+            if (data is! Map) return;
+            final offer = RentalOffer.fromJson(Map<String, dynamic>.from(data));
+            if (!mounted) return;
+            _upsertOffer(offer);
+          },
+        );
+      }
       _realtime.emit('conversation.join', {'productId': widget.productId});
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -1100,6 +1112,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       final message = await _api.send(
         accessToken: _token!,
         productId: widget.productId,
+        roommateInterestId: widget.roommateInterestId,
         body: body,
       );
       if (!mounted) return;
@@ -1130,7 +1143,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
             .toList() ??
         const <String>[];
     if (modes.isEmpty || !mounted) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -1138,6 +1151,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
             ),
           ),
         );
+      }
       return;
     }
     final today = DateTime.now();
@@ -1231,12 +1245,15 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         endDate: end,
         rentalMode: mode,
       );
-      if (mounted) _upsertOffer(offer);
+      if (mounted) {
+        _upsertOffer(offer);
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     }
   }
 
@@ -1248,12 +1265,15 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         offerId: offer.id,
         accept: accept,
       );
-      if (mounted) _upsertOffer(updated);
+      if (mounted) {
+        _upsertOffer(updated);
+      }
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     }
   }
 
@@ -1302,10 +1322,11 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         ),
       );
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     }
   }
 
@@ -1360,7 +1381,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                     ),
                   ),
                   Text(
-                    widget.productTitle,
+                    widget.contextLabel ?? widget.productTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 12, color: Colors.black54),
@@ -1442,7 +1463,9 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length + _offers.length,
+                    itemCount:
+                        _messages.length +
+                        (_isRoommateRequestChat ? 0 : _offers.length),
                     itemBuilder: (context, index) {
                       if (index >= _messages.length) {
                         return _OfferCard(
@@ -1499,7 +1522,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                       ),
                     ),
                   ),
-                  if (!_isOwner)
+                  if (!_isOwner && !_isRoommateRequestChat)
                     IconButton(
                       tooltip: 'Trimite ofertă',
                       onPressed: _sending ? null : _sendOffer,

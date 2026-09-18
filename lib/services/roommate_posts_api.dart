@@ -64,7 +64,7 @@ class RoommatePostsApi {
     return RoommatePost.fromJson(payload);
   }
 
-  Future<void> sendInterest({
+  Future<RoommateInterestResult> sendInterest({
     required String accessToken,
     required String postId,
     String? message,
@@ -92,6 +92,13 @@ class RoommatePostsApi {
       }
       throw RoommatePostsApiException(_extractMessage(payload));
     }
+
+    final payload = jsonDecode(response.body);
+    if (payload is Map<String, dynamic>) {
+      return RoommateInterestResult.fromJson(payload);
+    }
+
+    return const RoommateInterestResult();
   }
 
   String _extractMessage(Object? payload) {
@@ -108,6 +115,25 @@ class RoommatePostsApi {
     }
 
     return 'A aparut o eroare. Incearca din nou.';
+  }
+}
+
+class RoommateInterestResult {
+  const RoommateInterestResult({this.productId, this.interestId});
+
+  final String? productId;
+  final String? interestId;
+
+  factory RoommateInterestResult.fromJson(Map<String, dynamic> json) {
+    final productId = json['productId']?.toString();
+    final interest = json['interest'];
+    final interestId = interest is Map<String, dynamic>
+        ? (interest['_id'] ?? interest['id'])?.toString()
+        : json['interestId']?.toString();
+    return RoommateInterestResult(
+      productId: productId == null || productId.isEmpty ? null : productId,
+      interestId: interestId == null || interestId.isEmpty ? null : interestId,
+    );
   }
 }
 

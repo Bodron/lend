@@ -32,9 +32,16 @@ class MessagesApi {
   Future<MessageThread> getForProduct({
     required String accessToken,
     required String productId,
+    String? roommateInterestId,
   }) async {
+    final query = {
+      if (roommateInterestId != null && roommateInterestId.isNotEmpty)
+        'roommateInterestId': roommateInterestId,
+    };
     final response = await _client.get(
-      Uri.parse('${AuthApi.baseUrl}/messages/product/$productId'),
+      Uri.parse(
+        '${AuthApi.baseUrl}/messages/product/$productId',
+      ).replace(queryParameters: query.isEmpty ? null : query),
       headers: {'Authorization': 'Bearer $accessToken'},
     );
     return _decodeThread(response);
@@ -44,6 +51,7 @@ class MessagesApi {
     required String accessToken,
     required String productId,
     required String body,
+    String? roommateInterestId,
   }) async {
     final response = await _client.post(
       Uri.parse('${AuthApi.baseUrl}/messages'),
@@ -51,7 +59,12 @@ class MessagesApi {
         'Authorization': 'Bearer $accessToken',
         'Content-Type': 'application/json',
       },
-      body: jsonEncode({'productId': productId, 'body': body}),
+      body: jsonEncode({
+        'productId': productId,
+        if (roommateInterestId != null && roommateInterestId.isNotEmpty)
+          'roommateInterestId': roommateInterestId,
+        'body': body,
+      }),
     );
     final payload = jsonDecode(response.body);
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -83,8 +96,9 @@ class MessagesApi {
       }),
     );
     final payload = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw MessagesApiException(_message(payload));
+    }
     return RentalOffer.fromJson(payload as Map<String, dynamic>);
   }
 
@@ -99,8 +113,9 @@ class MessagesApi {
       headers: {'Authorization': 'Bearer $accessToken'},
     );
     final payload = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw MessagesApiException(_message(payload));
+    }
     return RentalOffer.fromJson(payload as Map<String, dynamic>);
   }
 
@@ -113,8 +128,9 @@ class MessagesApi {
       headers: {'Authorization': 'Bearer $accessToken'},
     );
     final payload = jsonDecode(response.body);
-    if (response.statusCode < 200 || response.statusCode >= 300)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw MessagesApiException(_message(payload));
+    }
     return RentalOffer.fromJson(payload as Map<String, dynamic>);
   }
 
@@ -137,6 +153,7 @@ class MessagesApi {
 class MessageThread {
   const MessageThread({
     required this.productId,
+    this.roommateInterestId,
     required this.productTitle,
     required this.ownerId,
     required this.ownerName,
@@ -147,6 +164,7 @@ class MessageThread {
   });
 
   final String productId;
+  final String? roommateInterestId;
   final String productTitle;
   final String ownerId;
   final String ownerName;
@@ -159,6 +177,7 @@ class MessageThread {
     final rawMessages = json['messages'];
     return MessageThread(
       productId: (json['productId'] ?? '').toString(),
+      roommateInterestId: _optionalString(json['roommateInterestId']),
       productTitle: (json['productTitle'] ?? '').toString(),
       ownerId: (json['ownerId'] ?? '').toString(),
       ownerName: (json['ownerName'] ?? '').toString(),
@@ -185,6 +204,7 @@ class MessageThread {
 class MessageThreadSummary {
   const MessageThreadSummary({
     required this.productId,
+    this.roommateInterestId,
     required this.productTitle,
     required this.ownerName,
     required this.participantName,
@@ -196,6 +216,7 @@ class MessageThreadSummary {
   });
 
   final String productId;
+  final String? roommateInterestId;
   final String productTitle;
   final String ownerName;
   final String participantName;
@@ -209,6 +230,7 @@ class MessageThreadSummary {
     final latest = json['latestMessage'];
     return MessageThreadSummary(
       productId: (json['productId'] ?? '').toString(),
+      roommateInterestId: _optionalString(json['roommateInterestId']),
       productTitle: (json['productTitle'] ?? '').toString(),
       ownerName: (json['ownerName'] ?? '').toString(),
       participantName:
@@ -235,12 +257,14 @@ class Message {
   const Message({
     required this.id,
     required this.senderId,
+    this.roommateInterestId,
     required this.body,
     required this.createdAt,
   });
 
   final String id;
   final String senderId;
+  final String? roommateInterestId;
   final String body;
   final DateTime? createdAt;
 
@@ -248,6 +272,7 @@ class Message {
     return Message(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       senderId: (json['senderId'] ?? '').toString(),
+      roommateInterestId: _optionalString(json['roommateInterestId']),
       body: (json['body'] ?? '').toString(),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
     );
