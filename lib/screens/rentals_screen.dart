@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'add_listing_screen.dart';
 import 'explore_screen.dart';
@@ -11,6 +10,7 @@ import 'return_qr_screen.dart';
 import 'return_scan_screen.dart';
 import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
+import '../services/downloads_saver.dart';
 import '../services/products_api.dart';
 import '../services/realtime_socket_service.dart';
 import '../services/rental_orders_api.dart';
@@ -115,6 +115,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
         event: 'connect',
         onData: (_) => _refreshOrdersFromSocket(),
       );
+      _refreshOrdersFromSocket();
     } catch (error) {
       debugPrint('Realtime rentals unavailable: $error');
     }
@@ -1438,11 +1439,39 @@ class _ActiveRentalCard extends StatelessWidget {
       return;
     }
 
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && context.mounted) {
-      LendToast.error(context, message: 'Nu am putut deschide contractul.');
+    try {
+      await DownloadsSaver.downloadPdfFromUrl(
+        name:
+            'contract-${_safeFilePart(item.title)}-${_dateFilePart(DateTime.now())}.pdf',
+        url: uri,
+      );
+
+      if (context.mounted) {
+        LendToast.success(context, message: 'Contractul a fost descarcat.');
+      }
+    } catch (error) {
+      if (context.mounted) {
+        LendToast.error(context, message: error.toString());
+      }
     }
   }
+}
+
+String _safeFilePart(String value) {
+  final normalized = value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9-]+'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+  return normalized.isEmpty ? 'contract' : normalized;
+}
+
+String _dateFilePart(DateTime value) {
+  final year = value.year.toString().padLeft(4, '0');
+  final month = value.month.toString().padLeft(2, '0');
+  final day = value.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
 }
 
 class _HistoryRentalsGrid extends StatelessWidget {

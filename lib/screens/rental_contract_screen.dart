@@ -3,11 +3,11 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:printing/printing.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/auth_api.dart';
+import '../services/downloads_saver.dart';
 import '../services/payments_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_contract_pdf.dart';
@@ -149,7 +149,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
 
       final contractBytes = await _buildContractPdfBytes();
       final contractFileName =
-          'contract-lend-${_safeFilePart(widget.product.slug)}-${order.id}.pdf';
+          'contract-${_safeFilePart(widget.product.title)}-${_dateFilePart(DateTime.now())}.pdf';
       final uploadedContract = await _storageApi.uploadDocument(
         accessToken: token,
         fileName: contractFileName,
@@ -232,10 +232,17 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
     try {
       final bytes = await _buildContractPdfBytes();
 
-      await Printing.sharePdf(
+      await DownloadsSaver.savePdf(
+        name:
+            'contract-${_safeFilePart(widget.product.title)}-${_dateFilePart(DateTime.now())}.pdf',
         bytes: bytes,
-        filename: 'contract-lend-${_safeFilePart(widget.product.slug)}.pdf',
       );
+
+      if (!mounted) {
+        return;
+      }
+
+      LendToast.success(context, message: 'Contractul a fost descarcat.');
     } catch (error) {
       if (!mounted) {
         return;
@@ -398,6 +405,13 @@ String _safeFilePart(String value) {
       .replaceAll(RegExp(r'-+'), '-')
       .replaceAll(RegExp(r'^-|-$'), '');
   return normalized.isEmpty ? 'contract' : normalized;
+}
+
+String _dateFilePart(DateTime value) {
+  final year = value.year.toString().padLeft(4, '0');
+  final month = value.month.toString().padLeft(2, '0');
+  final day = value.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
 }
 
 class _ContractTopBar extends StatelessWidget {

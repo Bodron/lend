@@ -11,9 +11,14 @@ class RoommatePostsApi {
 
   final http.Client _client;
 
-  Future<List<RoommatePost>> findAll() async {
+  Future<List<RoommatePost>> findAll({RoommatePostFilters? filters}) async {
+    final query = filters?.toQueryParameters() ?? const <String, String>{};
     final response = await _client
-        .get(Uri.parse('${AuthApi.baseUrl}/roommate-posts'))
+        .get(
+          Uri.parse(
+            '${AuthApi.baseUrl}/roommate-posts',
+          ).replace(queryParameters: query.isEmpty ? null : query),
+        )
         .timeout(_requestTimeout);
     final payload = jsonDecode(response.body);
 
@@ -103,6 +108,43 @@ class RoommatePostsApi {
     }
 
     return 'A aparut o eroare. Incearca din nou.';
+  }
+}
+
+class RoommatePostFilters {
+  const RoommatePostFilters({
+    this.minBudget = '',
+    this.maxBudget = '',
+    this.latitude,
+    this.longitude,
+    this.radiusKm,
+    this.query = '',
+  });
+
+  final String minBudget;
+  final String maxBudget;
+  final double? latitude;
+  final double? longitude;
+  final double? radiusKm;
+  final String query;
+
+  bool get isEmpty =>
+      minBudget.trim().isEmpty &&
+      maxBudget.trim().isEmpty &&
+      latitude == null &&
+      longitude == null &&
+      radiusKm == null &&
+      query.trim().isEmpty;
+
+  Map<String, String> toQueryParameters() {
+    return {
+      if (minBudget.trim().isNotEmpty) 'minBudget': minBudget.trim(),
+      if (maxBudget.trim().isNotEmpty) 'maxBudget': maxBudget.trim(),
+      if (latitude != null) 'lat': latitude!.toStringAsFixed(6),
+      if (longitude != null) 'lng': longitude!.toStringAsFixed(6),
+      if (radiusKm != null) 'radiusKm': radiusKm!.round().toString(),
+      if (query.trim().isNotEmpty) 'q': query.trim(),
+    };
   }
 }
 

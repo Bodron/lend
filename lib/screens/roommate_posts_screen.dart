@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
@@ -20,14 +24,97 @@ class _RoommatePostsScreenState extends State<RoommatePostsScreen> {
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
   static const _outline = Color(0xFFC3C6D1);
+  static const _maxBudgetFilter = 10000.0;
+  static const _defaultLocation = LatLng(44.4268, 26.1025);
 
   final _api = RoommatePostsApi();
-  late Future<List<RoommatePost>> _postsFuture = _api.findAll();
+  final _queryController = TextEditingController();
+  RangeValues _budgetRange = const RangeValues(0, _maxBudgetFilter);
+  _RoommateLocationFilter? _locationFilter;
+  Timer? _filterDebounce;
+  late Future<List<RoommatePost>> _postsFuture = _loadPosts();
+
+  RoommatePostFilters get _filters => RoommatePostFilters(
+    query: _queryController.text,
+    minBudget: _budgetRange.start > 0
+        ? _budgetRange.start.round().toString()
+        : '',
+    maxBudget: _budgetRange.end < _maxBudgetFilter
+        ? _budgetRange.end.round().toString()
+        : '',
+    latitude: _locationFilter?.position.latitude,
+    longitude: _locationFilter?.position.longitude,
+    radiusKm: _locationFilter?.radiusKm,
+  );
+
+  Future<List<RoommatePost>> _loadPosts() {
+    return _api.findAll(filters: _filters);
+  }
 
   void _reload() {
     setState(() {
-      _postsFuture = _api.findAll();
+      _postsFuture = _loadPosts();
     });
+  }
+
+  void _queueFilterReload() {
+    _filterDebounce?.cancel();
+    _filterDebounce = Timer(const Duration(milliseconds: 450), _reload);
+  }
+
+  void _clearFilters() {
+    _filterDebounce?.cancel();
+    _queryController.clear();
+    _budgetRange = const RangeValues(0, _maxBudgetFilter);
+    _locationFilter = null;
+    _reload();
+  }
+
+  void _setBudgetRange(RangeValues value) {
+    setState(() {
+      _budgetRange = RangeValues(
+        value.start.roundToDouble(),
+        value.end.roundToDouble(),
+      );
+    });
+    _queueFilterReload();
+  }
+
+  Future<void> _openLocationSheet() async {
+    final result = await showModalBottomSheet<_RoommateLocationFilter?>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => _RoommateLocationSheet(
+        initialFilter:
+            _locationFilter ??
+            const _RoommateLocationFilter(
+              position: _defaultLocation,
+              radiusKm: 25,
+              label: 'Bucuresti, Romania',
+            ),
+      ),
+    );
+
+    if (!mounted || result == null) {
+      return;
+    }
+
+    setState(() {
+      _locationFilter = result.enabled ? result : null;
+    });
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    _filterDebounce?.cancel();
+    _queryController.dispose();
+    super.dispose();
   }
 
   Future<void> _sendInterest(RoommatePost post) async {
@@ -87,6 +174,19 @@ class _RoommatePostsScreenState extends State<RoommatePostsScreen> {
               child: CustomScrollView(
                 slivers: [
                   const SliverToBoxAdapter(child: _RoommateTopBar()),
+                  SliverToBoxAdapter(
+                    child: _RoommateFilters(
+                      queryController: _queryController,
+                      budgetRange: _budgetRange,
+                      maxBudget: _maxBudgetFilter,
+                      locationFilter: _locationFilter,
+                      hasFilters: !_filters.isEmpty,
+                      onChanged: _queueFilterReload,
+                      onBudgetChanged: _setBudgetRange,
+                      onLocationTap: _openLocationSheet,
+                      onClear: _clearFilters,
+                    ),
+                  ),
                   FutureBuilder<List<RoommatePost>>(
                     future: _postsFuture,
                     builder: (context, snapshot) {
@@ -281,16 +381,19 @@ class _CreateRoommatePostScreenState extends State<CreateRoommatePostScreen> {
                             controller: _titleController,
                             label: 'Titlu',
                             hint: 'Caut coleg/colega in Cluj',
+                            readOnly: true,
                           ),
                           _RoommateField(
                             controller: _cityController,
                             label: 'Oras',
                             hint: 'Bucuresti',
+                            readOnly: true,
                           ),
                           _RoommateField(
                             controller: _areaController,
                             label: 'Zona',
                             hint: 'Unirii, Marasti, Copou...',
+                            readOnly: true,
                           ),
                           _RoommateField(
                             controller: _budgetController,
@@ -298,6 +401,7 @@ class _CreateRoommatePostScreenState extends State<CreateRoommatePostScreen> {
                             hint: '1500',
                             suffix: 'RON',
                             keyboardType: TextInputType.number,
+                            readOnly: true,
                           ),
                           _RoommateField(
                             controller: _moveInController,
@@ -412,6 +516,518 @@ class _RoommateTopBar extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RoommateFilters extends StatelessWidget {
+  const _RoommateFilters({
+    required this.queryController,
+    required this.budgetRange,
+    required this.maxBudget,
+    required this.locationFilter,
+    required this.hasFilters,
+    required this.onChanged,
+    required this.onBudgetChanged,
+    required this.onLocationTap,
+    required this.onClear,
+  });
+
+  final TextEditingController queryController;
+  final RangeValues budgetRange;
+  final double maxBudget;
+  final _RoommateLocationFilter? locationFilter;
+  final bool hasFilters;
+  final VoidCallback onChanged;
+  final ValueChanged<RangeValues> onBudgetChanged;
+  final VoidCallback onLocationTap;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: DecoratedBox(
+        decoration: _roommateCardDecoration,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
+              _FilterField(
+                controller: queryController,
+                hint: 'Cautare',
+                icon: Icons.search_rounded,
+                onChanged: onChanged,
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton.icon(
+                  onPressed: onLocationTap,
+                  icon: const Icon(Icons.location_on_rounded, size: 19),
+                  label: Text(
+                    locationFilter == null
+                        ? 'Locatie'
+                        : '${locationFilter!.label ?? 'Locatie'} · ${locationFilter!.radiusKm.round()} km',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    alignment: Alignment.centerLeft,
+                    foregroundColor: locationFilter == null
+                        ? _RoommatePostsScreenState._text
+                        : _RoommatePostsScreenState._primary,
+                    side: BorderSide(
+                      color:
+                          (locationFilter == null
+                                  ? _RoommatePostsScreenState._outline
+                                  : _RoommatePostsScreenState._primary)
+                              .withValues(alpha: 0.55),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              _BudgetRangeFilter(
+                range: budgetRange,
+                maxBudget: maxBudget,
+                onChanged: onBudgetChanged,
+              ),
+              if (hasFilters) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 42,
+                  child: OutlinedButton.icon(
+                    onPressed: onClear,
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    label: const Text('Sterge filtrele'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _RoommatePostsScreenState._primary,
+                      side: BorderSide(
+                        color: _RoommatePostsScreenState._primary.withValues(
+                          alpha: 0.28,
+                        ),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetRangeFilter extends StatelessWidget {
+  const _BudgetRangeFilter({
+    required this.range,
+    required this.maxBudget,
+    required this.onChanged,
+  });
+
+  final RangeValues range;
+  final double maxBudget;
+  final ValueChanged<RangeValues> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final start = range.start.round();
+    final end = range.end.round();
+    final endLabel = end >= maxBudget.round() ? '$end+' : end.toString();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.payments_rounded,
+              size: 20,
+              color: _RoommatePostsScreenState._primary,
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Pret lunar',
+                style: TextStyle(
+                  color: _RoommatePostsScreenState._text,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            Text(
+              '$start - $endLabel RON',
+              style: const TextStyle(
+                color: _RoommatePostsScreenState._muted,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        RangeSlider(
+          values: range,
+          min: 0,
+          max: maxBudget,
+          divisions: (maxBudget / 100).round(),
+          labels: RangeLabels('$start RON', '$endLabel RON'),
+          activeColor: _RoommatePostsScreenState._primary,
+          inactiveColor: _RoommatePostsScreenState._primary.withValues(
+            alpha: 0.16,
+          ),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _RoommateLocationFilter {
+  const _RoommateLocationFilter({
+    required this.position,
+    required this.radiusKm,
+    this.label,
+    this.enabled = true,
+  });
+
+  final LatLng position;
+  final double radiusKm;
+  final String? label;
+  final bool enabled;
+}
+
+class _RoommateLocationSheet extends StatefulWidget {
+  const _RoommateLocationSheet({required this.initialFilter});
+
+  final _RoommateLocationFilter initialFilter;
+
+  @override
+  State<_RoommateLocationSheet> createState() => _RoommateLocationSheetState();
+}
+
+class _RoommateLocationSheetState extends State<_RoommateLocationSheet> {
+  late LatLng _position = widget.initialFilter.position;
+  late double _radiusKm = widget.initialFilter.radiusKm;
+  GoogleMapController? _controller;
+  String? _mapStyle;
+  String? _locationLabel;
+  bool _resolvingLocation = false;
+  Timer? _reverseGeocodeDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    rootBundle.loadString('assets/maps/altus_map_3.json').then((style) {
+      if (mounted) {
+        setState(() => _mapStyle = style);
+      }
+    });
+    _locationLabel = widget.initialFilter.label;
+    _resolveLocationLabel();
+  }
+
+  @override
+  void dispose() {
+    _reverseGeocodeDebounce?.cancel();
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _setPosition(LatLng position) {
+    setState(() {
+      _position = position;
+      _locationLabel = null;
+    });
+    _reverseGeocodeDebounce?.cancel();
+    _reverseGeocodeDebounce = Timer(
+      const Duration(milliseconds: 450),
+      _resolveLocationLabel,
+    );
+  }
+
+  Future<void> _resolveLocationLabel() async {
+    setState(() => _resolvingLocation = true);
+
+    try {
+      final placemarks = await Geocoding()
+          .placemarkFromCoordinates(_position.latitude, _position.longitude)
+          .timeout(const Duration(seconds: 5));
+      if (!mounted) return;
+
+      final place = placemarks.isEmpty ? null : placemarks.first;
+      final city =
+          [
+                place?.locality,
+                place?.subAdministrativeArea,
+                place?.administrativeArea,
+              ]
+              .whereType<String>()
+              .map((value) => value.trim())
+              .firstWhere((value) => value.isNotEmpty, orElse: () => '');
+      final country = place?.country?.trim() ?? '';
+      final label = [
+        city,
+        country,
+      ].where((value) => value.isNotEmpty).join(', ');
+
+      setState(() {
+        _locationLabel = label.isEmpty ? null : label;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _locationLabel = null);
+    } finally {
+      if (mounted) {
+        setState(() => _resolvingLocation = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomPadding = MediaQuery.paddingOf(context).bottom;
+    final radius = _radiusKm.round();
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(18, 8, 18, bottomPadding + 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Filtru locatie',
+                      style: TextStyle(
+                        color: _RoommatePostsScreenState._text,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _resolvingLocation
+                          ? 'Detectez orasul...'
+                          : (_locationLabel ?? 'Muta pinul pe orasul dorit'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _RoommatePostsScreenState._muted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              height: 320,
+              child: GoogleMap(
+                style: _mapStyle,
+                initialCameraPosition: CameraPosition(
+                  target: _position,
+                  zoom: 11,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('roommate-location-filter'),
+                    position: _position,
+                    draggable: true,
+                    onDragEnd: _setPosition,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueAzure,
+                    ),
+                  ),
+                },
+                circles: {
+                  Circle(
+                    circleId: const CircleId('roommate-location-radius'),
+                    center: _position,
+                    radius: _radiusKm * 1000,
+                    fillColor: _RoommatePostsScreenState._primary.withValues(
+                      alpha: 0.12,
+                    ),
+                    strokeColor: _RoommatePostsScreenState._primary.withValues(
+                      alpha: 0.45,
+                    ),
+                    strokeWidth: 2,
+                  ),
+                },
+                onTap: _setPosition,
+                onMapCreated: (controller) => _controller = controller,
+                myLocationButtonEnabled: false,
+                mapToolbarEnabled: false,
+                zoomControlsEnabled: false,
+                compassEnabled: false,
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              const Icon(
+                Icons.radar_rounded,
+                size: 20,
+                color: _RoommatePostsScreenState._primary,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Raza cautare',
+                  style: TextStyle(
+                    color: _RoommatePostsScreenState._text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                '$radius km',
+                style: const TextStyle(
+                  color: _RoommatePostsScreenState._muted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: _radiusKm,
+            min: 1,
+            max: 100,
+            divisions: 99,
+            label: '$radius km',
+            activeColor: _RoommatePostsScreenState._primary,
+            inactiveColor: _RoommatePostsScreenState._primary.withValues(
+              alpha: 0.16,
+            ),
+            onChanged: (value) {
+              setState(() => _radiusKm = value.roundToDouble());
+            },
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(
+                    _RoommateLocationFilter(
+                      position: _position,
+                      radiusKm: _radiusKm,
+                      label: _locationLabel,
+                      enabled: false,
+                    ),
+                  ),
+                  icon: const Icon(Icons.location_off_rounded, size: 18),
+                  label: const Text('Scoate'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: _RoommatePostsScreenState._muted,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(context).pop(
+                    _RoommateLocationFilter(
+                      position: _position,
+                      radiusKm: _radiusKm,
+                      label: _locationLabel,
+                    ),
+                  ),
+                  icon: const Icon(Icons.check_rounded, size: 18),
+                  label: const Text('Aplica'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _RoommatePostsScreenState._primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterField extends StatelessWidget {
+  const _FilterField({
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: TextField(
+        controller: controller,
+        onChanged: (_) => onChanged(),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          hintText: hint,
+          prefixIcon: Icon(icon, size: 20),
+          filled: true,
+          fillColor: const Color(0xFFF5F5F7),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: _RoommatePostsScreenState._outline,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: _RoommatePostsScreenState._outline,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(
+              color: _RoommatePostsScreenState._primary,
+              width: 1.4,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -762,6 +1378,7 @@ class _RoommateField extends StatelessWidget {
     this.suffix,
     this.maxLines = 1,
     this.keyboardType,
+    this.readOnly = false,
   });
 
   final TextEditingController controller;
@@ -770,6 +1387,7 @@ class _RoommateField extends StatelessWidget {
   final String? suffix;
   final int maxLines;
   final TextInputType? keyboardType;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -791,8 +1409,11 @@ class _RoommateField extends StatelessWidget {
             controller: controller,
             maxLines: maxLines,
             keyboardType: keyboardType,
+            readOnly: readOnly,
+            enableInteractiveSelection: !readOnly,
             decoration: _roommateInputDecoration(
               hint,
+              readOnly: readOnly,
             ).copyWith(suffixText: suffix),
           ),
         ],
@@ -914,11 +1535,11 @@ class _EmptyRoommatePosts extends StatelessWidget {
   }
 }
 
-InputDecoration _roommateInputDecoration(String hint) {
+InputDecoration _roommateInputDecoration(String hint, {bool readOnly = false}) {
   return InputDecoration(
     hintText: hint,
     filled: true,
-    fillColor: Colors.white,
+    fillColor: readOnly ? const Color(0xFFF1F2F5) : Colors.white,
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),

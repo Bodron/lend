@@ -11,11 +11,13 @@ abstract final class RealtimeEvents {
   static const rentalOrderCreated = 'rental_order.created';
   static const rentalOrderUpdated = 'rental_order.updated';
   static const rentalOrderStatusChanged = 'rental_order.status_changed';
+  static const reconnect = 'reconnect';
 
   static const rentalOrderEvents = [
     rentalOrderCreated,
     rentalOrderUpdated,
     rentalOrderStatusChanged,
+    reconnect,
     // Compatibility names for older API deployments.
     'rental_order.new',
     'rental-order.created',

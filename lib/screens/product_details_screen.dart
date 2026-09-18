@@ -866,7 +866,7 @@ class _SpecsGrid extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        mainAxisExtent: 116,
+        mainAxisExtent: 124,
       ),
       itemBuilder: (context, index) {
         final item = items[index];
@@ -892,14 +892,16 @@ class _SpecCard extends StatelessWidget {
     return DecoratedBox(
       decoration: _cardDecoration,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: _ProductDetailsScreenState._text),
-            const Spacer(),
+            Icon(icon, size: 22, color: _ProductDetailsScreenState._text),
+            const SizedBox(height: 8),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: _ProductDetailsScreenState._muted,
                 fontSize: 12,
@@ -907,14 +909,19 @@ class _SpecCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              value,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _ProductDetailsScreenState._text,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
+            Expanded(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _ProductDetailsScreenState._text,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ),
           ],
