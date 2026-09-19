@@ -812,7 +812,6 @@ class _ChatMessageBubble extends StatelessWidget {
             const SizedBox(width: 10),
           ],
           bubble,
-          if (mine) const SizedBox(width: 42),
         ],
       ),
     );
@@ -838,8 +837,8 @@ class _ChatAvatar extends StatelessWidget {
       child: imageUrl == null
           ? Text(
               initial,
-              style: const TextStyle(
-                color: Color(0xFF30578F),
+              style: TextStyle(
+                color: const Color(0xFF30578F),
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -1503,6 +1502,8 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
   List<RentalOffer> _offers = const [];
   String? _token;
   String? _userId;
+  String _currentUserName = '';
+  String? _currentUserAvatarUrl;
   RealtimeSubscription? _messageSubscription;
   RealtimeSubscription? _offerSubscription;
   bool _loading = true;
@@ -1543,6 +1544,8 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       setState(() {
         _token = token;
         _userId = user.id;
+        _currentUserName = user.fullName;
+        _currentUserAvatarUrl = user.avatarUrl;
         _messages = thread.messages;
         _offers = thread.offers;
         _isOwner = thread.ownerId == user.id;
@@ -2172,10 +2175,16 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                       return _ChatMessageBubble(
                         body: message.body,
                         mine: mine,
-                        senderName: _chatParticipantName.isEmpty
-                            ? widget.ownerName
-                            : _chatParticipantName,
-                        senderAvatarUrl: _chatParticipantAvatarUrl,
+                        senderName: mine
+                            ? (_currentUserName.isEmpty
+                                  ? 'Tu'
+                                  : _currentUserName)
+                            : (_chatParticipantName.isEmpty
+                                  ? widget.ownerName
+                                  : _chatParticipantName),
+                        senderAvatarUrl: mine
+                            ? _currentUserAvatarUrl
+                            : _chatParticipantAvatarUrl,
                       );
                     },
                   ),
