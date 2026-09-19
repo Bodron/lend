@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
@@ -138,8 +139,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
                               const SizedBox(height: 3),
                               Text(
                                 thread.latestSenderId == _currentUserId
-                                    ? 'You: ${thread.latestMessage}'
-                                    : thread.latestMessage,
+                                    ? 'You: ${_messagePreview(thread.latestMessage)}'
+                                    : _messagePreview(thread.latestMessage),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
@@ -242,6 +243,103 @@ String _threadTime(DateTime? date) {
     return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
   }
   return '${local.day.toString().padLeft(2, '0')}.${local.month.toString().padLeft(2, '0')}';
+}
+
+const _roommateProposalPrefix = '@@roommate_proposal:';
+const _roommateProposalAcceptedPrefix = '@@roommate_proposal_accepted:';
+
+String _messagePreview(String body) {
+  if (_RoommateProposal.tryParse(body) != null) {
+    return 'Propunere de locuire';
+  }
+  if (_RoommateProposalAcceptance.tryParse(body) != null) {
+    return 'Propunere trimis\u0103 proprietarului';
+  }
+  return body;
+}
+
+class _RoommateProposal {
+  const _RoommateProposal({
+    required this.id,
+    required this.senderId,
+    required this.monthlyAmount,
+    required this.moveInDate,
+    required this.message,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String senderId;
+  final int monthlyAmount;
+  final DateTime moveInDate;
+  final String message;
+  final DateTime createdAt;
+
+  String encode() {
+    return '$_roommateProposalPrefix${jsonEncode({'id': id, 'senderId': senderId, 'monthlyAmount': monthlyAmount, 'moveInDate': moveInDate.toIso8601String(), 'message': message, 'createdAt': createdAt.toIso8601String()})}';
+  }
+
+  static _RoommateProposal? tryParse(String body) {
+    if (!body.startsWith(_roommateProposalPrefix)) return null;
+    try {
+      final payload =
+          jsonDecode(body.substring(_roommateProposalPrefix.length))
+              as Map<String, dynamic>;
+      final moveInDate = DateTime.tryParse(
+        (payload['moveInDate'] ?? '').toString(),
+      );
+      final createdAt = DateTime.tryParse(
+        (payload['createdAt'] ?? '').toString(),
+      );
+      if (moveInDate == null || createdAt == null) return null;
+      return _RoommateProposal(
+        id: (payload['id'] ?? '').toString(),
+        senderId: (payload['senderId'] ?? '').toString(),
+        monthlyAmount: (payload['monthlyAmount'] as num?)?.toInt() ?? 0,
+        moveInDate: moveInDate,
+        message: (payload['message'] ?? '').toString(),
+        createdAt: createdAt,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+class _RoommateProposalAcceptance {
+  const _RoommateProposalAcceptance({
+    required this.proposalId,
+    required this.senderId,
+    required this.createdAt,
+  });
+
+  final String proposalId;
+  final String senderId;
+  final DateTime createdAt;
+
+  String encode() {
+    return '$_roommateProposalAcceptedPrefix${jsonEncode({'proposalId': proposalId, 'senderId': senderId, 'createdAt': createdAt.toIso8601String()})}';
+  }
+
+  static _RoommateProposalAcceptance? tryParse(String body) {
+    if (!body.startsWith(_roommateProposalAcceptedPrefix)) return null;
+    try {
+      final payload =
+          jsonDecode(body.substring(_roommateProposalAcceptedPrefix.length))
+              as Map<String, dynamic>;
+      final createdAt = DateTime.tryParse(
+        (payload['createdAt'] ?? '').toString(),
+      );
+      if (createdAt == null) return null;
+      return _RoommateProposalAcceptance(
+        proposalId: (payload['proposalId'] ?? '').toString(),
+        senderId: (payload['senderId'] ?? '').toString(),
+        createdAt: createdAt,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 class _OfferCard extends StatelessWidget {
@@ -489,6 +587,434 @@ class _OfferInfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RoommateProposalCard extends StatelessWidget {
+  const _RoommateProposalCard({
+    required this.proposal,
+    required this.mine,
+    required this.accepted,
+    required this.onAccept,
+  });
+
+  final _RoommateProposal proposal;
+  final bool mine;
+  final bool accepted;
+  final VoidCallback onAccept;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = accepted ? Colors.green : const Color(0xFF30578F);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: .25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.diversity_3_outlined, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  mine ? 'Propunerea ta' : 'Propunere de locuire',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+              Text(
+                '${proposal.monthlyAmount} RON',
+                style: TextStyle(
+                  color: color,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF5F7FB),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                _OfferInfoRow(
+                  icon: Icons.payments_outlined,
+                  label: 'Buget lunar',
+                  value: '${proposal.monthlyAmount} RON / lun\u0103',
+                ),
+                const SizedBox(height: 8),
+                _OfferInfoRow(
+                  icon: Icons.event_available_outlined,
+                  label: 'Mutare',
+                  value: _shortDate(proposal.moveInDate),
+                ),
+              ],
+            ),
+          ),
+          if (proposal.message.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              proposal.message.trim(),
+              style: TextStyle(
+                color: Colors.grey.shade800,
+                fontSize: 13,
+                height: 1.35,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Text(
+            accepted
+                ? 'Confirmat\u0103 de am\u00e2ndoi. Proprietarul a primit propunerea.'
+                : mine
+                ? 'A\u0219teapt\u0103 confirmarea celuilalt coleg.'
+                : 'Confirm\u0103 dac\u0103 e\u0219ti de acord s\u0103 fie trimis\u0103 proprietarului.',
+            style: TextStyle(
+              color: accepted ? Colors.green.shade700 : Colors.grey.shade700,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (!mine && !accepted) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onAccept,
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text(
+                  'Confirm\u0103 \u0219i trimite proprietarului',
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RoommateProposalAcceptedCard extends StatelessWidget {
+  const _RoommateProposalAcceptedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.withValues(alpha: .22)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.mark_email_read_outlined, color: Colors.green.shade700),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text(
+              'Propunerea a fost confirmat\u0103 de am\u00e2ndoi \u0219i trimis\u0103 proprietarului.',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatMessageBubble extends StatelessWidget {
+  const _ChatMessageBubble({
+    required this.body,
+    required this.mine,
+    required this.senderName,
+    this.senderAvatarUrl,
+  });
+
+  final String body;
+  final bool mine;
+  final String senderName;
+  final String? senderAvatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final bubbleColor = mine
+        ? const Color(0xFF30578F)
+        : const Color(0xFF26301F);
+    final bubbleRadius = BorderRadius.only(
+      topLeft: Radius.circular(mine ? 18 : 6),
+      topRight: Radius.circular(mine ? 6 : 18),
+      bottomLeft: const Radius.circular(18),
+      bottomRight: const Radius.circular(18),
+    );
+
+    final bubble = Flexible(
+      child: Column(
+        crossAxisAlignment: mine
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: [
+          if (!mine && senderName.trim().isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 4),
+              child: Text(
+                senderName.trim(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+          Container(
+            constraints: const BoxConstraints(maxWidth: 292),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: bubbleColor,
+              borderRadius: bubbleRadius,
+            ),
+            child: Text(
+              body,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                height: 1.28,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        mainAxisAlignment: mine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (!mine) ...[
+            _ChatAvatar(name: senderName, imageUrl: senderAvatarUrl),
+            const SizedBox(width: 10),
+          ],
+          bubble,
+          if (mine) const SizedBox(width: 42),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatAvatar extends StatelessWidget {
+  const _ChatAvatar({required this.name, this.imageUrl});
+
+  final String name;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = name.trim();
+    final initial = trimmed.isEmpty
+        ? '?'
+        : trimmed.characters.first.toUpperCase();
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: const Color(0xFFDCE8FA),
+      backgroundImage: imageUrl == null ? null : NetworkImage(imageUrl!),
+      child: imageUrl == null
+          ? Text(
+              initial,
+              style: const TextStyle(
+                color: Color(0xFF30578F),
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _RoommateProposalDraft {
+  const _RoommateProposalDraft({
+    required this.monthlyAmount,
+    required this.moveInDate,
+    required this.message,
+  });
+
+  final int monthlyAmount;
+  final DateTime moveInDate;
+  final String message;
+}
+
+class _RoommateProposalSheet extends StatefulWidget {
+  const _RoommateProposalSheet({
+    required this.today,
+    required this.askingPriceLabel,
+  });
+
+  final DateTime today;
+  final String askingPriceLabel;
+
+  @override
+  State<_RoommateProposalSheet> createState() => _RoommateProposalSheetState();
+}
+
+class _RoommateProposalSheetState extends State<_RoommateProposalSheet> {
+  final _amountController = TextEditingController();
+  final _messageController = TextEditingController();
+  late DateTime _moveInDate = DateTime(
+    widget.today.year,
+    widget.today.month,
+    widget.today.day,
+  ).add(const Duration(days: 1));
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _moveInDate,
+      firstDate: DateTime(
+        widget.today.year,
+        widget.today.month,
+        widget.today.day,
+      ),
+      lastDate: widget.today.add(const Duration(days: 365)),
+    );
+    if (date != null) setState(() => _moveInDate = date);
+  }
+
+  void _submit() {
+    final amount = int.tryParse(_amountController.text.trim());
+    if (amount == null || amount <= 0) return;
+    Navigator.pop(
+      context,
+      _RoommateProposalDraft(
+        monthlyAmount: amount,
+        moveInDate: _moveInDate,
+        message: _messageController.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          18,
+          20,
+          20 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Propunere pentru proprietar',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Cel\u0103lalt coleg trebuie s\u0103 confirme \u00eenainte s\u0103 ajung\u0103 la proprietar.',
+              style: TextStyle(color: Colors.grey.shade700, height: 1.35),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F7FB),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: const Color(0xFF30578F).withValues(alpha: .14),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pre\u021bul cerut acum',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.askingPriceLabel,
+                    style: const TextStyle(
+                      color: Color(0xFF30578F),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _amountController,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Buget lunar propus',
+                suffixText: 'RON',
+              ),
+            ),
+            const SizedBox(height: 12),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.event_available_outlined),
+              title: const Text('Data mut\u0103rii'),
+              subtitle: Text(_shortDate(_moveInDate)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _pickDate,
+            ),
+            TextField(
+              controller: _messageController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Mesaj pentru proprietar',
+                hintText:
+                    'Ex: Suntem interesa\u021bi s\u0103 venim la vizionare.',
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _submit,
+                icon: const Icon(Icons.handshake_outlined),
+                label: const Text('Creeaz\u0103 propunerea'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1132,6 +1658,10 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
   }
 
   Future<void> _sendOffer() async {
+    if (_isRoommateRequestChat) {
+      await _sendRoommateProposal();
+      return;
+    }
     final products = await ProductsApi().findAll();
     final productMatches = products
         .where((item) => item.id == widget.productId)
@@ -1257,6 +1787,142 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
     }
   }
 
+  Future<void> _sendRoommateProposal() async {
+    if (_token == null || _userId == null || _sending) return;
+    final product = await _ensureChatProduct();
+    if (!mounted) return;
+    final draft = await showModalBottomSheet<_RoommateProposalDraft>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => _RoommateProposalSheet(
+        today: DateTime.now(),
+        askingPriceLabel: _askingPriceLabel(product),
+      ),
+    );
+    if (draft == null || !mounted) return;
+    final proposal = _RoommateProposal(
+      id: '${DateTime.now().microsecondsSinceEpoch}-${_userId!}',
+      senderId: _userId!,
+      monthlyAmount: draft.monthlyAmount,
+      moveInDate: draft.moveInDate,
+      message: draft.message,
+      createdAt: DateTime.now(),
+    );
+    setState(() => _sending = true);
+    try {
+      final message = await _api.send(
+        accessToken: _token!,
+        productId: widget.productId,
+        roommateInterestId: widget.roommateInterestId,
+        body: proposal.encode(),
+      );
+      if (!mounted) return;
+      if (!_messages.any((item) => item.id == message.id)) {
+        setState(() => _messages = [..._messages, message]);
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<LendProduct?> _ensureChatProduct() async {
+    if (_chatProduct != null) return _chatProduct;
+    try {
+      final products = await ProductsApi().findAll();
+      final product = products
+          .where((item) => item.id == widget.productId)
+          .firstOrNull;
+      if (mounted && product != null) {
+        setState(() {
+          _chatProduct = product;
+          _productImageUrl = product.imageUrl.isEmpty ? null : product.imageUrl;
+        });
+      }
+      return product;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _askingPriceLabel(LendProduct? product) {
+    if (product == null) return 'Pre\u021b indisponibil';
+    final monthly = product.pricePerMonth;
+    if (monthly != null && monthly > 0) {
+      return '$monthly RON / lun\u0103';
+    }
+    return '${product.pricePerDay} RON / zi';
+  }
+
+  Future<void> _acceptRoommateProposal(_RoommateProposal proposal) async {
+    if (_token == null || _userId == null || _sending) return;
+    setState(() => _sending = true);
+    final acceptance = _RoommateProposalAcceptance(
+      proposalId: proposal.id,
+      senderId: _userId!,
+      createdAt: DateTime.now(),
+    );
+    final ownerMessage = [
+      'Propunere de locuire pentru ${widget.productTitle}',
+      '',
+      'Doi colegi sunt de acord s\u0103 mearg\u0103 mai departe cu acest apartament.',
+      'Buget lunar propus: ${proposal.monthlyAmount} RON',
+      'Data mut\u0103rii: ${_shortDate(proposal.moveInDate)}',
+      if (proposal.message.trim().isNotEmpty) '',
+      if (proposal.message.trim().isNotEmpty)
+        'Mesaj: ${proposal.message.trim()}',
+    ].join('\n');
+    try {
+      final acceptedMessage = await _api.send(
+        accessToken: _token!,
+        productId: widget.productId,
+        roommateInterestId: widget.roommateInterestId,
+        body: acceptance.encode(),
+      );
+      await _api.send(
+        accessToken: _token!,
+        productId: widget.productId,
+        body: ownerMessage,
+      );
+      if (!mounted) return;
+      if (!_messages.any((item) => item.id == acceptedMessage.id)) {
+        setState(() => _messages = [..._messages, acceptedMessage]);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Propunerea a fost trimis\u0103 proprietarului.'),
+        ),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => ProductChatScreen(
+            productId: widget.productId,
+            productTitle: widget.productTitle,
+            ownerName: widget.ownerName,
+            contextLabel: 'Conversa\u021bie cu proprietarul',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   Future<void> _updateOffer(RentalOffer offer, bool accept) async {
     if (_token == null) return;
     try {
@@ -1330,11 +1996,19 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
     }
   }
 
+  bool _isRoommateProposalAccepted(String proposalId) {
+    return _messages.any((message) {
+      final acceptance = _RoommateProposalAcceptance.tryParse(message.body);
+      return acceptance?.proposalId == proposalId;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final headerImageUrl = _chatParticipantAvatarUrl;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFEFF2F6),
       appBar: AppBar(
         centerTitle: false,
         titleSpacing: 0,
@@ -1462,7 +2136,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 18),
                     itemCount:
                         _messages.length +
                         (_isRoommateRequestChat ? 0 : _offers.length),
@@ -1480,28 +2154,28 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                       }
                       final message = _messages[index];
                       final mine = message.senderId == _userId;
-                      return Align(
-                        alignment: mine
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 300),
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: mine ? _blue : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Text(
-                            message.body,
-                            style: TextStyle(
-                              color: mine ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ),
+                      final proposal = _RoommateProposal.tryParse(message.body);
+                      if (proposal != null) {
+                        return _RoommateProposalCard(
+                          proposal: proposal,
+                          mine: mine,
+                          accepted: _isRoommateProposalAccepted(proposal.id),
+                          onAccept: () => _acceptRoommateProposal(proposal),
+                        );
+                      }
+                      final accepted = _RoommateProposalAcceptance.tryParse(
+                        message.body,
+                      );
+                      if (accepted != null) {
+                        return const _RoommateProposalAcceptedCard();
+                      }
+                      return _ChatMessageBubble(
+                        body: message.body,
+                        mine: mine,
+                        senderName: _chatParticipantName.isEmpty
+                            ? widget.ownerName
+                            : _chatParticipantName,
+                        senderAvatarUrl: _chatParticipantAvatarUrl,
                       );
                     },
                   ),
@@ -1511,20 +2185,25 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _composer,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _send(),
+                      minLines: 1,
+                      maxLines: 3,
+                      keyboardType: TextInputType.multiline,
+                      textInputAction: TextInputAction.newline,
                       decoration: const InputDecoration(
                         hintText: 'Scrie un mesaj...',
                       ),
                     ),
                   ),
-                  if (!_isOwner && !_isRoommateRequestChat)
+                  if (!_isOwner)
                     IconButton(
-                      tooltip: 'Trimite ofertă',
+                      tooltip: _isRoommateRequestChat
+                          ? 'Propunere pentru proprietar'
+                          : 'Trimite ofert\u0103',
                       onPressed: _sending ? null : _sendOffer,
                       icon: const Icon(
                         Icons.local_offer_outlined,
