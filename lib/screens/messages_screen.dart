@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
+import '../widgets/lend_toast.dart';
 
 import '../services/auth_api.dart';
 import '../services/messages_api.dart';
@@ -25,6 +27,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
   static const _background = Color(0xFFF5F5F7);
   Future<List<MessageThreadSummary>>? _threads;
   final _authApi = AuthApi();
+  final _messagesApi = MessagesApi();
+  final _hiddenThreads = <String>{};
+  final _deletingThreads = <String>{};
   String? _currentUserId;
 
   @override
@@ -43,7 +48,36 @@ class _MessagesScreenState extends State<MessagesScreen> {
     if (token == null) return const [];
     final user = await _authApi.me(token);
     _currentUserId = user.id;
-    return MessagesApi().findThreads(token);
+    return _messagesApi.findThreads(token);
+  }
+
+  String _threadKey(MessageThreadSummary thread) =>
+      '${thread.productId}:${thread.roommateInterestId ?? ''}';
+
+  Future<void> _deleteThread(MessageThreadSummary thread) async {
+    final key = _threadKey(thread);
+    if (_deletingThreads.contains(key)) return;
+    setState(() => _deletingThreads.add(key));
+    try {
+      final token = await AuthSessionStore.getToken();
+      if (token == null) throw StateError('Sesiunea a expirat.');
+      await _messagesApi.deleteThread(
+        accessToken: token,
+        productId: thread.productId,
+        roommateInterestId: thread.roommateInterestId,
+      );
+      if (!mounted) return;
+      setState(() => _hiddenThreads.add(key));
+      LendToast.success(context, message: 'Conversația a fost ștearsă.');
+    } catch (error) {
+      if (!mounted) return;
+      LendToast.error(
+        context,
+        message: 'Nu am putut șterge conversația: $error',
+      );
+    } finally {
+      if (mounted) setState(() => _deletingThreads.remove(key));
+    }
   }
 
   @override
@@ -52,11 +86,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
       backgroundColor: _background,
       child: Scaffold(
         backgroundColor: _background,
-        appBar: AppBar(
-          title: const Text('Mesaje'),
-          backgroundColor: _background,
-          foregroundColor: Colors.black,
-          elevation: 0,
+        appBar: const PreferredSize(
+          preferredSize: Size.fromHeight(LendBackTopBar.height),
+          child: LendBackTopBar(title: 'Mesaje'),
         ),
         body: FutureBuilder<List<MessageThreadSummary>>(
           future: _threads,
@@ -64,7 +96,9 @@ class _MessagesScreenState extends State<MessagesScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            final threads = snapshot.data ?? const <MessageThreadSummary>[];
+            final threads = (snapshot.data ?? const <MessageThreadSummary>[])
+                .where((thread) => !_hiddenThreads.contains(_threadKey(thread)))
+                .toList();
             if (threads.isEmpty) {
               return const Center(child: Text('Nu ai conversații încă.'));
             }
@@ -74,18 +108,28 @@ class _MessagesScreenState extends State<MessagesScreen> {
               separatorBuilder: (_, _) => const Divider(height: 1, indent: 78),
               itemBuilder: (context, index) {
                 final thread = threads[index];
-                return InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => ProductChatScreen(
-                        productId: thread.productId,
-                        roommateInterestId: thread.roommateInterestId,
-                        productTitle: thread.productTitle,
-                        ownerName: thread.participantName,
+                return _SwipeToDeleteThread(
+                  key: ValueKey(_threadKey(thread)),
+                  deleting: _deletingThreads.contains(_threadKey(thread)),
+                  onDelete: () => _deleteThread(thread),
+                  onOpen: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ProductChatScreen(
+                          productId: thread.productId,
+                          roommateInterestId: thread.roommateInterestId,
+                          productTitle: thread.productTitle,
+                          ownerName: thread.participantName,
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                    if (mounted) {
+                      setState(() {
+                        _hiddenThreads.clear();
+                        _threads = _loadThreads();
+                      });
+                    }
+                  },
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: 13,
@@ -184,6 +228,113 @@ class _MessagesScreenState extends State<MessagesScreen> {
               },
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeToDeleteThread extends StatefulWidget {
+  const _SwipeToDeleteThread({
+    super.key,
+    required this.child,
+    required this.onOpen,
+    required this.onDelete,
+    required this.deleting,
+  });
+
+  final Widget child;
+  final VoidCallback onOpen;
+  final VoidCallback onDelete;
+  final bool deleting;
+
+  @override
+  State<_SwipeToDeleteThread> createState() => _SwipeToDeleteThreadState();
+}
+
+class _SwipeToDeleteThreadState extends State<_SwipeToDeleteThread> {
+  static const _actionWidth = 88.0;
+  double _offset = 0;
+  bool _dragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragStart: (_) => setState(() => _dragging = true),
+      onHorizontalDragUpdate: (details) => setState(() {
+        _offset = (_offset + details.delta.dx).clamp(-_actionWidth, 0.0);
+      }),
+      onHorizontalDragEnd: (_) => setState(() {
+        _dragging = false;
+        _offset = _offset < -_actionWidth / 2 ? -_actionWidth : 0;
+      }),
+      onHorizontalDragCancel: () => setState(() {
+        _dragging = false;
+        _offset = 0;
+      }),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  width: _actionWidth,
+                  child: Material(
+                    color: const Color(0xFFD92D35),
+                    child: InkWell(
+                      onTap: widget.deleting ? null : widget.onDelete,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (widget.deleting)
+                            const SizedBox(
+                              width: 19,
+                              height: 19,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.delete_outline,
+                              color: Colors.white,
+                            ),
+                          const SizedBox(height: 3),
+                          const Text(
+                            'Șterge',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            AnimatedContainer(
+              duration: _dragging
+                  ? Duration.zero
+                  : const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              transform: Matrix4.translationValues(_offset, 0, 0),
+              child: Material(
+                color: const Color(0xFFF5F5F7),
+                child: InkWell(
+                  onTap: _offset < 0
+                      ? () => setState(() => _offset = 0)
+                      : widget.onOpen,
+                  child: widget.child,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -596,12 +747,14 @@ class _RoommateProposalCard extends StatelessWidget {
     required this.proposal,
     required this.mine,
     required this.accepted,
+    required this.ownerView,
     required this.onAccept,
   });
 
   final _RoommateProposal proposal;
   final bool mine;
   final bool accepted;
+  final bool ownerView;
   final VoidCallback onAccept;
 
   @override
@@ -624,7 +777,11 @@ class _RoommateProposalCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  mine ? 'Propunerea ta' : 'Propunere de locuire',
+                  ownerView
+                      ? 'Propunere primit\u0103'
+                      : mine
+                      ? 'Propunerea ta'
+                      : 'Propunere de locuire',
                   style: const TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
@@ -675,7 +832,9 @@ class _RoommateProposalCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             accepted
-                ? 'Confirmat\u0103 de am\u00e2ndoi. Proprietarul a primit propunerea.'
+                ? ownerView
+                      ? 'Confirmat\u0103 de cei doi colegi.'
+                      : 'Confirmat\u0103 de am\u00e2ndoi. Proprietarul a primit propunerea.'
                 : mine
                 ? 'A\u0219teapt\u0103 confirmarea celuilalt coleg.'
                 : 'Confirm\u0103 dac\u0103 e\u0219ti de acord s\u0103 fie trimis\u0103 proprietarului.',
@@ -685,7 +844,7 @@ class _RoommateProposalCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          if (!mine && !accepted) ...[
+          if (!ownerView && !mine && !accepted) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -2013,63 +2172,70 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFEFF2F6),
       appBar: AppBar(
-        centerTitle: false,
+        toolbarHeight: LendBackTopBar.height,
         titleSpacing: 0,
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFFDCE8FA),
-              backgroundImage: headerImageUrl == null
-                  ? null
-                  : NetworkImage(headerImageUrl),
-              child: headerImageUrl == null
-                  ? Text(
-                      (_chatParticipantName.isEmpty
-                              ? widget.ownerName
-                              : _chatParticipantName)
-                          .trim()
-                          .characters
-                          .first
-                          .toUpperCase(),
-                      style: const TextStyle(
-                        color: _blue,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _chatParticipantName.isEmpty
-                        ? widget.ownerName
-                        : _chatParticipantName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    widget.contextLabel ?? widget.productTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        surfaceTintColor: Colors.white,
+        title: LendBackTopBar(
+          title: '',
+          titleContent: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFFDCE8FA),
+                backgroundImage: headerImageUrl == null
+                    ? null
+                    : NetworkImage(headerImageUrl),
+                child: headerImageUrl == null
+                    ? Text(
+                        (_chatParticipantName.isEmpty
+                                ? widget.ownerName
+                                : _chatParticipantName)
+                            .trim()
+                            .characters
+                            .first
+                            .toUpperCase(),
+                        style: const TextStyle(
+                          color: _blue,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _chatParticipantName.isEmpty
+                          ? widget.ownerName
+                          : _chatParticipantName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      widget.contextLabel ?? widget.productTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -2159,10 +2325,17 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                       final mine = message.senderId == _userId;
                       final proposal = _RoommateProposal.tryParse(message.body);
                       if (proposal != null) {
+                        final proposalAccepted = _isRoommateProposalAccepted(
+                          proposal.id,
+                        );
+                        if (_isOwner && !proposalAccepted) {
+                          return const SizedBox.shrink();
+                        }
                         return _RoommateProposalCard(
                           proposal: proposal,
                           mine: mine,
-                          accepted: _isRoommateProposalAccepted(proposal.id),
+                          accepted: proposalAccepted,
+                          ownerView: _isOwner,
                           onAccept: () => _acceptRoommateProposal(proposal),
                         );
                       }
@@ -2170,6 +2343,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                         message.body,
                       );
                       if (accepted != null) {
+                        if (_isOwner) return const SizedBox.shrink();
                         return const _RoommateProposalAcceptedCard();
                       }
                       return _ChatMessageBubble(

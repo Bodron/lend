@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../l10n/generated_localizations.dart';
@@ -27,7 +28,6 @@ class ReturnQrScreen extends StatefulWidget {
   static const _secondary = Color(0xFF446085);
   static const _secondaryContainer = Color(0xFFB7D3FE);
   static const _background = Color(0xFFF5F5F7);
-  static const _surface = Color(0xFFF9F9F9);
   static const _surfaceLow = Color(0xFFF3F3F3);
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
@@ -184,39 +184,10 @@ class _ReturnTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: ReturnQrScreen._surface.withValues(alpha: 0.92),
-        border: Border(
-          bottom: BorderSide(
-            color: ReturnQrScreen._outlineVariant.withValues(alpha: 0.25),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.close_rounded),
-            color: ReturnQrScreen._text,
-          ),
-          Expanded(
-            child: Text(
-              GeneratedLocalizations.of(context).completeReturn,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: ReturnQrScreen._text,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
+    return LendBackTopBar(
+      title: GeneratedLocalizations.of(context).completeReturn,
+      subtitle: title,
+      leadingIcon: Icons.close_rounded,
     );
   }
 }

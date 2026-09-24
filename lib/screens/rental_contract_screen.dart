@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -419,38 +420,8 @@ class _ContractTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _RentalContractScreenState._surface.withValues(alpha: 0.90),
-        border: Border(
-          bottom: BorderSide(
-            color: _RentalContractScreenState._outline.withValues(alpha: 0.20),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _RentalContractScreenState._text,
-          ),
-          Expanded(
-            child: Text(
-              GeneratedLocalizations.of(context).contractAndSignature,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _RentalContractScreenState._text,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return LendBackTopBar(
+      title: GeneratedLocalizations.of(context).contractAndSignature,
     );
   }
 }
@@ -527,67 +498,58 @@ class _LegalDocumentCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 430),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _LegalSection(
-                      title: GeneratedLocalizations.of(
-                        context,
-                      ).legalGeneralTermsTitle,
-                      body: GeneratedLocalizations.of(
-                        context,
-                      ).legalGeneralTermsBody,
-                    ),
-                    const SizedBox(height: 24),
-                    _HighlightedLegalSection(
-                      icon: Icons.access_time_rounded,
-                      color: _RentalContractScreenState._secondary,
-                      title: GeneratedLocalizations.of(context).pickupAndReturn,
-                      body: GeneratedLocalizations.of(
-                        context,
-                      ).pickupReturnContractBody(pickupTime, returnTime),
-                    ),
-                    const SizedBox(height: 24),
-                    _HighlightedLegalSection(
-                      icon: Icons.gavel_rounded,
-                      color: _RentalContractScreenState._text,
-                      title: GeneratedLocalizations.of(context).responsibility,
-                      body: GeneratedLocalizations.of(
-                        context,
-                      ).responsibilityBody,
-                    ),
-                    const SizedBox(height: 16),
-                    _HighlightedLegalSection(
-                      icon: Icons.security_rounded,
-                      color: _RentalContractScreenState._secondary,
-                      title: GeneratedLocalizations.of(context).deposit,
-                      body: GeneratedLocalizations.of(
-                        context,
-                      ).depositContractBody,
-                    ),
-                    const SizedBox(height: 24),
-                    _LegalSection(
-                      title: GeneratedLocalizations.of(
-                        context,
-                      ).contractTerminationTitle,
-                      body: GeneratedLocalizations.of(context)
-                          .contractTerminationBody(
-                            product.title,
-                            rentalMode == RentalMode.hour
-                                ? GeneratedLocalizations.of(
-                                    context,
-                                  ).hoursCount(rentalHours)
-                                : GeneratedLocalizations.of(
-                                    context,
-                                  ).daysCount(rentalDays),
-                          ),
-                    ),
-                  ],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _LegalSection(
+                  title: GeneratedLocalizations.of(
+                    context,
+                  ).legalGeneralTermsTitle,
+                  body: GeneratedLocalizations.of(
+                    context,
+                  ).legalGeneralTermsBody,
                 ),
-              ),
+                const SizedBox(height: 24),
+                _HighlightedLegalSection(
+                  icon: Icons.access_time_rounded,
+                  color: _RentalContractScreenState._secondary,
+                  title: GeneratedLocalizations.of(context).pickupAndReturn,
+                  body: GeneratedLocalizations.of(
+                    context,
+                  ).pickupReturnContractBody(pickupTime, returnTime),
+                ),
+                const SizedBox(height: 24),
+                _HighlightedLegalSection(
+                  icon: Icons.gavel_rounded,
+                  color: _RentalContractScreenState._text,
+                  title: GeneratedLocalizations.of(context).responsibility,
+                  body: GeneratedLocalizations.of(context).responsibilityBody,
+                ),
+                const SizedBox(height: 16),
+                _HighlightedLegalSection(
+                  icon: Icons.security_rounded,
+                  color: _RentalContractScreenState._secondary,
+                  title: GeneratedLocalizations.of(context).deposit,
+                  body: GeneratedLocalizations.of(context).depositContractBody,
+                ),
+                const SizedBox(height: 24),
+                _LegalSection(
+                  title: GeneratedLocalizations.of(
+                    context,
+                  ).contractTerminationTitle,
+                  body: GeneratedLocalizations.of(context)
+                      .contractTerminationBody(
+                        product.title,
+                        rentalMode == RentalMode.hour
+                            ? GeneratedLocalizations.of(
+                                context,
+                              ).hoursCount(rentalHours)
+                            : GeneratedLocalizations.of(
+                                context,
+                              ).daysCount(rentalDays),
+                      ),
+                ),
+              ],
             ),
           ],
         ),

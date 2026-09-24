@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 
 import '../l10n/app_localizations.dart';
 import '../l10n/generated_localizations.dart';
@@ -172,41 +173,7 @@ class _CartTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _CartScreenState._background.withValues(alpha: 0.92),
-        border: Border(
-          bottom: BorderSide(
-            color: _CartScreenState._outline.withValues(alpha: 0.20),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _CartScreenState._text,
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              AppLocalizations.of(context).appName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _CartScreenState._text,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
-    );
+    return LendBackTopBar(title: AppLocalizations.of(context).appName);
   }
 }
 

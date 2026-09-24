@@ -1,16 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
+import '../services/realtime_socket_service.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
 
 class AvailabilityManagementScreen extends StatefulWidget {
-  const AvailabilityManagementScreen({super.key, required this.product});
+  const AvailabilityManagementScreen({
+    super.key,
+    required this.product,
+    this.rentalOrdersApi,
+    this.enableRealtime = true,
+  });
 
   final LendProduct product;
+  final RentalOrdersApi? rentalOrdersApi;
+  final bool enableRealtime;
 
   @override
   State<AvailabilityManagementScreen> createState() =>
@@ -21,35 +32,93 @@ class _AvailabilityManagementScreenState
     extends State<AvailabilityManagementScreen> {
   static const _primary = Color(0xFF30578F);
   static const _background = Color(0xFFF5F5F7);
-  static const _surface = Color(0xFFF9F9F9);
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
   static const _outline = Color(0xFFC3C6D1);
   static const _manualBlock = Color(0xFF8B5CF6);
   static const _reservation = Color(0xFFDC2626);
 
-  final _rentalOrdersApi = RentalOrdersApi();
+  late final RentalOrdersApi _rentalOrdersApi;
   final _reasonController = TextEditingController();
 
   late DateTime _visibleMonth;
   DateTime? _startDate;
   DateTime? _endDate;
+  bool _awaitingEndDate = false;
   ProductAvailability? _availability;
   bool _loading = true;
+  String? _loadError;
   bool _saving = false;
+  int _availabilityRequestId = 0;
+  final _realtime = RealtimeSocketService.instance;
+  RealtimeSubscription? _availabilitySubscription;
+  RealtimeSubscription? _connectionSubscription;
+  Timer? _socketRefreshDebounce;
+  bool _joinedAvailability = false;
 
   @override
   void initState() {
     super.initState();
+    _rentalOrdersApi = widget.rentalOrdersApi ?? RentalOrdersApi();
     final now = DateTime.now();
     _visibleMonth = DateTime(now.year, now.month);
     _loadAvailability();
+    if (widget.enableRealtime) _connectAvailabilitySocket();
   }
 
   @override
   void dispose() {
+    _socketRefreshDebounce?.cancel();
+    _availabilitySubscription?.cancel();
+    _connectionSubscription?.cancel();
+    if (_joinedAvailability) _realtime.leaveAvailability(widget.product.id);
     _reasonController.dispose();
     super.dispose();
+  }
+
+  Future<void> _connectAvailabilitySocket() async {
+    final token = await AuthSessionStore.getToken();
+    if (!mounted || token == null) return;
+    try {
+      final subscription = await _realtime.subscribe(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        event: RealtimeEvents.availabilityChanged,
+        onData: (data) {
+          if (data is Map && data['productId'] == widget.product.id) {
+            _refreshAvailabilityFromSocket();
+          }
+        },
+      );
+      if (!mounted) {
+        subscription.cancel();
+        return;
+      }
+      _availabilitySubscription = subscription;
+      final connection = await _realtime.subscribe(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        event: 'connect',
+        onData: (_) => _refreshAvailabilityFromSocket(),
+      );
+      if (!mounted) {
+        connection.cancel();
+        return;
+      }
+      _connectionSubscription = connection;
+      _realtime.joinAvailability(widget.product.id);
+      _joinedAvailability = true;
+      _refreshAvailabilityFromSocket();
+    } catch (error) {
+      debugPrint('Realtime availability unavailable: $error');
+    }
+  }
+
+  void _refreshAvailabilityFromSocket() {
+    _socketRefreshDebounce?.cancel();
+    _socketRefreshDebounce = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) _loadAvailability();
+    });
   }
 
   @override
@@ -70,6 +139,9 @@ class _AvailabilityManagementScreenState
                   startDate: _startDate,
                   endDate: _endDate,
                   isLoading: _loading,
+                  loadError: _loadError,
+                  canSelect:
+                      _availability != null && !_loading && _loadError == null,
                   reservations: _availability?.reservations ?? const [],
                   manualBlocks: _availability?.manualBlocks ?? const [],
                   onPrevious: () {
@@ -91,20 +163,19 @@ class _AvailabilityManagementScreenState
                     _loadAvailability();
                   },
                   onDateSelected: _selectDate,
+                  onRetry: _loadAvailability,
                 ),
                 const SizedBox(height: 16),
                 _BlockForm(
                   startDate: _startDate,
                   endDate: _endDate,
+                  awaitingEndDate: _awaitingEndDate,
                   reasonController: _reasonController,
                   saving: _saving,
                   onSubmit: _canSaveBlock ? _createBlock : null,
                 ),
                 const SizedBox(height: 18),
-                _BlocksList(
-                  blocks: _availability?.manualBlocks ?? const [],
-                  onDelete: _deleteBlock,
-                ),
+                _BlocksList(blocks: _displayedBlocks, onDelete: _deleteBlock),
               ]),
             ),
           ),
@@ -114,7 +185,27 @@ class _AvailabilityManagementScreenState
   }
 
   bool get _canSaveBlock {
-    return !_saving && _startDate != null && _endDate != null;
+    return !_saving &&
+        !_loading &&
+        _loadError == null &&
+        _startDate != null &&
+        _endDate != null;
+  }
+
+  List<AvailabilityBlock> get _displayedBlocks {
+    final days = _buildCalendarDays(_visibleMonth);
+    final firstDay = days.first;
+    final lastDay = days.last;
+    final afterLastDay = DateTime(lastDay.year, lastDay.month, lastDay.day + 1);
+    return (_availability?.manualBlocks ?? const <AvailabilityBlock>[])
+        .where(
+          (block) =>
+              block.startDate != null &&
+              block.endDate != null &&
+              block.startDate!.isBefore(afterLastDay) &&
+              block.endDate!.isAfter(firstDay),
+        )
+        .toList();
   }
 
   void _selectDate(DateTime date) {
@@ -124,37 +215,45 @@ class _AvailabilityManagementScreenState
     }
 
     setState(() {
-      if (_startDate == null || (_startDate != null && _endDate != null)) {
+      if (_startDate == null || !_awaitingEndDate) {
         _startDate = selected;
-        _endDate = null;
+        _endDate = selected;
+        _awaitingEndDate = true;
         return;
       }
 
       if (selected.isBefore(_startDate!)) {
+        if (_rangeContainsUnavailable(selected, _startDate!)) return;
         _endDate = _startDate;
         _startDate = selected;
+        _awaitingEndDate = false;
         return;
       }
 
-      final proposedEnd = selected.isAtSameMomentAs(_startDate!)
-          ? selected.add(const Duration(days: 1))
-          : selected;
-      if (_rangeContainsUnavailable(_startDate!, proposedEnd)) {
+      if (_rangeContainsUnavailable(_startDate!, selected)) {
         return;
       }
 
-      _endDate = proposedEnd;
+      _endDate = selected;
+      _awaitingEndDate = false;
     });
   }
 
   bool _isUnavailableForSelection(DateTime date) {
+    final today = DateTime.now();
+    final currentDay = DateTime(date.year, date.month, date.day);
+    if (currentDay.isBefore(DateTime(today.year, today.month, today.day)) ||
+        _loading ||
+        _loadError != null) {
+      return true;
+    }
     final availability = _availability;
     if (availability == null) {
-      return false;
+      return true;
     }
 
     return availability.reservations.any(
-          (item) => _isInExclusiveRange(date, item.startDate, item.endDate),
+          (item) => _reservationOverlapsDate(date, item),
         ) ||
         availability.manualBlocks.any(
           (item) => _isInExclusiveRange(date, item.startDate, item.endDate),
@@ -167,8 +266,8 @@ class _AvailabilityManagementScreenState
 
     for (
       var current = first;
-      current.isBefore(last);
-      current = current.add(const Duration(days: 1))
+      !current.isAfter(last);
+      current = DateTime(current.year, current.month, current.day + 1)
     ) {
       if (_isUnavailableForSelection(current)) {
         return true;
@@ -179,11 +278,18 @@ class _AvailabilityManagementScreenState
   }
 
   Future<void> _loadAvailability() async {
-    final from = DateTime(_visibleMonth.year, _visibleMonth.month);
-    final to = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
+    final requestId = ++_availabilityRequestId;
+    final days = _buildCalendarDays(_visibleMonth);
+    final firstDay = days.first;
+    final lastDay = days.last;
+    final from = _startDate != null && _startDate!.isBefore(firstDay)
+        ? DateTime(_startDate!.year, _startDate!.month, _startDate!.day)
+        : firstDay;
+    final to = DateTime(lastDay.year, lastDay.month, lastDay.day + 1);
 
     setState(() {
       _loading = true;
+      _loadError = null;
     });
 
     try {
@@ -193,21 +299,30 @@ class _AvailabilityManagementScreenState
         to: to,
       );
 
-      if (!mounted) {
+      if (!mounted || requestId != _availabilityRequestId) {
         return;
       }
 
       setState(() {
         _availability = availability;
         _loading = false;
+        _loadError = null;
+        if (_startDate != null &&
+            _endDate != null &&
+            _rangeContainsUnavailable(_startDate!, _endDate!)) {
+          _startDate = null;
+          _endDate = null;
+          _awaitingEndDate = false;
+        }
       });
     } catch (error) {
-      if (!mounted) {
+      if (!mounted || requestId != _availabilityRequestId) {
         return;
       }
 
       setState(() {
         _loading = false;
+        _loadError = error.toString();
       });
       LendToast.error(context, message: error.toString());
     }
@@ -241,7 +356,7 @@ class _AvailabilityManagementScreenState
         accessToken: token,
         productId: widget.product.id,
         startDate: startDate,
-        endDate: endDate,
+        endDate: DateTime(endDate.year, endDate.month, endDate.day + 1),
         reason: _reasonController.text,
       );
 
@@ -252,6 +367,7 @@ class _AvailabilityManagementScreenState
       setState(() {
         _startDate = null;
         _endDate = null;
+        _awaitingEndDate = false;
         _reasonController.clear();
       });
       await _loadAvailability();
@@ -263,6 +379,9 @@ class _AvailabilityManagementScreenState
         message: GeneratedLocalizations.of(context).periodBlocked,
       );
     } catch (error) {
+      if (mounted) {
+        await _loadAvailability();
+      }
       if (mounted) {
         LendToast.error(context, message: error.toString());
       }
@@ -302,58 +421,9 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final strings = GeneratedLocalizations.of(context);
-
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _AvailabilityManagementScreenState._surface.withValues(
-          alpha: 0.92,
-        ),
-        border: Border(
-          bottom: BorderSide(
-            color: _AvailabilityManagementScreenState._outline.withValues(
-              alpha: 0.24,
-            ),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _AvailabilityManagementScreenState._text,
-          ),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  strings.availability,
-                  style: const TextStyle(
-                    color: _AvailabilityManagementScreenState._text,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: _AvailabilityManagementScreenState._muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return LendBackTopBar(
+      title: GeneratedLocalizations.of(context).availability,
+      subtitle: title,
     );
   }
 }
@@ -364,26 +434,34 @@ class _CalendarCard extends StatelessWidget {
     required this.startDate,
     required this.endDate,
     required this.isLoading,
+    required this.loadError,
+    required this.canSelect,
     required this.reservations,
     required this.manualBlocks,
     required this.onPrevious,
     required this.onNext,
     required this.onDateSelected,
+    required this.onRetry,
   });
 
   final DateTime visibleMonth;
   final DateTime? startDate;
   final DateTime? endDate;
   final bool isLoading;
+  final String? loadError;
+  final bool canSelect;
   final List<AvailabilityReservation> reservations;
   final List<AvailabilityBlock> manualBlocks;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final ValueChanged<DateTime> onDateSelected;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
     final days = _buildCalendarDays(visibleMonth);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
     return DecoratedBox(
       decoration: _cardDecoration,
@@ -422,6 +500,30 @@ class _CalendarCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (loadError != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      GeneratedLocalizations.of(
+                        context,
+                      ).availabilityRefreshError,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onRetry,
+                    child: Text(GeneratedLocalizations.of(context).retry),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 18),
             const _WeekDaysRow(),
             const SizedBox(height: 10),
@@ -436,6 +538,7 @@ class _CalendarCard extends StatelessWidget {
               itemBuilder: (context, index) {
                 final date = days[index];
                 final inVisibleMonth = date.month == visibleMonth.month;
+                final isPast = date.isBefore(today);
                 final reservation = _isInsideReservation(date);
                 final manualBlock = _isInsideManualBlock(date);
                 final selected = _isSelectedEndpoint(date);
@@ -444,6 +547,8 @@ class _CalendarCard extends StatelessWidget {
                 return _DayCell(
                   date: date,
                   inVisibleMonth: inVisibleMonth,
+                  isPast: isPast,
+                  canSelect: canSelect,
                   reserved: reservation,
                   manuallyBlocked: manualBlock,
                   selected: selected,
@@ -461,9 +566,7 @@ class _CalendarCard extends StatelessWidget {
   }
 
   bool _isInsideReservation(DateTime date) {
-    return reservations.any(
-      (item) => _isInExclusiveRange(date, item.startDate, item.endDate),
-    );
+    return reservations.any((item) => _reservationOverlapsDate(date, item));
   }
 
   bool _isInsideManualBlock(DateTime date) {
@@ -490,6 +593,7 @@ class _BlockForm extends StatelessWidget {
   const _BlockForm({
     required this.startDate,
     required this.endDate,
+    required this.awaitingEndDate,
     required this.reasonController,
     required this.saving,
     required this.onSubmit,
@@ -497,6 +601,7 @@ class _BlockForm extends StatelessWidget {
 
   final DateTime? startDate;
   final DateTime? endDate;
+  final bool awaitingEndDate;
   final TextEditingController reasonController;
   final bool saving;
   final VoidCallback? onSubmit;
@@ -524,11 +629,30 @@ class _BlockForm extends StatelessWidget {
             Text(
               startDate == null || endDate == null
                   ? strings.selectPeriodStartEnd
-                  : '${_formatShortDate(context, startDate!)} - ${_formatShortDate(context, endDate!)}',
+                  : _formatSelectedDays(context, startDate!, endDate!),
               style: const TextStyle(
                 color: _AvailabilityManagementScreenState._muted,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (awaitingEndDate) ...[
+              const SizedBox(height: 4),
+              Text(
+                strings.chooseRangeEnd,
+                style: const TextStyle(
+                  color: _AvailabilityManagementScreenState._muted,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              strings.blockBookedDayHint,
+              style: const TextStyle(
+                color: _AvailabilityManagementScreenState._muted,
+                fontSize: 12,
+                height: 1.35,
               ),
             ),
             const SizedBox(height: 14),
@@ -556,7 +680,13 @@ class _BlockForm extends StatelessWidget {
                         ),
                       )
                     : const Icon(Icons.block_rounded),
-                label: Text(strings.blockPeriod),
+                label: Text(
+                  startDate != null &&
+                          endDate != null &&
+                          _isSameDay(startDate!, endDate!)
+                      ? strings.blockDay
+                      : strings.blockPeriod,
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: _AvailabilityManagementScreenState._primary,
                   foregroundColor: Colors.white,
@@ -613,7 +743,7 @@ class _BlocksList extends StatelessWidget {
                     color: _AvailabilityManagementScreenState._manualBlock,
                   ),
                   title: Text(
-                    '${_formatShortDate(context, block.startDate)} - ${_formatShortDate(context, block.endDate)}',
+                    _formatBlockedDays(context, block),
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                   subtitle: Text(
@@ -663,6 +793,8 @@ class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.date,
     required this.inVisibleMonth,
+    required this.isPast,
+    required this.canSelect,
     required this.reserved,
     required this.manuallyBlocked,
     required this.selected,
@@ -672,6 +804,8 @@ class _DayCell extends StatelessWidget {
 
   final DateTime date;
   final bool inVisibleMonth;
+  final bool isPast;
+  final bool canSelect;
   final bool reserved;
   final bool manuallyBlocked;
   final bool selected;
@@ -683,7 +817,7 @@ class _DayCell extends StatelessWidget {
     Color textColor = _AvailabilityManagementScreenState._text;
     Color background = Colors.transparent;
 
-    if (!inVisibleMonth) {
+    if (isPast) {
       textColor = const Color(0x55737781);
     } else if (reserved) {
       textColor = Colors.white;
@@ -693,15 +827,19 @@ class _DayCell extends StatelessWidget {
       background = _AvailabilityManagementScreenState._manualBlock;
     } else if (inRange) {
       background = const Color(0xFFD5E3FF);
+    } else if (!inVisibleMonth) {
+      textColor = const Color(0xFF6B7280);
     }
 
-    if (selected) {
+    if (selected && !isPast) {
       textColor = Colors.white;
       background = _AvailabilityManagementScreenState._primary;
     }
 
     return InkWell(
-      onTap: inVisibleMonth && !reserved && !manuallyBlocked ? onTap : null,
+      onTap: !isPast && canSelect && !reserved && !manuallyBlocked
+          ? onTap
+          : null,
       borderRadius: BorderRadius.circular(999),
       child: Center(
         child: AnimatedContainer(
@@ -803,7 +941,21 @@ bool _isInExclusiveRange(DateTime date, DateTime? start, DateTime? end) {
   final rangeStart = DateTime(start.year, start.month, start.day);
   final rangeEnd = DateTime(end.year, end.month, end.day);
 
-  return !current.isBefore(rangeStart) && current.isBefore(rangeEnd);
+  return !current.isBefore(rangeStart) &&
+      (current.isBefore(rangeEnd) ||
+          (rangeStart.isAtSameMomentAs(rangeEnd) &&
+              current.isAtSameMomentAs(rangeStart)));
+}
+
+bool _reservationOverlapsDate(DateTime date, AvailabilityReservation item) {
+  final occupiedFrom = item.occupiedFrom;
+  final occupiedUntil = item.occupiedUntil;
+  if (occupiedFrom != null && occupiedUntil != null) {
+    final start = DateTime.utc(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return occupiedFrom.isBefore(end) && occupiedUntil.isAfter(start);
+  }
+  return _isInExclusiveRange(date, item.startDate, item.endDate);
 }
 
 String _formatMonth(BuildContext context, DateTime date) {
@@ -823,6 +975,29 @@ String _formatMonth(BuildContext context, DateTime date) {
     strings.december,
   ];
   return '${months[date.month - 1]} ${date.year}';
+}
+
+String _formatSelectedDays(BuildContext context, DateTime start, DateTime end) {
+  final first = _formatShortDate(context, start);
+  return _isSameDay(start, end)
+      ? first
+      : '$first - ${_formatShortDate(context, end)}';
+}
+
+String _formatBlockedDays(BuildContext context, AvailabilityBlock block) {
+  final start = block.startDate;
+  final exclusiveEnd = block.endDate;
+  if (start == null || exclusiveEnd == null) return '-';
+  final lastDay = DateTime(
+    exclusiveEnd.year,
+    exclusiveEnd.month,
+    exclusiveEnd.day - 1,
+  );
+  return _formatSelectedDays(
+    context,
+    start,
+    lastDay.isBefore(start) ? start : lastDay,
+  );
 }
 
 String _formatShortDate(BuildContext context, DateTime? date) {

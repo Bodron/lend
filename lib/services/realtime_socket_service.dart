@@ -11,6 +11,7 @@ abstract final class RealtimeEvents {
   static const rentalOrderCreated = 'rental_order.created';
   static const rentalOrderUpdated = 'rental_order.updated';
   static const rentalOrderStatusChanged = 'rental_order.status_changed';
+  static const availabilityChanged = 'availability.changed';
   static const reconnect = 'reconnect';
 
   static const rentalOrderEvents = [
@@ -46,6 +47,7 @@ class RealtimeSocketService {
   socket_io.Socket? _socket;
   String? _accessToken;
   String? _apiBaseUrl;
+  final Map<String, int> _availabilityRooms = {};
 
   Future<void>? _connecting;
 
@@ -140,6 +142,24 @@ class RealtimeSocketService {
     _socket?.emit(event, data);
   }
 
+  void joinAvailability(String productId) {
+    final count = _availabilityRooms[productId] ?? 0;
+    _availabilityRooms[productId] = count + 1;
+    if (count == 0 && isConnected) {
+      emit('availability.join', {'productId': productId});
+    }
+  }
+
+  void leaveAvailability(String productId) {
+    final count = _availabilityRooms[productId] ?? 0;
+    if (count <= 1) {
+      _availabilityRooms.remove(productId);
+      if (isConnected) emit('availability.leave', {'productId': productId});
+    } else {
+      _availabilityRooms[productId] = count - 1;
+    }
+  }
+
   Future<void> disconnect() async {
     final inFlight = _connecting;
     if (inFlight != null) {
@@ -151,6 +171,7 @@ class RealtimeSocketService {
     }
 
     _disconnectSocket();
+    _availabilityRooms.clear();
   }
 
   void _disconnectSocket() {
@@ -182,6 +203,11 @@ class RealtimeSocketService {
     _socket = socket;
     _accessToken = accessToken;
     _apiBaseUrl = apiBaseUrl;
+    socket.onConnect((_) {
+      for (final productId in _availabilityRooms.keys) {
+        socket.emit('availability.join', {'productId': productId});
+      }
+    });
     socket.connect();
   }
 }

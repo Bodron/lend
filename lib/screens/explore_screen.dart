@@ -331,7 +331,7 @@ class _ExploreHeader extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: onRoommates,
             icon: const Icon(Icons.groups_2_rounded),
-            label: const Text('Caut coleg de apartament'),
+            label: Text(strings.findRoommate),
             style: OutlinedButton.styleFrom(
               foregroundColor: _ExploreScreenState._text,
               side: BorderSide(

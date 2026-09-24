@@ -40,6 +40,19 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
   String get exploreObjects => 'Explorează obiecte';
 
   @override
+  String get findRoommate => 'Caut coleg de apartament';
+
+  @override
+  String get roommateInviteTitle => 'Cauți coleg pentru apartamentul ăsta?';
+
+  @override
+  String get roommateInviteBody =>
+      'Publică un mini-anunț atașat apartamentului și oamenii interesați îți pot trimite cerere.';
+
+  @override
+  String get roommateInviteAction => 'Caută coleg';
+
+  @override
   String get dayShort => '/zi';
 
   @override
@@ -65,6 +78,14 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
 
   @override
   String get addListing => 'Adaugă anunț';
+
+  @override
+  String get stockQuantity => 'Număr de produse identice';
+
+  @override
+  String stockUnits(int count) {
+    return '$count bucăți în acest anunț';
+  }
 
   @override
   String get newAccount => 'Cont nou';
@@ -467,8 +488,17 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
   String get manualBlockDates => 'Blochează manual zile';
 
   @override
-  String get selectPeriodStartEnd =>
-      'Selectează începutul și finalul perioadei.';
+  String get selectPeriodStartEnd => 'Selectează o zi sau un interval.';
+
+  @override
+  String get chooseRangeEnd => 'Atinge altă zi pentru a extinde intervalul.';
+
+  @override
+  String get blockDay => 'Blochează ziua';
+
+  @override
+  String get blockBookedDayHint =>
+      'Zilele cu închirieri, chiar și de câteva ore, nu pot fi blocate integral.';
 
   @override
   String get availabilityReasonHint => 'Motiv opțional: service, uz personal';
@@ -481,7 +511,7 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
 
   @override
   String get noManualBlocksThisMonth =>
-      'Nu ai blocaje manuale în luna aceasta.';
+      'Nu ai blocaje manuale în zilele afișate.';
 
   @override
   String get unavailable => 'Indisponibil';
@@ -868,6 +898,9 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
   String get chooseStartAndEndDate => 'Alege data de început și sfârșit';
 
   @override
+  String get chooseEndDate => 'Acum alege data de sfârșit';
+
+  @override
   String get contractAndSignature => 'Contract și semnătură';
 
   @override
@@ -1004,6 +1037,9 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
   String get rating => 'Rating';
 
   @override
+  String get viewOwnerListings => 'Vezi anunțurile';
+
+  @override
   String get sendMessage => 'Trimite mesaj';
 
   @override
@@ -1122,6 +1158,25 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
 
   @override
   String get cityHint => 'Ex: București';
+
+  @override
+  String get profileCityTitle => 'Orașul tău';
+
+  @override
+  String get profileCityComplete => 'Completează orașul';
+
+  @override
+  String get profileCityHelp =>
+      'Îl folosim când locația telefonului nu este disponibilă.';
+
+  @override
+  String get profileCitySaved => 'Orașul a fost salvat.';
+
+  @override
+  String get cancel => 'Anulează';
+
+  @override
+  String get save => 'Salvează';
 
   @override
   String get address => 'Adresă';

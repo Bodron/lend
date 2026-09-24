@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class StripeOnboardingScreen extends StatefulWidget {
@@ -7,14 +8,10 @@ class StripeOnboardingScreen extends StatefulWidget {
   final String url;
 
   @override
-  State<StripeOnboardingScreen> createState() =>
-      _StripeOnboardingScreenState();
+  State<StripeOnboardingScreen> createState() => _StripeOnboardingScreenState();
 }
 
-enum StripeOnboardingResult {
-  completed,
-  refreshRequested,
-}
+enum StripeOnboardingResult { completed, refreshRequested }
 
 class _StripeOnboardingScreenState extends State<StripeOnboardingScreen> {
   late final WebViewController _controller;
@@ -36,8 +33,9 @@ class _StripeOnboardingScreenState extends State<StripeOnboardingScreen> {
             }
 
             if (_isStripeRefreshUrl(uri)) {
-              Navigator.of(context)
-                  .pop(StripeOnboardingResult.refreshRequested);
+              Navigator.of(
+                context,
+              ).pop(StripeOnboardingResult.refreshRequested);
               return NavigationDecision.prevent;
             }
 
@@ -69,19 +67,23 @@ class _StripeOnboardingScreenState extends State<StripeOnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Configurează plățile'),
-        leading: IconButton(
-          tooltip: 'Închide',
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
+        toolbarHeight: LendBackTopBar.height,
+        titleSpacing: 0,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: LendBackTopBar(
+          title: 'Configurează plățile',
+          leadingIcon: Icons.close_rounded,
+          onBack: () => Navigator.of(context).pop(),
+          actions: [
+            IconButton(
+              tooltip: 'Reîncarcă',
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: () => _controller.reload(),
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Reîncarcă',
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _controller.reload(),
-          ),
-        ],
       ),
       body: Stack(
         children: [

@@ -404,6 +404,8 @@ class _ListingCard extends StatelessWidget {
                                     category: item.categorySlug,
                                     categoryLabel: item.category,
                                     deposit: item.deposit.toString(),
+                                    stockQuantity: item.stockQuantity
+                                        .toString(),
                                     city: item.city,
                                     address: item.address,
                                     latitude: item.latitude,

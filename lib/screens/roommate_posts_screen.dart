@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -529,38 +530,7 @@ class _RoommateTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _RoommatePostsScreenState._background.withValues(alpha: 0.92),
-        border: Border(
-          bottom: BorderSide(
-            color: _RoommatePostsScreenState._outline.withValues(alpha: 0.35),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _RoommatePostsScreenState._text,
-          ),
-          const Expanded(
-            child: Text(
-              'Caut coleg',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _RoommatePostsScreenState._text,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const LendBackTopBar(title: 'Caut coleg');
   }
 }
 
@@ -1084,38 +1054,7 @@ class _FilterField extends StatelessWidget {
 class _CreateRoommateTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _RoommatePostsScreenState._background.withValues(alpha: 0.92),
-        border: Border(
-          bottom: BorderSide(
-            color: _RoommatePostsScreenState._outline.withValues(alpha: 0.35),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _RoommatePostsScreenState._text,
-          ),
-          const Expanded(
-            child: Text(
-              'Anunt de coleg',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _RoommatePostsScreenState._text,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const LendBackTopBar(title: 'Anunt de coleg');
   }
 }
 

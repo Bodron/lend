@@ -132,6 +132,7 @@ class ProductSaveInput {
     required this.pricePerDay,
     this.pricePerMonth,
     required this.deposit,
+    this.stockQuantity = 1,
     required this.city,
     required this.address,
     required this.latitude,
@@ -150,6 +151,7 @@ class ProductSaveInput {
   final int pricePerDay;
   final int? pricePerMonth;
   final int deposit;
+  final int stockQuantity;
   final String city;
   final String address;
   final double? latitude;
@@ -169,6 +171,7 @@ class ProductSaveInput {
       'pricePerDay': pricePerDay,
       'pricePerMonth': pricePerMonth,
       'deposit': deposit,
+      'stockQuantity': stockQuantity,
       'city': city,
       'address': address,
       'latitude': latitude,
@@ -202,6 +205,7 @@ class LendProduct {
     required this.pricePerDay,
     this.pricePerMonth,
     required this.deposit,
+    this.stockQuantity = 1,
     required this.city,
     required this.address,
     required this.latitude,
@@ -211,6 +215,7 @@ class LendProduct {
     required this.returnTime,
     this.rentalModes = const ['hour', 'day'],
     required this.ownerName,
+    this.ownerId,
     this.ownerAvatarUrl,
     this.ownerRentalCount = 0,
     required this.rating,
@@ -227,6 +232,7 @@ class LendProduct {
   final int pricePerDay;
   final int? pricePerMonth;
   final int deposit;
+  final int stockQuantity;
   final String city;
   final String address;
   final double? latitude;
@@ -236,6 +242,7 @@ class LendProduct {
   final String returnTime;
   final List<String> rentalModes;
   final String ownerName;
+  final String? ownerId;
   final String? ownerAvatarUrl;
   final int ownerRentalCount;
   final double rating;
@@ -275,6 +282,9 @@ class LendProduct {
       pricePerDay: _toInt(json['pricePerDay']),
       pricePerMonth: _toNullableInt(json['pricePerMonth']),
       deposit: _toInt(json['deposit']),
+      stockQuantity: json['stockQuantity'] == null
+          ? 1
+          : _toInt(json['stockQuantity']),
       city: (json['city'] ?? '').toString(),
       address: (json['address'] ?? '').toString(),
       latitude: _toNullableDouble(json['latitude']),
@@ -288,6 +298,10 @@ class LendProduct {
                 .toList()
           : const ['hour', 'day'],
       ownerName: (json['ownerName'] ?? '').toString(),
+      ownerId:
+          json['ownerId'] is String && (json['ownerId'] as String).isNotEmpty
+          ? json['ownerId'] as String
+          : null,
       ownerAvatarUrl:
           ownerAvatarPayload is String && ownerAvatarPayload.isNotEmpty
           ? ownerAvatarPayload

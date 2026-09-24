@@ -161,6 +161,30 @@ abstract class GeneratedLocalizations {
   /// **'Explore items'**
   String get exploreObjects;
 
+  /// No description provided for @findRoommate.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a roommate'**
+  String get findRoommate;
+
+  /// No description provided for @roommateInviteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for a roommate for this apartment?'**
+  String get roommateInviteTitle;
+
+  /// No description provided for @roommateInviteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Post a short listing for this apartment so interested people can send you a request.'**
+  String get roommateInviteBody;
+
+  /// No description provided for @roommateInviteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a roommate'**
+  String get roommateInviteAction;
+
   /// No description provided for @dayShort.
   ///
   /// In en, this message translates to:
@@ -214,6 +238,18 @@ abstract class GeneratedLocalizations {
   /// In en, this message translates to:
   /// **'Add listing'**
   String get addListing;
+
+  /// No description provided for @stockQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of identical units'**
+  String get stockQuantity;
+
+  /// No description provided for @stockUnits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} units in this listing'**
+  String stockUnits(int count);
 
   /// No description provided for @newAccount.
   ///
@@ -962,8 +998,26 @@ abstract class GeneratedLocalizations {
   /// No description provided for @selectPeriodStartEnd.
   ///
   /// In en, this message translates to:
-  /// **'Select the start and end of the period.'**
+  /// **'Select one day or a date range.'**
   String get selectPeriodStartEnd;
+
+  /// No description provided for @chooseRangeEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap another day to extend the range.'**
+  String get chooseRangeEnd;
+
+  /// No description provided for @blockDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Block day'**
+  String get blockDay;
+
+  /// No description provided for @blockBookedDayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Days with a rental, even for a few hours, cannot be blocked for the whole day.'**
+  String get blockBookedDayHint;
 
   /// No description provided for @availabilityReasonHint.
   ///
@@ -986,7 +1040,7 @@ abstract class GeneratedLocalizations {
   /// No description provided for @noManualBlocksThisMonth.
   ///
   /// In en, this message translates to:
-  /// **'No manual blocks this month.'**
+  /// **'No manual blocks in the days shown.'**
   String get noManualBlocksThisMonth;
 
   /// No description provided for @unavailable.
@@ -1684,6 +1738,12 @@ abstract class GeneratedLocalizations {
   /// **'Choose start and end date'**
   String get chooseStartAndEndDate;
 
+  /// No description provided for @chooseEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Now choose the end date'**
+  String get chooseEndDate;
+
   /// No description provided for @contractAndSignature.
   ///
   /// In en, this message translates to:
@@ -1936,6 +1996,12 @@ abstract class GeneratedLocalizations {
   /// **'Rating'**
   String get rating;
 
+  /// No description provided for @viewOwnerListings.
+  ///
+  /// In en, this message translates to:
+  /// **'View listings'**
+  String get viewOwnerListings;
+
   /// No description provided for @sendMessage.
   ///
   /// In en, this message translates to:
@@ -2157,6 +2223,42 @@ abstract class GeneratedLocalizations {
   /// In en, this message translates to:
   /// **'Ex: Bucharest'**
   String get cityHint;
+
+  /// No description provided for @profileCityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your city'**
+  String get profileCityTitle;
+
+  /// No description provided for @profileCityComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your city'**
+  String get profileCityComplete;
+
+  /// No description provided for @profileCityHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'We use it when your phone location is unavailable.'**
+  String get profileCityHelp;
+
+  /// No description provided for @profileCitySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Your city has been saved.'**
+  String get profileCitySaved;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
 
   /// No description provided for @address.
   ///

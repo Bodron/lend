@@ -241,84 +241,81 @@ class _LendToastContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = _styleFor(type);
-    final resolvedTitle = title ?? _defaultTitle(context, type);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: style.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: style.accent.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(style.icon, color: style.accent, size: 20),
+    return Center(
+      widthFactor: 1,
+      heightFactor: 1,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.16),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    resolvedTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF1B1B1B),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    message,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF4B5563),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: onAction,
-                style: TextButton.styleFrom(
-                  foregroundColor: style.accent,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  actionLabel!,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(style.icon, color: style.accent, size: 36),
+              const SizedBox(width: 14),
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title ?? message,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    if (title != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        message,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFD1D1D1),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: onAction,
+                  style: TextButton.styleFrom(
+                    foregroundColor: style.accent,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    actionLabel!,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -327,48 +324,28 @@ class _LendToastContent extends StatelessWidget {
   _ToastStyle _styleFor(LendToastType type) {
     return switch (type) {
       LendToastType.success => const _ToastStyle(
-        accent: Color(0xFF2E7D5B),
-        borderColor: Color(0xFFD7EADF),
-        icon: Icons.check_rounded,
+        accent: Color(0xFF79C96B),
+        icon: Icons.check_circle_rounded,
       ),
       LendToastType.error => const _ToastStyle(
-        accent: Color(0xFFC2413B),
-        borderColor: Color(0xFFF1D3D1),
-        icon: Icons.close_rounded,
+        accent: Color(0xFFFF5D6C),
+        icon: Icons.error_rounded,
       ),
       LendToastType.warning => const _ToastStyle(
-        accent: Color(0xFFB26A00),
-        borderColor: Color(0xFFF2DFBF),
-        icon: Icons.priority_high_rounded,
+        accent: Color(0xFFFFCC53),
+        icon: Icons.warning_rounded,
       ),
       LendToastType.info => const _ToastStyle(
-        accent: Color(0xFF4A70A9),
-        borderColor: Color(0xFFD5DEEC),
-        icon: Icons.info_outline_rounded,
+        accent: Color(0xFF4E7BF4),
+        icon: Icons.info_rounded,
       ),
-    };
-  }
-
-  String _defaultTitle(BuildContext context, LendToastType type) {
-    final isRomanian = Localizations.localeOf(context).languageCode == 'ro';
-
-    return switch (type) {
-      LendToastType.success => isRomanian ? 'Succes' : 'Success',
-      LendToastType.error => isRomanian ? 'Eroare' : 'Error',
-      LendToastType.warning => isRomanian ? 'Atentie' : 'Warning',
-      LendToastType.info => isRomanian ? 'Info' : 'Info',
     };
   }
 }
 
 class _ToastStyle {
-  const _ToastStyle({
-    required this.accent,
-    required this.borderColor,
-    required this.icon,
-  });
+  const _ToastStyle({required this.accent, required this.icon});
 
   final Color accent;
-  final Color borderColor;
   final IconData icon;
 }

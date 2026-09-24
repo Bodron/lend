@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
@@ -418,10 +419,9 @@ class _MapTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
@@ -430,46 +430,11 @@ class _MapTopBar extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.arrow_back_rounded),
-              color: _ExploreMapScreenState._text,
-              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: _ExploreMapScreenState._text,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: _ExploreMapScreenState._muted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      clipBehavior: Clip.antiAlias,
+      child: LendBackTopBar(
+        title: title,
+        subtitle: subtitle,
+        showDivider: false,
       ),
     );
   }

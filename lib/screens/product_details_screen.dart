@@ -11,9 +11,11 @@ import '../models/rental_mode.dart';
 import '../services/products_api.dart';
 import '../services/favorites_service.dart';
 import '../widgets/lend_screen_frame.dart';
+import '../widgets/lend_back_top_bar.dart';
 import '../widgets/product_media_preview.dart';
 import '../widgets/product_reviews_section.dart';
 import 'messages_screen.dart';
+import 'owner_listings_screen.dart';
 import 'rental_period_screen.dart';
 import 'roommate_posts_screen.dart';
 
@@ -155,6 +157,7 @@ class _RoommateInviteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final strings = GeneratedLocalizations.of(context);
     return DecoratedBox(
       decoration: _cardDecoration.copyWith(
         borderRadius: BorderRadius.circular(16),
@@ -165,16 +168,16 @@ class _RoommateInviteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              children: const [
-                Icon(
+              children: [
+                const Icon(
                   Icons.groups_2_rounded,
                   color: _ProductDetailsScreenState._primary,
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Cauti coleg pentru apartamentul asta?',
-                    style: TextStyle(
+                    strings.roommateInviteTitle,
+                    style: const TextStyle(
                       color: _ProductDetailsScreenState._text,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -184,9 +187,9 @@ class _RoommateInviteCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Publica un mini-anunt atasat apartamentului si oamenii interesati iti pot trimite cerere.',
-              style: TextStyle(
+            Text(
+              strings.roommateInviteBody,
+              style: const TextStyle(
                 color: _ProductDetailsScreenState._muted,
                 fontSize: 14,
                 height: 1.4,
@@ -207,7 +210,7 @@ class _RoommateInviteCard extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.group_add_rounded, size: 18),
-                label: const Text('Cauta coleg'),
+                label: Text(strings.roommateInviteAction),
                 style: FilledButton.styleFrom(
                   backgroundColor: _ProductDetailsScreenState._primary,
                   foregroundColor: Colors.white,
@@ -231,54 +234,22 @@ class _DetailsTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _ProductDetailsScreenState._background.withValues(alpha: 0.92),
-        border: Border(
-          bottom: BorderSide(
-            color: _ProductDetailsScreenState._outlineVariant.withValues(
-              alpha: 0.25,
-            ),
-          ),
+    return LendBackTopBar(
+      title: GeneratedLocalizations.of(context).productDetails,
+      actions: [
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.ios_share_rounded),
+          color: _ProductDetailsScreenState._text,
         ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _ProductDetailsScreenState._text,
+        IconButton(
+          onPressed: onFavorite,
+          icon: Icon(
+            isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              GeneratedLocalizations.of(context).productDetails,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _ProductDetailsScreenState._text,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.ios_share_rounded),
-            color: _ProductDetailsScreenState._text,
-          ),
-          IconButton(
-            onPressed: onFavorite,
-            icon: Icon(
-              isFavorite
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-            ),
-            color: _ProductDetailsScreenState._text,
-          ),
-        ],
-      ),
+          color: _ProductDetailsScreenState._text,
+        ),
+      ],
     );
   }
 }
@@ -450,6 +421,19 @@ class _TitleBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        if (product.stockQuantity > 1) ...[
+          Text(
+            GeneratedLocalizations.of(
+              context,
+            ).stockUnits(product.stockQuantity),
+            style: const TextStyle(
+              color: _ProductDetailsScreenState._muted,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         Row(
           children: [
             const Icon(Icons.star_rounded, color: Color(0xFFFFC107), size: 22),
@@ -936,6 +920,14 @@ class _OwnerCard extends StatelessWidget {
 
   final LendProduct product;
 
+  void _openOwnerListings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => OwnerListingsScreen(product: product),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
@@ -957,85 +949,90 @@ class _OwnerCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Stack(
-                  children: [
-                    ClipOval(
-                      child: SizedBox(
-                        width: 64,
-                        height: 64,
-                        child: Image.network(
-                          product.ownerAvatarUrl ??
-                              _ProductDetailsScreenState._ownerImageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const ColoredBox(color: Color(0xFFD3E3FF));
-                          },
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: _ProductDetailsScreenState._text,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                        child: const Padding(
-                          padding: EdgeInsets.all(3),
-                          child: Icon(
-                            Icons.shield_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _openOwnerListings(context),
+              child: Row(
+                children: [
+                  Stack(
                     children: [
-                      Text(
-                        product.ownerName,
-                        style: const TextStyle(
-                          color: _ProductDetailsScreenState._text,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                      ClipOval(
+                        child: SizedBox(
+                          width: 64,
+                          height: 64,
+                          child: Image.network(
+                            product.ownerAvatarUrl ??
+                                _ProductDetailsScreenState._ownerImageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const ColoredBox(color: Color(0xFFD3E3FF));
+                            },
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 16,
-                            color: _ProductDetailsScreenState._muted,
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: _ProductDetailsScreenState._text,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
                           ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              GeneratedLocalizations.of(
-                                context,
-                              ).verifiedIdentity,
-                              style: const TextStyle(
-                                color: _ProductDetailsScreenState._muted,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          child: const Padding(
+                            padding: EdgeInsets.all(3),
+                            child: Icon(
+                              Icons.shield_rounded,
+                              size: 14,
+                              color: Colors.white,
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.ownerName,
+                          style: const TextStyle(
+                            color: _ProductDetailsScreenState._text,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 16,
+                              color: _ProductDetailsScreenState._muted,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                GeneratedLocalizations.of(
+                                  context,
+                                ).verifiedIdentity,
+                                style: const TextStyle(
+                                  color: _ProductDetailsScreenState._muted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, size: 24),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
             const Divider(color: _ProductDetailsScreenState._outlineVariant),
@@ -1063,6 +1060,25 @@ class _OwnerCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: () => _openOwnerListings(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _ProductDetailsScreenState._primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  GeneratedLocalizations.of(context).viewOwnerListings,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               height: 48,

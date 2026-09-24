@@ -29,6 +29,26 @@ class MessagesApi {
         .toList();
   }
 
+  Future<void> deleteThread({
+    required String accessToken,
+    required String productId,
+    String? roommateInterestId,
+  }) async {
+    final query = {
+      if (roommateInterestId != null && roommateInterestId.isNotEmpty)
+        'roommateInterestId': roommateInterestId,
+    };
+    final response = await _client.delete(
+      Uri.parse(
+        '${AuthApi.baseUrl}/messages/product/$productId',
+      ).replace(queryParameters: query.isEmpty ? null : query),
+      headers: {'Authorization': 'Bearer $accessToken'},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw MessagesApiException(_message(jsonDecode(response.body)));
+    }
+  }
+
   Future<MessageThread> getForProduct({
     required String accessToken,
     required String productId,

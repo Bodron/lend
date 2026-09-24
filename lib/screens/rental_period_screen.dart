@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/rental_orders_api.dart';
+import '../services/auth_api.dart';
 import '../services/products_api.dart';
+import '../services/realtime_socket_service.dart';
 import '../widgets/lend_screen_frame.dart';
 import 'cart_screen.dart';
 
@@ -16,6 +21,8 @@ class RentalPeriodScreen extends StatefulWidget {
     this.initialEndDate,
     this.negotiatedSubtotal,
     this.lockSelection = false,
+    this.rentalOrdersApi,
+    this.enableRealtime = true,
   });
 
   final LendProduct product;
@@ -24,6 +31,8 @@ class RentalPeriodScreen extends StatefulWidget {
   final DateTime? initialEndDate;
   final int? negotiatedSubtotal;
   final bool lockSelection;
+  final RentalOrdersApi? rentalOrdersApi;
+  final bool enableRealtime;
 
   @override
   State<RentalPeriodScreen> createState() => _RentalPeriodScreenState();
@@ -43,17 +52,26 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   late DateTime _visibleMonth;
   late DateTime? _startDate;
   late DateTime? _endDate;
+  bool _awaitingEndDate = false;
   late String _pickupTime;
   late String _returnTime;
-  final _rentalOrdersApi = RentalOrdersApi();
+  late final RentalOrdersApi _rentalOrdersApi;
   Set<String> _unavailableDateKeys = {};
   List<AvailabilityReservation> _reservations = const [];
+  List<AvailabilityBlock> _manualBlocks = const [];
   bool _availabilityLoading = false;
   String? _availabilityError;
+  int _availabilityRequestId = 0;
+  final _realtime = RealtimeSocketService.instance;
+  RealtimeSubscription? _availabilitySubscription;
+  RealtimeSubscription? _connectionSubscription;
+  Timer? _socketRefreshDebounce;
+  bool _joinedAvailability = false;
 
   @override
   void initState() {
     super.initState();
+    _rentalOrdersApi = widget.rentalOrdersApi ?? RentalOrdersApi();
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     final visibleDate = widget.initialStartDate ?? tomorrow;
     _visibleMonth = DateTime(visibleDate.year, visibleDate.month);
@@ -74,9 +92,68 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
         : widget.rentalMode == RentalMode.month
         ? (widget.initialEndDate ?? _sameDayNextMonth(initialDate))
         : widget.initialEndDate;
+    _awaitingEndDate =
+        widget.rentalMode == RentalMode.day &&
+        _startDate != null &&
+        _endDate == null;
     _pickupTime = widget.product.pickupTime;
     _returnTime = widget.product.returnTime;
     _loadAvailabilityForVisibleMonth();
+    if (widget.enableRealtime) _connectAvailabilitySocket();
+  }
+
+  @override
+  void dispose() {
+    _socketRefreshDebounce?.cancel();
+    _availabilitySubscription?.cancel();
+    _connectionSubscription?.cancel();
+    if (_joinedAvailability) _realtime.leaveAvailability(widget.product.id);
+    super.dispose();
+  }
+
+  Future<void> _connectAvailabilitySocket() async {
+    final token = await AuthSessionStore.getToken();
+    if (!mounted || token == null) return;
+    try {
+      final subscription = await _realtime.subscribe(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        event: RealtimeEvents.availabilityChanged,
+        onData: (data) {
+          if (data is Map && data['productId'] == widget.product.id) {
+            _refreshAvailabilityFromSocket();
+          }
+        },
+      );
+      if (!mounted) {
+        subscription.cancel();
+        return;
+      }
+      _availabilitySubscription = subscription;
+      final connection = await _realtime.subscribe(
+        accessToken: token,
+        apiBaseUrl: AuthApi.baseUrl,
+        event: 'connect',
+        onData: (_) => _refreshAvailabilityFromSocket(),
+      );
+      if (!mounted) {
+        connection.cancel();
+        return;
+      }
+      _connectionSubscription = connection;
+      _realtime.joinAvailability(widget.product.id);
+      _joinedAvailability = true;
+      _refreshAvailabilityFromSocket();
+    } catch (error) {
+      debugPrint('Realtime availability unavailable: $error');
+    }
+  }
+
+  void _refreshAvailabilityFromSocket() {
+    _socketRefreshDebounce?.cancel();
+    _socketRefreshDebounce = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) _loadAvailabilityForVisibleMonth();
+    });
   }
 
   int get _rentalDays {
@@ -87,7 +164,11 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
       return 0;
     }
 
-    final days = end.difference(start).inDays;
+    final days = DateTime.utc(
+      end.year,
+      end.month,
+      end.day,
+    ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
     return days < 1 ? 1 : days;
   }
 
@@ -172,15 +253,18 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
         _endDate = end;
         return;
       }
-      if (_startDate == null || (_startDate != null && _endDate != null)) {
+      if (_startDate == null || !_awaitingEndDate) {
         _startDate = date;
         _endDate = date;
+        _awaitingEndDate = true;
         return;
       }
 
       if (date.isBefore(_startDate!)) {
+        if (_rangeContainsUnavailable(date, _startDate!)) return;
         _endDate = _startDate;
         _startDate = date;
+        _awaitingEndDate = false;
         return;
       }
 
@@ -189,14 +273,24 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
       }
 
       _endDate = date;
+      _awaitingEndDate = false;
     });
   }
 
   bool _isUnavailable(DateTime date) {
     final today = _dateOnly(DateTime.now());
     final current = _dateOnly(date);
-    return current.isBefore(today) ||
-        _unavailableDateKeys.contains(_dateKey(current));
+    if (current.isBefore(today)) return true;
+    if (widget.rentalMode == RentalMode.hour) {
+      return _manualBlocks.any(
+        (block) =>
+            block.startDate != null &&
+            block.endDate != null &&
+            !current.isBefore(block.startDate!) &&
+            current.isBefore(block.endDate!),
+      );
+    }
+    return _unavailableDateKeys.contains(_dateKey(current));
   }
 
   bool _rangeContainsUnavailable(DateTime startDate, DateTime endDate) {
@@ -219,9 +313,14 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   }
 
   Future<void> _loadAvailabilityForVisibleMonth() async {
-    final from = DateTime(_visibleMonth.year, _visibleMonth.month);
-    // Load the following month as well so monthly rentals can validate the
-    // complete start-to-same-date-next-month interval.
+    final requestId = ++_availabilityRequestId;
+    final firstMonth =
+        _startDate == null || !_startDate!.isBefore(_visibleMonth)
+        ? _visibleMonth
+        : DateTime(_startDate!.year, _startDate!.month);
+    final from = DateTime(firstMonth.year, firstMonth.month);
+    // Keep the selected start month in the availability window when the user
+    // moves forward to choose an end date in a later month.
     final to = DateTime(_visibleMonth.year, _visibleMonth.month + 2);
 
     setState(() {
@@ -236,13 +335,14 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
         to: to,
       );
 
-      if (!mounted) {
+      if (!mounted || requestId != _availabilityRequestId) {
         return;
       }
 
       setState(() {
         _unavailableDateKeys = availability.unavailableDates;
         _reservations = availability.reservations;
+        _manualBlocks = availability.manualBlocks;
         _availabilityLoading = false;
 
         // Nu păstrăm o perioadă implicită/anterioară dacă API-ul a marcat
@@ -254,6 +354,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                 _rangeContainsUnavailable(_startDate!, _endDate!))) {
           _startDate = null;
           _endDate = null;
+          _awaitingEndDate = false;
         }
 
         if (widget.rentalMode == RentalMode.hour && _startDate == null) {
@@ -265,7 +366,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
         }
       });
     } catch (error) {
-      if (!mounted) {
+      if (!mounted || requestId != _availabilityRequestId) {
         return;
       }
 
@@ -332,6 +433,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                       isSelectedEndpoint: _isSelectedEndpoint,
                       isInRange: _isInRange,
                       hourlyMode: widget.rentalMode == RentalMode.hour,
+                      awaitingEndDate: _awaitingEndDate,
                       isLoading: _availabilityLoading,
                       error: _availabilityError,
                     ),
@@ -409,7 +511,16 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
     final date = _startDate;
     if (date == null) return true;
     final selectedMinutes = _timeToMinutes(time);
-    return _reservations.any((item) {
+    final occupied = _reservations.where((item) {
+      if (item.occupiedFrom != null && item.occupiedUntil != null) {
+        final selectedAt = DateTime.utc(
+          date.year,
+          date.month,
+          date.day,
+        ).add(Duration(minutes: selectedMinutes));
+        return !selectedAt.isBefore(item.occupiedFrom!) &&
+            selectedAt.isBefore(item.occupiedUntil!);
+      }
       if (item.startDate == null || item.endDate == null) return false;
       if (!_isSameDay(date, item.startDate) ||
           !_isSameDay(date, item.endDate)) {
@@ -417,8 +528,9 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
             item.endDate!.isAfter(date);
       }
       return selectedMinutes >= _timeToMinutes(item.pickupTime) &&
-          selectedMinutes < _timeToMinutes(item.returnTime);
-    });
+          selectedMinutes < _timeToMinutes(item.returnTime) + 60;
+    }).length;
+    return occupied >= widget.product.stockQuantity;
   }
 
   int _timeToMinutes(String value) {
@@ -440,40 +552,8 @@ class _PeriodTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _RentalPeriodScreenState._surface.withValues(alpha: 0.90),
-        border: Border(
-          bottom: BorderSide(
-            color: _RentalPeriodScreenState._outline.withValues(alpha: 0.20),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _RentalPeriodScreenState._text,
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              GeneratedLocalizations.of(context).choosePeriod,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _RentalPeriodScreenState._text,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
+    return LendBackTopBar(
+      title: GeneratedLocalizations.of(context).choosePeriod,
     );
   }
 }
@@ -574,6 +654,7 @@ class _CalendarCard extends StatelessWidget {
     required this.isSelectedEndpoint,
     required this.isInRange,
     required this.hourlyMode,
+    required this.awaitingEndDate,
     required this.isLoading,
     required this.error,
   });
@@ -588,6 +669,7 @@ class _CalendarCard extends StatelessWidget {
   final bool Function(DateTime date) isSelectedEndpoint;
   final bool Function(DateTime date) isInRange;
   final bool hourlyMode;
+  final bool awaitingEndDate;
   final bool isLoading;
   final String? error;
 
@@ -671,6 +753,18 @@ class _CalendarCard extends StatelessWidget {
                 child: Text(
                   GeneratedLocalizations.of(context).selectDayAndTime,
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (awaitingEndDate)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  GeneratedLocalizations.of(context).chooseEndDate,
+                  style: const TextStyle(
+                    color: _RentalPeriodScreenState._secondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             const _WeekDaysRow(),

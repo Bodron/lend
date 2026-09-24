@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../services/favorites_service.dart';
@@ -13,7 +14,14 @@ class FavoritesScreen extends StatelessWidget {
     final strings = GeneratedLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(strings.favorites)),
+      appBar: AppBar(
+        toolbarHeight: LendBackTopBar.height,
+        titleSpacing: 0,
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: LendBackTopBar(title: strings.favorites),
+      ),
       body: FutureBuilder<List<LendProduct>>(
         future: _load(),
         builder: (context, snapshot) {

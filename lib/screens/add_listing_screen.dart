@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
@@ -39,6 +40,7 @@ class ListingFormData {
     this.category = 'choose',
     this.categoryLabel = '',
     this.deposit = '0',
+    this.stockQuantity = '1',
     this.city = '',
     this.address = '',
     this.latitude,
@@ -62,6 +64,7 @@ class ListingFormData {
   final String category;
   final String categoryLabel;
   final String deposit;
+  final String stockQuantity;
   final String city;
   final String address;
   final double? latitude;
@@ -98,6 +101,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
   late final TextEditingController _pricePerHourController;
   late final TextEditingController _pricePerMonthController;
   late final TextEditingController _depositController;
+  late final TextEditingController _stockQuantityController;
   late final TextEditingController _cityController;
   late final TextEditingController _addressController;
   late final TextEditingController _pickupTimeController;
@@ -138,6 +142,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _depositController = TextEditingController(
       text: initialData?.deposit ?? '0',
     );
+    _stockQuantityController = TextEditingController(
+      text: initialData?.stockQuantity ?? '1',
+    );
     _cityController = TextEditingController(
       text: initialData?.city.isNotEmpty == true
           ? initialData!.city
@@ -173,6 +180,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _pricePerHourController.dispose();
     _pricePerMonthController.dispose();
     _depositController.dispose();
+    _stockQuantityController.dispose();
     _cityController.dispose();
     _addressController.dispose();
     _addressDebounce?.cancel();
@@ -280,6 +288,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
     final pricePerMonth =
         int.tryParse(_pricePerMonthController.text.trim()) ?? 0;
     final deposit = int.tryParse(_depositController.text.trim()) ?? 0;
+    final stockQuantity =
+        int.tryParse(_stockQuantityController.text.trim()) ?? 0;
     final city = _cityController.text.trim();
     final rawAddress = _addressController.text.trim();
     final address = rawAddress.isNotEmpty || !widget.isEditing
@@ -292,6 +302,8 @@ class _AddListingScreenState extends State<AddListingScreen> {
     if (title.isEmpty ||
         description.isEmpty ||
         pricePerDay <= 0 ||
+        stockQuantity < 1 ||
+        stockQuantity > 100 ||
         city.isEmpty ||
         address.isEmpty ||
         _category == 'choose' ||
@@ -337,6 +349,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
         pricePerDay: pricePerDay,
         pricePerMonth: _monthlyEnabled ? pricePerMonth : null,
         deposit: deposit,
+        stockQuantity: stockQuantity,
         city: city,
         address: address,
         latitude: _selectedLocation.latitude,
@@ -520,6 +533,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
                             pricePerDayController: _pricePerDayController,
                             pricePerMonthController: _pricePerMonthController,
                             depositController: _depositController,
+                            stockQuantityController: _stockQuantityController,
                             pickupTimeController: _pickupTimeController,
                             returnTimeController: _returnTimeController,
                             hourlyEnabled: _hourlyEnabled,
@@ -571,42 +585,13 @@ class _AddListingTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = GeneratedLocalizations.of(context);
-
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: _AddListingScreenState._background.withValues(alpha: 0.90),
-        border: Border(
-          bottom: BorderSide(
-            color: _AddListingScreenState._outline.withValues(alpha: 0.35),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-            color: _AddListingScreenState._text,
-          ),
-          Expanded(
-            child: Text(
-              isEditing ? strings.editListing : strings.addListing,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: _AddListingScreenState._text,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const LanguageToggleButton(),
-          const SizedBox(width: 8),
-          _SecurePill(label: strings.secure),
-        ],
-      ),
+    return LendBackTopBar(
+      title: isEditing ? strings.editListing : strings.addListing,
+      actions: [
+        const LanguageToggleButton(),
+        const SizedBox(width: 8),
+        _SecurePill(label: strings.secure),
+      ],
     );
   }
 }
@@ -1366,6 +1351,7 @@ class _RatesSection extends StatelessWidget {
     required this.pricePerDayController,
     required this.pricePerMonthController,
     required this.depositController,
+    required this.stockQuantityController,
     required this.pickupTimeController,
     required this.returnTimeController,
     required this.hourlyEnabled,
@@ -1380,6 +1366,7 @@ class _RatesSection extends StatelessWidget {
   final TextEditingController pricePerDayController;
   final TextEditingController pricePerMonthController;
   final TextEditingController depositController;
+  final TextEditingController stockQuantityController;
   final TextEditingController pickupTimeController;
   final TextEditingController returnTimeController;
   final bool hourlyEnabled;
@@ -1498,6 +1485,12 @@ class _RatesSection extends StatelessWidget {
           label: strings.deposit,
           hint: '0.00',
           suffix: 'RON',
+          keyboardType: TextInputType.number,
+        ),
+        _LabeledField(
+          controller: stockQuantityController,
+          label: strings.stockQuantity,
+          hint: '1',
           keyboardType: TextInputType.number,
         ),
         Row(

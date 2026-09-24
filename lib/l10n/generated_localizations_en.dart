@@ -40,6 +40,20 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   String get exploreObjects => 'Explore items';
 
   @override
+  String get findRoommate => 'Find a roommate';
+
+  @override
+  String get roommateInviteTitle =>
+      'Looking for a roommate for this apartment?';
+
+  @override
+  String get roommateInviteBody =>
+      'Post a short listing for this apartment so interested people can send you a request.';
+
+  @override
+  String get roommateInviteAction => 'Find a roommate';
+
+  @override
   String get dayShort => '/day';
 
   @override
@@ -65,6 +79,14 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
 
   @override
   String get addListing => 'Add listing';
+
+  @override
+  String get stockQuantity => 'Number of identical units';
+
+  @override
+  String stockUnits(int count) {
+    return '$count units in this listing';
+  }
 
   @override
   String get newAccount => 'New account';
@@ -464,7 +486,17 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   String get manualBlockDates => 'Manually block dates';
 
   @override
-  String get selectPeriodStartEnd => 'Select the start and end of the period.';
+  String get selectPeriodStartEnd => 'Select one day or a date range.';
+
+  @override
+  String get chooseRangeEnd => 'Tap another day to extend the range.';
+
+  @override
+  String get blockDay => 'Block day';
+
+  @override
+  String get blockBookedDayHint =>
+      'Days with a rental, even for a few hours, cannot be blocked for the whole day.';
 
   @override
   String get availabilityReasonHint => 'Optional reason: service, personal use';
@@ -476,7 +508,7 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   String get manualBlocks => 'Manual blocks';
 
   @override
-  String get noManualBlocksThisMonth => 'No manual blocks this month.';
+  String get noManualBlocksThisMonth => 'No manual blocks in the days shown.';
 
   @override
   String get unavailable => 'Unavailable';
@@ -860,6 +892,9 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   String get chooseStartAndEndDate => 'Choose start and end date';
 
   @override
+  String get chooseEndDate => 'Now choose the end date';
+
+  @override
   String get contractAndSignature => 'Contract and signature';
 
   @override
@@ -996,6 +1031,9 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   String get rating => 'Rating';
 
   @override
+  String get viewOwnerListings => 'View listings';
+
+  @override
   String get sendMessage => 'Send message';
 
   @override
@@ -1113,6 +1151,25 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
 
   @override
   String get cityHint => 'Ex: Bucharest';
+
+  @override
+  String get profileCityTitle => 'Your city';
+
+  @override
+  String get profileCityComplete => 'Add your city';
+
+  @override
+  String get profileCityHelp =>
+      'We use it when your phone location is unavailable.';
+
+  @override
+  String get profileCitySaved => 'Your city has been saved.';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get save => 'Save';
 
   @override
   String get address => 'Address';

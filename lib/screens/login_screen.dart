@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -281,26 +282,10 @@ class _LoginHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
-        border: Border(
-          bottom: BorderSide(color: Colors.black.withValues(alpha: 0.04)),
-        ),
-      ),
-      child: Row(
+    return LendBackTopBar(
+      title: '',
+      titleContent: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            color: const Color(0xFF1F2933),
-            iconSize: 24,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-          ),
-          const SizedBox(width: 8),
           const LendLogo(),
           const Spacer(),
           const LanguageToggleButton(),

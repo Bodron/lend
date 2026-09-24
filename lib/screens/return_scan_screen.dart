@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -317,30 +318,14 @@ class _ScannerTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 64,
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(false),
-            icon: const Icon(Icons.close_rounded),
-            color: Colors.white,
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 48),
-        ],
-      ),
+    return LendBackTopBar(
+      title: title,
+      leadingIcon: Icons.close_rounded,
+      onBack: () => Navigator.of(context).maybePop(false),
+      backgroundColor: Colors.transparent,
+      foregroundColor: Colors.white,
+      backButtonColor: Colors.white24,
+      showDivider: false,
     );
   }
 }

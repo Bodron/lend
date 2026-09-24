@@ -173,34 +173,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final signInRequiredMessage = GeneratedLocalizations.of(
       context,
     ).signInRequired;
-    var cityValue = user.city?.trim() ?? '';
-    final city = await showDialog<String>(
+    final city = await showModalBottomSheet<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Orașul tău'),
-        content: TextField(
-          textInputAction: TextInputAction.done,
-          autofocus: true,
-          onChanged: (value) => cityValue = value,
-          decoration: const InputDecoration(
-            labelText: 'Oraș',
-            hintText: 'Ex: Iași',
-          ),
-          onSubmitted: (_) => Navigator.of(context).pop(cityValue.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Anulează'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(cityValue.trim()),
-            child: const Text('Salvează'),
-          ),
-        ],
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (_) =>
+          _EditProfileCitySheet(initialCity: user.city?.trim() ?? ''),
     );
-    if (city == null || city.isEmpty) {
+    if (!mounted || city == null || city.isEmpty) {
       return;
     }
 
@@ -211,7 +196,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       await _authApi.updateLocation(accessToken: token, city: city);
       if (!mounted) return;
-      LendToast.success(context, message: 'Orașul a fost salvat.');
+      LendToast.success(
+        context,
+        message: GeneratedLocalizations.of(context).profileCitySaved,
+      );
       _reloadProfile();
     } catch (error) {
       if (!mounted) return;
@@ -420,7 +408,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ? await _selectStripeBusinessType()
           : null;
 
-      if (!mounted || (profile.user.stripeAccountId == null && businessType == null)) {
+      if (!mounted ||
+          (profile.user.stripeAccountId == null && businessType == null)) {
         return;
       }
 
@@ -439,10 +428,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (!mounted) return;
         final onboardingResult = await Navigator.of(context)
             .push<StripeOnboardingResult>(
-          MaterialPageRoute(
-            builder: (_) => StripeOnboardingScreen(url: result.url),
-          ),
-        );
+              MaterialPageRoute(
+                builder: (_) => StripeOnboardingScreen(url: result.url),
+              ),
+            );
 
         if (!mounted) {
           return;
@@ -677,6 +666,122 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
+class _EditProfileCitySheet extends StatefulWidget {
+  const _EditProfileCitySheet({required this.initialCity});
+
+  final String initialCity;
+
+  @override
+  State<_EditProfileCitySheet> createState() => _EditProfileCitySheetState();
+}
+
+class _EditProfileCitySheetState extends State<_EditProfileCitySheet> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialCity);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final city = _controller.text.trim();
+    if (city.isNotEmpty) Navigator.of(context).pop(city);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = GeneratedLocalizations.of(context);
+    final canSave = _controller.text.trim().isNotEmpty;
+
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              strings.profileCityTitle,
+              style: const TextStyle(
+                color: _ProfileScreenState._text,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              strings.profileCityHelp,
+              style: const TextStyle(
+                color: _ProfileScreenState._muted,
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) => _save(),
+              decoration: InputDecoration(
+                labelText: strings.city,
+                hintText: strings.cityHint,
+                prefixIcon: const Icon(Icons.location_on_outlined),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(strings.cancel),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: canSave ? _save : null,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _ProfileScreenState._primary,
+                        shape: const StadiumBorder(),
+                      ),
+                      child: Text(strings.save),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ProfileCityCard extends StatelessWidget {
   const _ProfileCityCard({required this.user, required this.onPressed});
 
@@ -686,6 +791,7 @@ class _ProfileCityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final city = user.city?.trim();
+    final strings = GeneratedLocalizations.of(context);
 
     return DecoratedBox(
       decoration: _profileCardDecoration,
@@ -704,7 +810,9 @@ class _ProfileCityCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    city == null || city.isEmpty ? 'Completează orașul' : city,
+                    city == null || city.isEmpty
+                        ? strings.profileCityComplete
+                        : city,
                     style: const TextStyle(
                       color: _ProfileScreenState._text,
                       fontSize: 16,
@@ -712,9 +820,9 @@ class _ProfileCityCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Îl folosim ca rezervă când nu putem folosi locația telefonului.',
-                    style: TextStyle(
+                  Text(
+                    strings.profileCityHelp,
+                    style: const TextStyle(
                       color: _ProfileScreenState._muted,
                       fontSize: 13,
                       height: 1.3,
@@ -725,7 +833,7 @@ class _ProfileCityCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            TextButton(onPressed: onPressed, child: const Text('Editează')),
+            TextButton(onPressed: onPressed, child: Text(strings.edit)),
           ],
         ),
       ),

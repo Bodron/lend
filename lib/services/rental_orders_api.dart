@@ -431,6 +431,8 @@ class AvailabilityReservation {
     required this.pickupTime,
     required this.returnTime,
     required this.status,
+    this.occupiedFrom,
+    this.occupiedUntil,
   });
 
   final String id;
@@ -439,6 +441,8 @@ class AvailabilityReservation {
   final String pickupTime;
   final String returnTime;
   final String status;
+  final DateTime? occupiedFrom;
+  final DateTime? occupiedUntil;
 
   factory AvailabilityReservation.fromJson(Map<String, dynamic> json) {
     return AvailabilityReservation(
@@ -448,6 +452,10 @@ class AvailabilityReservation {
       pickupTime: (json['pickupTime'] ?? '00:00').toString(),
       returnTime: (json['returnTime'] ?? '24:00').toString(),
       status: (json['status'] ?? '').toString(),
+      occupiedFrom: DateTime.tryParse((json['occupiedFrom'] ?? '').toString()),
+      occupiedUntil: DateTime.tryParse(
+        (json['occupiedUntil'] ?? '').toString(),
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/lend_back_top_bar.dart';
 
 import '../l10n/generated_localizations.dart';
 import '../widgets/lend_screen_frame.dart';
@@ -140,37 +141,14 @@ class _NotificationsTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = GeneratedLocalizations.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-      child: SizedBox(
-        height: 58,
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(Icons.arrow_back_rounded),
-              color: _NotificationsScreenState._text,
-            ),
-            Expanded(
-              child: Text(
-                strings.notifications,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _NotificationsScreenState._text,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: unreadCount == 0 ? null : onMarkAllRead,
-              child: Text(strings.readAll, overflow: TextOverflow.ellipsis),
-            ),
-          ],
+    return LendBackTopBar(
+      title: strings.notifications,
+      actions: [
+        TextButton(
+          onPressed: unreadCount == 0 ? null : onMarkAllRead,
+          child: Text(strings.readAll, overflow: TextOverflow.ellipsis),
         ),
-      ),
+      ],
     );
   }
 }
