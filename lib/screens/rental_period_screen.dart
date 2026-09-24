@@ -610,28 +610,6 @@ class _ProductContextCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.verified_user_rounded,
-                        size: 16,
-                        color: _RentalPeriodScreenState._secondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          GeneratedLocalizations.of(context).ownerVerified,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _RentalPeriodScreenState._secondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

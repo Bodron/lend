@@ -4,6 +4,10 @@ import android.content.ContentValues
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import android.net.Uri
+import android.os.Bundle
+import com.stripe.android.identity.IdentityVerificationSheet
+import com.stripe.android.identity.IdentityVerificationSheet.VerificationFlowResult
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -11,9 +15,54 @@ import java.io.File
 
 class MainActivity : FlutterFragmentActivity() {
     private val downloadsChannel = "lend/downloads"
+    private val identityChannel = "lend/stripe_identity"
+    private lateinit var identitySheet: IdentityVerificationSheet
+    private var identityResult: MethodChannel.Result? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        identitySheet = IdentityVerificationSheet.create(
+            this,
+            IdentityVerificationSheet.Configuration(
+                brandLogo = Uri.parse("android.resource://$packageName/${R.mipmap.ic_launcher}")
+            )
+        ) { verificationResult ->
+            val pending = identityResult ?: return@create
+            identityResult = null
+            when (verificationResult) {
+                is VerificationFlowResult.Completed -> pending.success("completed")
+                is VerificationFlowResult.Canceled -> pending.success("canceled")
+                is VerificationFlowResult.Failed ->
+                    pending.error("IDENTITY_FAILED", verificationResult.throwable.localizedMessage, null)
+            }
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, identityChannel)
+            .setMethodCallHandler { call, result ->
+                if (call.method != "presentIdentity") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+                val sessionId = call.argument<String>("sessionId")
+                val secret = call.argument<String>("ephemeralKeySecret")
+                if (sessionId.isNullOrBlank() || secret.isNullOrBlank()) {
+                    result.error("INVALID_SESSION", "Stripe Identity session is missing", null)
+                } else if (identityResult != null) {
+                    result.error("ALREADY_OPEN", "Stripe Identity is already open", null)
+                } else {
+                    identityResult = result
+                    try {
+                        identitySheet.present(sessionId, secret)
+                    } catch (error: Exception) {
+                        identityResult = null
+                        result.error("IDENTITY_FAILED", error.localizedMessage, null)
+                    }
+                }
+            }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, downloadsChannel)
             .setMethodCallHandler { call, result ->

@@ -1004,29 +1004,6 @@ class _OwnerCard extends StatelessWidget {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.verified_rounded,
-                              size: 16,
-                              color: _ProductDetailsScreenState._muted,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                GeneratedLocalizations.of(
-                                  context,
-                                ).verifiedIdentity,
-                                style: const TextStyle(
-                                  color: _ProductDetailsScreenState._muted,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),

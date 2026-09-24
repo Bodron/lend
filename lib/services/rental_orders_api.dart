@@ -187,6 +187,17 @@ class RentalOrdersApi {
     );
   }
 
+  Future<RentalOrder> markRenterReady({
+    required String accessToken,
+    required String orderId,
+  }) async {
+    return _patchOrder(
+      accessToken: accessToken,
+      path: '/rental-orders/$orderId/renter-ready',
+      fallback: 'Nu am putut trimite cererea proprietarului.',
+    );
+  }
+
   Future<RentalOrder> attachSignedContract({
     required String accessToken,
     required String orderId,
@@ -502,6 +513,8 @@ class RentalOrder {
     required this.rentalMode,
     required this.rentalHours,
     required this.paymentStatus,
+    required this.renterVerifiedAt,
+    required this.ownerVerifiedAt,
     required this.paymentClientSecret,
     required this.payoutStatus,
     required this.payoutEligibleAt,
@@ -532,6 +545,8 @@ class RentalOrder {
   final String rentalMode;
   final int rentalHours;
   final String paymentStatus;
+  final DateTime? renterVerifiedAt;
+  final DateTime? ownerVerifiedAt;
   final String paymentClientSecret;
   final String payoutStatus;
   final DateTime? payoutEligibleAt;
@@ -590,6 +605,12 @@ class RentalOrder {
       rentalMode: (json['rentalMode'] ?? 'day').toString(),
       rentalHours: _toInt(json['rentalHours']),
       paymentStatus: (json['paymentStatus'] ?? '').toString(),
+      renterVerifiedAt: DateTime.tryParse(
+        (json['renterVerifiedAt'] ?? '').toString(),
+      ),
+      ownerVerifiedAt: DateTime.tryParse(
+        (json['ownerVerifiedAt'] ?? '').toString(),
+      ),
       paymentClientSecret: (json['stripePaymentClientSecret'] ?? '').toString(),
       payoutStatus: (json['payoutStatus'] ?? '').toString(),
       payoutEligibleAt: DateTime.tryParse(

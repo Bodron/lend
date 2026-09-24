@@ -19,7 +19,7 @@ export default function PrivacyPolicy() {
       <p>Putem colecta urmatoarele categorii de date, in functie de modul in care folosesti aplicatia sau site-ul:</p>
       <ul>
         <li>date de cont: nume, email, parola, limba, preferinte;</li>
-        <li>date de contact: numar de telefon si confirmari SMS;</li>
+        <li>date de contact: numar de telefon;</li>
         <li>date de identitate: documente, selfie, rezultat verificare si status KYC, procesate prin furnizori specializati precum Stripe Identity;</li>
         <li>date de plata: identificatori de plata, garantii, rambursari si tranzactii, procesate prin furnizori de plati;</li>
         <li>date despre anunturi: fotografii, descrieri, pret, locatie aproximativa si disponibilitate;</li>
@@ -32,7 +32,7 @@ export default function PrivacyPolicy() {
 
       <h2>4. Furnizori si parteneri</h2>
       <p>
-        Putem partaja date cu procesatori precum furnizori de plati, verificare identitate, SMS, hosting, analytics, customer support si autoritati publice atunci cand legea o cere.
+        Putem partaja date cu procesatori precum furnizori de plati, verificare identitate, hosting, analytics, customer support si autoritati publice atunci cand legea o cere.
       </p>
 
       <h2>5. Date de identitate</h2>

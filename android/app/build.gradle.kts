@@ -59,3 +59,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Keep this aligned with stripe_android 14.0.0's Stripe Android SDK.
+    implementation("com.stripe:identity:23.12.0")
+    implementation("com.google.android.material:material:1.12.0")
+}

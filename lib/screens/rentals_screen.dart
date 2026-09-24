@@ -8,7 +8,9 @@ import 'my_listings_screen.dart';
 import 'profile_screen.dart';
 import 'return_qr_screen.dart';
 import 'return_scan_screen.dart';
+import 'transaction_verification_screen.dart';
 import '../l10n/generated_localizations.dart';
+import '../l10n/app_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/downloads_saver.dart';
 import '../services/products_api.dart';
@@ -216,6 +218,8 @@ class _RentalsScreenState extends State<RentalsScreen> {
           : strings.renterLabel(renterName),
       statusRaw: order.status,
       paymentStatus: order.paymentStatus,
+      renterVerified: order.renterVerifiedAt != null,
+      ownerVerified: order.ownerVerifiedAt != null,
       contractPdfUrl: order.contractPdfUrl,
       status: expiring ? _RentalStatus.expiring : _RentalStatus.active,
     );
@@ -418,6 +422,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                                 onEditSchedule: _openScheduleEditor,
                                 onAccept: _acceptRentalRequest,
                                 onReject: _rejectRentalRequest,
+                                onVerifyRenter: _verifyRenterRequest,
                               ),
                       );
                     },
@@ -486,11 +491,30 @@ class _RentalsScreenState extends State<RentalsScreen> {
   }
 
   Future<void> _acceptRentalRequest(_RentalItem item) async {
+    final verified = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const TransactionVerificationScreen()),
+    );
+    if (verified != true || !mounted) return;
     await _updateRentalRequest(
       item,
       action: (token) =>
           _rentalOrdersApi.accept(accessToken: token, orderId: item.id),
       successMessage: GeneratedLocalizations.of(context).requestAccepted,
+    );
+  }
+
+  Future<void> _verifyRenterRequest(_RentalItem item) async {
+    final verified = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const TransactionVerificationScreen()),
+    );
+    if (verified != true || !mounted) return;
+    await _updateRentalRequest(
+      item,
+      action: (token) => _rentalOrdersApi.markRenterReady(
+        accessToken: token,
+        orderId: item.id,
+      ),
+      successMessage: GeneratedLocalizations.of(context).requestSentToOwner,
     );
   }
 
@@ -1040,6 +1064,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
     required this.onEditSchedule,
     required this.onAccept,
     required this.onReject,
+    required this.onVerifyRenter,
   });
 
   final List<_RentalItem> items;
@@ -1049,6 +1074,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
   final ValueChanged<_RentalItem> onEditSchedule;
   final ValueChanged<_RentalItem> onAccept;
   final ValueChanged<_RentalItem> onReject;
+  final ValueChanged<_RentalItem> onVerifyRenter;
 
   @override
   Widget build(BuildContext context) {
@@ -1099,6 +1125,7 @@ class _ActiveRentalsGrid extends StatelessWidget {
       onEditSchedule: onEditSchedule,
       onAccept: onAccept,
       onReject: onReject,
+      onVerifyRenter: onVerifyRenter,
     );
   }
 }
@@ -1112,6 +1139,7 @@ class _ActiveRentalCard extends StatelessWidget {
     required this.onEditSchedule,
     required this.onAccept,
     required this.onReject,
+    required this.onVerifyRenter,
   });
 
   final _RentalItem item;
@@ -1120,6 +1148,7 @@ class _ActiveRentalCard extends StatelessWidget {
   final ValueChanged<_RentalItem> onEditSchedule;
   final ValueChanged<_RentalItem> onAccept;
   final ValueChanged<_RentalItem> onReject;
+  final ValueChanged<_RentalItem> onVerifyRenter;
 
   @override
   Widget build(BuildContext context) {
@@ -1185,7 +1214,7 @@ class _ActiveRentalCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const _VerifiedBadge(),
+                    if (item.ownerVerified) const _VerifiedBadge(),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -1299,7 +1328,11 @@ class _ActiveRentalCard extends StatelessWidget {
                           child: SizedBox(
                             height: 40,
                             child: FilledButton(
-                              onPressed: () => onAccept(item),
+                              onPressed:
+                                  item.renterVerified ||
+                                      item.paymentStatus == 'captured'
+                                  ? () => onAccept(item)
+                                  : null,
                               style: FilledButton.styleFrom(
                                 backgroundColor: _RentalsScreenState._primary,
                                 foregroundColor: Colors.white,
@@ -1316,6 +1349,14 @@ class _ActiveRentalCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 8),
+                    if (!item.renterVerified &&
+                        item.paymentStatus == 'authorized')
+                      Text(
+                        AppLocalizations.of(context).choose(
+                          'Asteptam verificarea chiriasului.',
+                          'Waiting for the renter to verify their identity.',
+                        ),
+                      ),
                   ] else if (isPendingRequest) ...[
                     Text(
                       GeneratedLocalizations.of(
@@ -1359,7 +1400,12 @@ class _ActiveRentalCard extends StatelessWidget {
                     child: FilledButton(
                       onPressed:
                           perspective == _RentalPerspective.renting &&
-                              isPendingRequest
+                              isPendingRequest &&
+                              item.paymentStatus == 'authorized' &&
+                              !item.renterVerified
+                          ? () => onVerifyRenter(item)
+                          : perspective == _RentalPerspective.renting &&
+                                isPendingRequest
                           ? null
                           : () {
                               if (perspective == _RentalPerspective.lending) {
@@ -1389,9 +1435,15 @@ class _ActiveRentalCard extends StatelessWidget {
                       child: Text(
                         perspective == _RentalPerspective.renting
                             ? isPendingRequest
-                                  ? GeneratedLocalizations.of(
-                                      context,
-                                    ).waitingApproval
+                                  ? item.paymentStatus == 'authorized' &&
+                                            !item.renterVerified
+                                        ? AppLocalizations.of(context).choose(
+                                            'Verifica identitatea',
+                                            'Verify identity',
+                                          )
+                                        : GeneratedLocalizations.of(
+                                            context,
+                                          ).waitingApproval
                                   : GeneratedLocalizations.of(
                                       context,
                                     ).completeReturn
@@ -1729,6 +1781,8 @@ class _RentalItem {
     required this.detailText,
     required this.statusRaw,
     required this.paymentStatus,
+    required this.renterVerified,
+    required this.ownerVerified,
     required this.contractPdfUrl,
     required this.status,
   });
@@ -1745,6 +1799,8 @@ class _RentalItem {
   final String detailText;
   final String statusRaw;
   final String paymentStatus;
+  final bool renterVerified;
+  final bool ownerVerified;
   final String? contractPdfUrl;
   final _RentalStatus status;
 }

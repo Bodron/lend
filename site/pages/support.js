@@ -22,7 +22,7 @@ export default function Support() {
 
       <h2>Probleme frecvente</h2>
       <h3>Nu pot intra in cont</h3>
-      <p>Verifica emailul, parola si codul primit prin SMS. Daca problema continua, contacteaza suportul cu emailul contului.</p>
+      <p>Verifica emailul si parola. Daca problema continua, contacteaza suportul cu emailul contului.</p>
 
       <h3>Vreau sa sterg contul</h3>
       <p>

@@ -17,6 +17,7 @@ import '../services/storage_api.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
+import 'transaction_verification_screen.dart';
 
 class RentalContractScreen extends StatefulWidget {
   const RentalContractScreen({
@@ -193,6 +194,29 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         accessToken: token,
         orderId: order.id,
       );
+
+      if (order.paymentStatus == 'authorized') {
+        if (!mounted) return;
+        final verified = await Navigator.of(context).push<bool>(
+          MaterialPageRoute(
+            builder: (_) => const TransactionVerificationScreen(),
+          ),
+        );
+        if (!mounted) return;
+        if (verified != true) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute<void>(
+              builder: (_) => const MainShell(initialIndex: 2),
+            ),
+            (route) => false,
+          );
+          return;
+        }
+        order = await _rentalOrdersApi.markRenterReady(
+          accessToken: token,
+          orderId: order.id,
+        );
+      }
 
       if (!mounted) {
         return;

@@ -12,7 +12,7 @@ export default function TermsAndConditions() {
       <p>Prin folosirea BorrowIt, accepti acesti termeni. Daca nu esti de acord, nu folosi serviciul.</p>
 
       <h2>2. Eligibilitate</h2>
-      <p>Trebuie sa ai cel putin 18 ani si capacitatea legala de a incheia contracte. Putem cere verificarea identitatii si a numarului de telefon.</p>
+      <p>Trebuie sa ai cel putin 18 ani si capacitatea legala de a incheia contracte. Putem cere verificarea identitatii pentru inchirieri.</p>
 
       <h2>3. Contul tau</h2>
       <p>Esti responsabil pentru informatiile introduse, securitatea contului si activitatea desfasurata prin contul tau.</p>

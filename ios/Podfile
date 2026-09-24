@@ -28,6 +28,9 @@ flutter_ios_podfile_setup
 target 'Runner' do
   use_frameworks!
 
+  # Keep StripeIdentity on the same Stripe iOS version as stripe_ios 14.0.0.
+  pod 'StripeIdentity', '~> 26.3.0'
+
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
     inherit! :search_paths
