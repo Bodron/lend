@@ -9,6 +9,7 @@
     <application
         android:label="Lend Everything"
         android:name="${applicationName}"
+        android:theme="@style/NormalTheme"
         android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher">
         <activity
