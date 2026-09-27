@@ -148,7 +148,7 @@ class _MainShellState extends State<MainShell> {
         systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
-        backgroundColor: _background,
+        backgroundColor: Colors.black,
         body: SafeArea(
           bottom: false,
           child: ColoredBox(
