@@ -45,6 +45,10 @@
 	<string>$(GOOGLE_MAPS_IOS_API_KEY)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Lend Everything uses the camera for item photos and for Stripe identity document and selfie verification.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

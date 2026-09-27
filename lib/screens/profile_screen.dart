@@ -22,6 +22,7 @@ import 'home_screen.dart';
 import 'my_listings_screen.dart';
 import 'rentals_screen.dart';
 import 'stripe_onboarding_screen.dart';
+import 'viewings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -1116,6 +1117,15 @@ class _AccountCard extends StatelessWidget {
                 MaterialPageRoute<void>(
                   builder: (_) => const FavoritesScreen(),
                 ),
+              ),
+            ),
+            _ActionRow(
+              icon: Icons.calendar_month_outlined,
+              label: Localizations.localeOf(context).languageCode == 'en'
+                  ? 'Viewings'
+                  : 'Vizionari',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ViewingsScreen()),
               ),
             ),
             _ActionRow(

@@ -7,7 +7,7 @@ class DownloadsSaver {
 
   static const _channel = MethodChannel('lend/downloads');
 
-  static Future<String> savePdf({
+  static Future<String?> savePdf({
     required String name,
     required Uint8List bytes,
   }) async {
@@ -26,15 +26,25 @@ class DownloadsSaver {
       return uri;
     }
 
+    final nameWithoutExtension = fileName.replaceFirst(RegExp(r'\.pdf$'), '');
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      return FileSaver.instance.saveAs(
+        name: nameWithoutExtension,
+        bytes: bytes,
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+    }
+
     return FileSaver.instance.saveFile(
-      name: fileName.replaceFirst(RegExp(r'\.pdf$'), ''),
+      name: nameWithoutExtension,
       bytes: bytes,
       fileExtension: 'pdf',
       mimeType: MimeType.pdf,
     );
   }
 
-  static Future<String> downloadPdfFromUrl({
+  static Future<String?> downloadPdfFromUrl({
     required String name,
     required Uri url,
   }) async {
@@ -53,8 +63,18 @@ class DownloadsSaver {
       return result;
     }
 
+    final nameWithoutExtension = fileName.replaceFirst(RegExp(r'\.pdf$'), '');
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      return FileSaver.instance.saveAs(
+        name: nameWithoutExtension,
+        link: LinkDetails(link: url.toString()),
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+    }
+
     return FileSaver.instance.saveFile(
-      name: fileName.replaceFirst(RegExp(r'\.pdf$'), ''),
+      name: nameWithoutExtension,
       link: LinkDetails(link: url.toString()),
       fileExtension: 'pdf',
       mimeType: MimeType.pdf,

@@ -257,17 +257,24 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
     try {
       final bytes = await _buildContractPdfBytes();
 
-      await DownloadsSaver.savePdf(
+      final savedPath = await DownloadsSaver.savePdf(
         name:
             'contract-${_safeFilePart(widget.product.title)}-${_dateFilePart(DateTime.now())}.pdf',
         bytes: bytes,
       );
 
+      if (savedPath == null) return;
+
       if (!mounted) {
         return;
       }
 
-      LendToast.success(context, message: 'Contractul a fost descarcat.');
+      LendToast.success(
+        context,
+        message: Localizations.localeOf(context).languageCode == 'en'
+            ? 'Contract saved.'
+            : 'Contractul a fost salvat.',
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -1005,7 +1012,9 @@ class _PricingBar extends StatelessWidget {
                 ),
               ),
               label: Text(
-                downloading ? 'Se pregateste...' : 'Descarca PDF',
+                Localizations.localeOf(context).languageCode == 'en'
+                    ? (downloading ? 'Preparing...' : 'Save PDF')
+                    : (downloading ? 'Se pregateste...' : 'Salveaza PDF'),
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),

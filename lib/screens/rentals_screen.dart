@@ -1461,7 +1461,12 @@ class _ActiveRentalCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: () => _openContract(context, item),
                       icon: const Icon(Icons.description_outlined, size: 18),
-                      label: const Text('Contract PDF'),
+                      label: Text(
+                        AppLocalizations.of(context).choose(
+                          'Salveaza contractul PDF',
+                          'Save contract PDF',
+                        ),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _RentalsScreenState._primary,
                         side: BorderSide(
@@ -1492,14 +1497,21 @@ class _ActiveRentalCard extends StatelessWidget {
     }
 
     try {
-      await DownloadsSaver.downloadPdfFromUrl(
+      final savedPath = await DownloadsSaver.downloadPdfFromUrl(
         name:
             'contract-${_safeFilePart(item.title)}-${_dateFilePart(DateTime.now())}.pdf',
         url: uri,
       );
 
+      if (savedPath == null) return;
+
       if (context.mounted) {
-        LendToast.success(context, message: 'Contractul a fost descarcat.');
+        LendToast.success(
+          context,
+          message: AppLocalizations.of(
+            context,
+          ).choose('Contractul a fost salvat.', 'Contract saved.'),
+        );
       }
     } catch (error) {
       if (context.mounted) {

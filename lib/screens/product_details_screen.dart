@@ -18,6 +18,7 @@ import 'messages_screen.dart';
 import 'owner_listings_screen.dart';
 import 'rental_period_screen.dart';
 import 'roommate_posts_screen.dart';
+import 'viewings_screen.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key, required this.product});
@@ -383,6 +384,33 @@ class _DetailsInfoCard extends StatelessWidget {
             if (_isRealEstateProduct(product)) ...[
               const SizedBox(height: 18),
               _RoommateInviteCard(product: product),
+              if (product.viewingsEnabled) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final created = await ViewingsScreen.showRequestSheet(
+                        context,
+                        product,
+                      );
+                      if (created && context.mounted) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => ViewingsScreen(product: product),
+                          ),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    label: Text(
+                      Localizations.localeOf(context).languageCode == 'en'
+                          ? 'Schedule a viewing${product.viewingPriceRon > 0 ? ' · ${product.viewingPriceRon} RON' : ' · Free'}'
+                          : 'Programeaza o vizionare${product.viewingPriceRon > 0 ? ' · ${product.viewingPriceRon} RON' : ' · Gratuit'}',
+                    ),
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 18),
             _ProductLocationMap(product: product, mapStyle: mapStyle),

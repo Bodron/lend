@@ -132,6 +132,8 @@ class ProductSaveInput {
     required this.pricePerDay,
     this.pricePerMonth,
     required this.deposit,
+    this.viewingsEnabled = false,
+    this.viewingPriceRon = 0,
     this.stockQuantity = 1,
     required this.city,
     required this.address,
@@ -151,6 +153,8 @@ class ProductSaveInput {
   final int pricePerDay;
   final int? pricePerMonth;
   final int deposit;
+  final bool viewingsEnabled;
+  final int viewingPriceRon;
   final int stockQuantity;
   final String city;
   final String address;
@@ -171,6 +175,8 @@ class ProductSaveInput {
       'pricePerDay': pricePerDay,
       'pricePerMonth': pricePerMonth,
       'deposit': deposit,
+      'viewingsEnabled': viewingsEnabled,
+      'viewingPriceRon': viewingPriceRon,
       'stockQuantity': stockQuantity,
       'city': city,
       'address': address,
@@ -205,6 +211,8 @@ class LendProduct {
     required this.pricePerDay,
     this.pricePerMonth,
     required this.deposit,
+    this.viewingsEnabled = false,
+    this.viewingPriceRon = 0,
     this.stockQuantity = 1,
     required this.city,
     required this.address,
@@ -232,6 +240,8 @@ class LendProduct {
   final int pricePerDay;
   final int? pricePerMonth;
   final int deposit;
+  final bool viewingsEnabled;
+  final int viewingPriceRon;
   final int stockQuantity;
   final String city;
   final String address;
@@ -282,6 +292,8 @@ class LendProduct {
       pricePerDay: _toInt(json['pricePerDay']),
       pricePerMonth: _toNullableInt(json['pricePerMonth']),
       deposit: _toInt(json['deposit']),
+      viewingsEnabled: json['viewingsEnabled'] == true,
+      viewingPriceRon: _toInt(json['viewingPriceRon']),
       stockQuantity: json['stockQuantity'] == null
           ? 1
           : _toInt(json['stockQuantity']),

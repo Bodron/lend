@@ -10,7 +10,9 @@ import '../services/auth_api.dart';
 import '../services/verification_api.dart';
 
 class TransactionVerificationScreen extends StatefulWidget {
-  const TransactionVerificationScreen({super.key});
+  const TransactionVerificationScreen({super.key, this.forViewing = false});
+
+  final bool forViewing;
 
   @override
   State<TransactionVerificationScreen> createState() =>
@@ -145,18 +147,25 @@ class _TransactionVerificationScreenState
           padding: const EdgeInsets.all(20),
           children: [
             Text(
-              strings.choose(
-                'Verifica-ti identitatea pentru aceasta inchiriere. Verificarea ramane valabila pentru urmatoarele inchirieri.',
-                'Verify your identity for this rental. The result is reused for future rentals.',
-              ),
+              widget.forViewing
+                  ? strings.choose(
+                      'Verifica-ti identitatea cu buletinul si selfie-ul inainte de vizionarea cu plata. Verificarea ramane valabila si pentru inchirieri viitoare.',
+                      'Verify your identity with an ID document and selfie before a paid viewing. This verification is also reusable for future rentals.',
+                    )
+                  : strings.choose(
+                      'Verifica-ti identitatea pentru aceasta inchiriere. Verificarea ramane valabila pentru urmatoarele inchirieri.',
+                      'Verify your identity for this rental. The result is reused for future rentals.',
+                    ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              strings.choose(
-                'Daca ai autorizat deja plata, suma este doar rezervata pe card. Daca inchirierea nu este acceptata in 48 de ore, rezervarea sumei se anuleaza.',
-                'If you have authorized payment, the amount is only held on your card. If the rental is not accepted within 48 hours, the hold is canceled.',
+            if (!widget.forViewing) ...[
+              const SizedBox(height: 8),
+              Text(
+                strings.choose(
+                  'Daca ai autorizat deja plata, suma este doar rezervata pe card. Daca inchirierea nu este acceptata in 48 de ore, rezervarea sumei se anuleaza.',
+                  'If you have authorized payment, the amount is only held on your card. If the rental is not accepted within 48 hours, the hold is canceled.',
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 20),
             if (status == null)
               const Center(child: CircularProgressIndicator()),

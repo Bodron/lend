@@ -40,6 +40,8 @@ class ListingFormData {
     this.category = 'choose',
     this.categoryLabel = '',
     this.deposit = '0',
+    this.viewingsEnabled = false,
+    this.viewingPriceRon = '0',
     this.stockQuantity = '1',
     this.city = '',
     this.address = '',
@@ -64,6 +66,8 @@ class ListingFormData {
   final String category;
   final String categoryLabel;
   final String deposit;
+  final bool viewingsEnabled;
+  final String viewingPriceRon;
   final String stockQuantity;
   final String city;
   final String address;
@@ -92,6 +96,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
   bool _hourlyEnabled = true;
   bool _dailyEnabled = true;
   bool _monthlyEnabled = false;
+  bool _viewingsEnabled = false;
   String _availabilityScope = 'local';
   Timer? _addressDebounce;
   String _category = 'choose';
@@ -101,6 +106,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
   late final TextEditingController _pricePerHourController;
   late final TextEditingController _pricePerMonthController;
   late final TextEditingController _depositController;
+  late final TextEditingController _viewingPriceController;
   late final TextEditingController _stockQuantityController;
   late final TextEditingController _cityController;
   late final TextEditingController _addressController;
@@ -122,6 +128,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _hourlyEnabled = initialData?.rentalModes.contains('hour') ?? true;
     _dailyEnabled = initialData?.rentalModes.contains('day') ?? true;
     _monthlyEnabled = initialData?.rentalModes.contains('month') ?? false;
+    _viewingsEnabled = initialData?.viewingsEnabled ?? false;
     _category = _supportedCategory(initialData?.category ?? 'choose');
     _availabilityScope =
         initialData?.availabilityScope ??
@@ -141,6 +148,9 @@ class _AddListingScreenState extends State<AddListingScreen> {
     );
     _depositController = TextEditingController(
       text: initialData?.deposit ?? '0',
+    );
+    _viewingPriceController = TextEditingController(
+      text: initialData?.viewingPriceRon ?? '0',
     );
     _stockQuantityController = TextEditingController(
       text: initialData?.stockQuantity ?? '1',
@@ -180,6 +190,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
     _pricePerHourController.dispose();
     _pricePerMonthController.dispose();
     _depositController.dispose();
+    _viewingPriceController.dispose();
     _stockQuantityController.dispose();
     _cityController.dispose();
     _addressController.dispose();
@@ -288,6 +299,7 @@ class _AddListingScreenState extends State<AddListingScreen> {
     final pricePerMonth =
         int.tryParse(_pricePerMonthController.text.trim()) ?? 0;
     final deposit = int.tryParse(_depositController.text.trim()) ?? 0;
+    final viewingPrice = int.tryParse(_viewingPriceController.text.trim());
     final stockQuantity =
         int.tryParse(_stockQuantityController.text.trim()) ?? 0;
     final city = _cityController.text.trim();
@@ -312,6 +324,19 @@ class _AddListingScreenState extends State<AddListingScreen> {
         !_isValidTime(pickupTime) ||
         !_isValidTime(returnTime)) {
       _showMessage(GeneratedLocalizations.of(context).listingFormInvalid);
+      return;
+    }
+    if (_category == 'imobiliare' &&
+        _viewingsEnabled &&
+        (viewingPrice == null ||
+            viewingPrice == 1 ||
+            viewingPrice < 0 ||
+            viewingPrice > 100000)) {
+      _showMessage(
+        Localizations.localeOf(context).languageCode == 'en'
+            ? 'Enter 0 for free or at least 2 RON for a paid viewing.'
+            : 'Introdu 0 pentru gratuit sau cel putin 2 RON pentru vizionarea cu plata.',
+      );
       return;
     }
 
@@ -349,6 +374,10 @@ class _AddListingScreenState extends State<AddListingScreen> {
         pricePerDay: pricePerDay,
         pricePerMonth: _monthlyEnabled ? pricePerMonth : null,
         deposit: deposit,
+        viewingsEnabled: _category == 'imobiliare' && _viewingsEnabled,
+        viewingPriceRon: _category == 'imobiliare' && _viewingsEnabled
+            ? viewingPrice!
+            : 0,
         stockQuantity: stockQuantity,
         city: city,
         address: address,
@@ -546,6 +575,63 @@ class _AddListingScreenState extends State<AddListingScreen> {
                             onMonthlyChanged: (value) =>
                                 setState(() => _monthlyEnabled = value),
                           ),
+                          if (_category == 'imobiliare') ...[
+                            const SizedBox(height: 24),
+                            Card(
+                              color: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SwitchListTile(
+                                      title: Text(
+                                        Localizations.localeOf(
+                                                  context,
+                                                ).languageCode ==
+                                                'en'
+                                            ? 'Allow viewings'
+                                            : 'Permite vizionari',
+                                      ),
+                                      subtitle: Text(
+                                        Localizations.localeOf(
+                                                  context,
+                                                ).languageCode ==
+                                                'en'
+                                            ? 'Visitors propose a date and time. You confirm the viewing.'
+                                            : 'Solicitantii propun o data si o ora. Tu confirmi vizionarea.',
+                                      ),
+                                      value: _viewingsEnabled,
+                                      onChanged: (value) => setState(
+                                        () => _viewingsEnabled = value,
+                                      ),
+                                    ),
+                                    if (_viewingsEnabled)
+                                      TextField(
+                                        controller: _viewingPriceController,
+                                        keyboardType: TextInputType.number,
+                                        decoration: InputDecoration(
+                                          labelText:
+                                              Localizations.localeOf(
+                                                    context,
+                                                  ).languageCode ==
+                                                  'en'
+                                              ? 'Viewing price (RON)'
+                                              : 'Pret vizionare (RON)',
+                                          helperText:
+                                              Localizations.localeOf(
+                                                    context,
+                                                  ).languageCode ==
+                                                  'en'
+                                              ? '0 RON means free. Payment follows your confirmation.'
+                                              : '0 RON inseamna vizionare gratuita. Plata se face dupa confirmare.',
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 24),
                           _InsuranceCard(
                             enabled: _insuranceEnabled,
