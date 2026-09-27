@@ -7,6 +7,7 @@ import UIKit
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var identityInProgress = false
+  private var pdfExportSession: PdfExportSession?
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -32,6 +33,50 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    let downloadsChannel = FlutterMethodChannel(
+      name: "lend/downloads",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    downloadsChannel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "savePdfWithPicker" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      guard let self = self,
+            let arguments = call.arguments as? [String: Any],
+            let rawName = arguments["name"] as? String,
+            let bytes = arguments["bytes"] as? FlutterStandardTypedData,
+            let presenter = self.identityPresenter() else {
+        result(FlutterError(code: "PDF_EXPORT_UNAVAILABLE", message: "Could not open Files", details: nil))
+        return
+      }
+      guard self.pdfExportSession == nil else {
+        result(FlutterError(code: "PDF_EXPORT_BUSY", message: "A file is already being saved", details: nil))
+        return
+      }
+      let safeName = (rawName as NSString).lastPathComponent
+      let fileName = safeName.lowercased().hasSuffix(".pdf") ? safeName : "\(safeName).pdf"
+      let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+      let fileURL = temporaryDirectory.appendingPathComponent(fileName)
+      do {
+        try FileManager.default.createDirectory(
+          at: temporaryDirectory,
+          withIntermediateDirectories: true
+        )
+        try bytes.data.write(to: fileURL, options: .atomic)
+      } catch {
+        try? FileManager.default.removeItem(at: temporaryDirectory)
+        result(FlutterError(code: "PDF_EXPORT_FAILED", message: "Could not prepare PDF", details: nil))
+        return
+      }
+      let session = PdfExportSession(temporaryDirectory: temporaryDirectory) { [weak self] savedPath in
+        self?.pdfExportSession = nil
+        result(savedPath)
+      }
+      self.pdfExportSession = session
+      session.present(fileURL: fileURL, from: presenter)
+    }
     let identityChannel = FlutterMethodChannel(
       name: "lend/stripe_identity",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
@@ -78,13 +123,50 @@ import UIKit
   }
 
   private func identityPresenter() -> UIViewController? {
-    let root = window?.rootViewController ?? UIApplication.shared.connectedScenes
-      .compactMap { ($0 as? UIWindowScene)?.windows.first(where: { $0.isKeyWindow })?.rootViewController }
-      .first
+    let activeScene = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .first(where: { $0.activationState == .foregroundActive })
+    let root = activeScene?.windows.first(where: { $0.isKeyWindow })?.rootViewController
+      ?? window?.rootViewController
     var presenter = root
     while let presented = presenter?.presentedViewController {
       presenter = presented
     }
     return presenter
+  }
+}
+
+private final class PdfExportSession: NSObject, UIDocumentPickerDelegate {
+  private let temporaryDirectory: URL
+  private let completion: (String?) -> Void
+  private var finished = false
+
+  init(temporaryDirectory: URL, completion: @escaping (String?) -> Void) {
+    self.temporaryDirectory = temporaryDirectory
+    self.completion = completion
+  }
+
+  func present(fileURL: URL, from presenter: UIViewController) {
+    let picker = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)
+    picker.delegate = self
+    presenter.present(picker, animated: true)
+  }
+
+  func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+    finish(with: nil)
+  }
+
+  func documentPicker(
+    _ controller: UIDocumentPickerViewController,
+    didPickDocumentsAt urls: [URL]
+  ) {
+    finish(with: urls.first?.path)
+  }
+
+  private func finish(with savedPath: String?) {
+    guard !finished else { return }
+    finished = true
+    try? FileManager.default.removeItem(at: temporaryDirectory)
+    completion(savedPath)
   }
 }

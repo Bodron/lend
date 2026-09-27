@@ -124,6 +124,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
               );
             },
           ),
+          SliverToBoxAdapter(
+            child: SizedBox(height: 128 + MediaQuery.paddingOf(context).bottom),
+          ),
         ],
       ),
     );
@@ -137,6 +140,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
         statusBarColor: Colors.black,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: _background,
+        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -327,18 +333,43 @@ class _ExploreHeader extends StatelessWidget {
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
-          height: 46,
-          child: OutlinedButton.icon(
-            onPressed: onRoommates,
-            icon: const Icon(Icons.groups_2_rounded),
-            label: Text(strings.findRoommate),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: _ExploreScreenState._text,
-              side: BorderSide(
-                color: _ExploreScreenState._primary.withValues(alpha: 0.35),
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+          height: 54,
+          child: Material(
+            color: const Color(0xFF050505),
+            elevation: 3,
+            shadowColor: Colors.black.withValues(alpha: 0.22),
+            borderRadius: BorderRadius.circular(999),
+            child: InkWell(
+              onTap: onRoommates,
+              borderRadius: BorderRadius.circular(999),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(22, 5, 5, 5),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        strings.findRoommate,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const CircleAvatar(
+                      radius: 22,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Color(0xFF050505),
+                        size: 22,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

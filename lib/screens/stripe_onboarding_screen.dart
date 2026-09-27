@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/lend_back_top_bar.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class StripeOnboardingScreen extends StatefulWidget {
-  const StripeOnboardingScreen({required this.url, super.key});
+  const StripeOnboardingScreen({
+    required this.url,
+    this.forAccountDashboard = false,
+    super.key,
+  });
 
   final String url;
+  final bool forAccountDashboard;
 
   @override
   State<StripeOnboardingScreen> createState() => _StripeOnboardingScreenState();
@@ -25,6 +31,9 @@ class _StripeOnboardingScreenState extends State<StripeOnboardingScreen> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onNavigationRequest: (request) {
+            if (widget.forAccountDashboard) {
+              return NavigationDecision.navigate;
+            }
             final uri = Uri.tryParse(request.url);
 
             if (_isStripeReturnUrl(uri)) {
@@ -65,6 +74,7 @@ class _StripeOnboardingScreenState extends State<StripeOnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: LendBackTopBar.height,
@@ -73,12 +83,14 @@ class _StripeOnboardingScreenState extends State<StripeOnboardingScreen> {
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.white,
         title: LendBackTopBar(
-          title: 'Configurează plățile',
+          title: widget.forAccountDashboard
+              ? strings.choose('Contul de încasări', 'Payout account')
+              : strings.choose('Configurează încasările', 'Set up payouts'),
           leadingIcon: Icons.close_rounded,
           onBack: () => Navigator.of(context).pop(),
           actions: [
             IconButton(
-              tooltip: 'Reîncarcă',
+              tooltip: strings.choose('Reîncarcă', 'Reload'),
               icon: const Icon(Icons.refresh_rounded),
               onPressed: () => _controller.reload(),
             ),

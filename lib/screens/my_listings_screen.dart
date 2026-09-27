@@ -80,7 +80,7 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
                 20,
                 widget.showChrome ? 32 : 0,
                 20,
-                widget.showChrome ? 168 : 6,
+                128 + MediaQuery.paddingOf(context).bottom,
               ),
               sliver: SliverToBoxAdapter(
                 child: FutureBuilder<List<LendProduct>>(

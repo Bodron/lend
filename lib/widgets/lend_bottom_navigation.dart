@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/generated_localizations.dart';
+import 'lend_curved_surface.dart';
 
 class LendBottomNavigation extends StatelessWidget {
   const LendBottomNavigation({
@@ -18,7 +19,6 @@ class LendBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = GeneratedLocalizations.of(context);
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final bottomPadding = bottomInset > 0 ? 14.0 : 8.0;
     final items = [
       LendBottomNavigationItem(Icons.search_rounded, strings.navExplore),
       LendBottomNavigationItem(Icons.list_alt_rounded, strings.navListings),
@@ -29,89 +29,92 @@ class LendBottomNavigation extends StatelessWidget {
       ),
     ];
 
-    return SizedBox(
-      height: 86 + bottomInset,
-      child: CustomPaint(
-        painter: _LendBottomNavigationPainter(),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(14, 8, 14, bottomPadding),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final selectedIndex = currentIndex.clamp(0, items.length - 1);
-              final itemWidth = constraints.maxWidth / 5;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 12),
+      child: SizedBox(
+        height: 82,
+        child: CustomPaint(
+          painter: const LendCurvedSurfacePainter(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final selectedIndex = currentIndex.clamp(0, items.length - 1);
+                final itemWidth = constraints.maxWidth / 5;
 
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _LendNavigationButton(
-                            item: items[0],
-                            selected: selectedIndex == 0,
-                            onPressed: () => onSelected(0),
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned.fill(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _LendNavigationButton(
+                              item: items[0],
+                              selected: selectedIndex == 0,
+                              onPressed: () => onSelected(0),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: _LendNavigationButton(
-                            item: items[1],
-                            selected: selectedIndex == 1,
-                            onPressed: () => onSelected(1),
+                          Expanded(
+                            child: _LendNavigationButton(
+                              item: items[1],
+                              selected: selectedIndex == 1,
+                              onPressed: () => onSelected(1),
+                            ),
                           ),
-                        ),
-                        SizedBox(width: itemWidth),
-                        Expanded(
-                          child: _LendNavigationButton(
-                            item: items[2],
-                            selected: selectedIndex == 2,
-                            onPressed: () => onSelected(2),
+                          SizedBox(width: itemWidth),
+                          Expanded(
+                            child: _LendNavigationButton(
+                              item: items[2],
+                              selected: selectedIndex == 2,
+                              onPressed: () => onSelected(2),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: _LendNavigationButton(
-                            item: items[3],
-                            selected: selectedIndex == 3,
-                            onPressed: () => onSelected(3),
+                          Expanded(
+                            child: _LendNavigationButton(
+                              item: items[3],
+                              selected: selectedIndex == 3,
+                              onPressed: () => onSelected(3),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    child: Center(
-                      child: _AddListingNavigationButton(
-                        onPressed: onAddListing,
-                        label: strings.addListing,
+                        ],
                       ),
                     ),
-                  ),
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 43,
-                    child: SizedBox(
-                      height: 14,
-                      child: AnimatedAlign(
-                        duration: const Duration(milliseconds: 380),
-                        curve: Curves.easeInOutCubicEmphasized,
-                        alignment: Alignment(
-                          _indicatorAlignment(selectedIndex),
-                          0,
-                        ),
-                        child: SizedBox(
-                          width: itemWidth,
-                          child: const Center(child: _SlidingIndicator()),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      child: Center(
+                        child: _AddListingNavigationButton(
+                          onPressed: onAddListing,
+                          label: strings.addListing,
                         ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 35,
+                      child: SizedBox(
+                        height: 14,
+                        child: AnimatedAlign(
+                          duration: const Duration(milliseconds: 380),
+                          curve: Curves.easeInOutCubicEmphasized,
+                          alignment: Alignment(
+                            _indicatorAlignment(selectedIndex),
+                            0,
+                          ),
+                          child: SizedBox(
+                            width: itemWidth,
+                            child: const Center(child: _SlidingIndicator()),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -126,27 +129,6 @@ class LendBottomNavigation extends StatelessWidget {
       _ => 1,
     };
   }
-}
-
-class _LendBottomNavigationPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final background = Paint()..color = const Color(0xFF050505);
-
-    final path = Path()
-      // Extend the black surface to the top edge so the content behind it
-      // cannot show through as a thin white strip.
-      ..moveTo(0, 0)
-      ..quadraticBezierTo(size.width / 2, -10, size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-
-    canvas.drawPath(path, background);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class LendBottomNavigationItem {

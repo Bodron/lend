@@ -275,12 +275,17 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
             ? 'Contract saved.'
             : 'Contractul a fost salvat.',
       );
-    } catch (error) {
+    } catch (_) {
       if (!mounted) {
         return;
       }
 
-      LendToast.error(context, message: error.toString());
+      LendToast.error(
+        context,
+        message: Localizations.localeOf(context).languageCode == 'en'
+            ? 'We couldn’t save the contract. Please try again.'
+            : 'Nu am putut salva contractul. Încearcă din nou.',
+      );
     } finally {
       if (mounted) {
         setState(() {

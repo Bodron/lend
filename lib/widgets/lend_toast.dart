@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'lend_curved_surface.dart';
+
 enum LendToastType { success, error, warning, info }
 
 class LendToast {
@@ -170,6 +172,7 @@ class _LendToastOverlayState extends State<_LendToastOverlay>
       _isExiting = true;
     });
 
+    _controller.duration = const Duration(milliseconds: 360);
     await _controller.forward(from: 0);
     if (mounted) {
       widget.onDismissed();
@@ -178,13 +181,6 @@ class _LendToastOverlayState extends State<_LendToastOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final offsetTween = _isExiting
-        ? Tween<Offset>(begin: Offset.zero, end: const Offset(1.15, 0))
-        : Tween<Offset>(begin: const Offset(0, 0.18), end: Offset.zero);
-    final opacityTween = _isExiting
-        ? Tween<double>(begin: 1, end: 0)
-        : Tween<double>(begin: 0, end: 1);
-
     return Positioned(
       left: 16,
       right: 16,
@@ -194,17 +190,19 @@ class _LendToastOverlayState extends State<_LendToastOverlay>
         child: AnimatedBuilder(
           animation: _controller,
           builder: (context, child) {
-            final curve = CurvedAnimation(
-              parent: _controller,
-              curve: Curves.easeOutCubic,
-            );
+            final progress = _isExiting
+                ? Curves.easeInCubic.transform(_controller.value)
+                : Curves.easeOutCubic.transform(_controller.value);
+            final offset = _isExiting
+                ? Offset(MediaQuery.sizeOf(context).width * progress, 0)
+                : Offset(0, 16 * (1 - progress));
+            final opacity = _isExiting
+                ? (1 - ((progress - 0.55) / 0.45).clamp(0.0, 1.0))
+                : progress;
 
             return Opacity(
-              opacity: opacityTween.evaluate(curve),
-              child: SlideTransition(
-                position: offsetTween.animate(curve),
-                child: child,
-              ),
+              opacity: opacity,
+              child: Transform.translate(offset: offset, child: child),
             );
           },
           child: Material(
@@ -242,80 +240,66 @@ class _LendToastContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = _styleFor(type);
 
-    return Center(
-      widthFactor: 1,
-      heightFactor: 1,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1E1E1E),
-          borderRadius: BorderRadius.circular(100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.16),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(style.icon, color: style.accent, size: 36),
-              const SizedBox(width: 14),
-              Flexible(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+    return CustomPaint(
+      painter: const LendCurvedSurfacePainter(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(style.icon, color: style.accent, size: 36),
+            const SizedBox(width: 14),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title ?? message,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                    ),
+                  ),
+                  if (title != null) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      title ?? message,
+                      message,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
+                        color: Color(0xFFD1D1D1),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
                       ),
                     ),
-                    if (title != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        message,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFD1D1D1),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
                   ],
+                ],
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: style.accent,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  actionLabel!,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
-              if (actionLabel != null && onAction != null) ...[
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    foregroundColor: style.accent,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    actionLabel!,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );

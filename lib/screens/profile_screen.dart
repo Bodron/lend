@@ -12,6 +12,7 @@ import '../services/payments_api.dart';
 import '../services/products_api.dart';
 import '../services/rental_orders_api.dart';
 import '../services/storage_api.dart';
+import '../services/verification_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
@@ -20,8 +21,10 @@ import 'add_listing_screen.dart';
 import 'explore_screen.dart';
 import 'home_screen.dart';
 import 'my_listings_screen.dart';
+import 'payout_settings_screen.dart';
 import 'rentals_screen.dart';
 import 'stripe_onboarding_screen.dart';
+import 'transaction_verification_screen.dart';
 import 'viewings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -58,8 +61,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _rentalOrdersApi = RentalOrdersApi();
   final _paymentsApi = PaymentsApi();
   final _storageApi = StorageApi();
+  final _verificationApi = VerificationApi();
   bool _uploadingAvatar = false;
   late Future<_ProfileData> _profileFuture = _loadProfileData();
+  late Future<bool> _identityVerifiedFuture = _loadIdentityVerified();
+
+  Future<bool> _loadIdentityVerified() async {
+    final token = await AuthSessionStore.getToken();
+    if (token == null) return false;
+    try {
+      return (await _verificationApi.status(token)).identityVerified;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<_ProfileData> _loadProfileData() async {
     final token = await AuthSessionStore.getToken();
@@ -78,6 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _reloadProfile() {
     setState(() {
       _profileFuture = _loadProfileData();
+      _identityVerifiedFuture = _loadIdentityVerified();
     });
   }
 
@@ -248,7 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 20,
                 widget.showChrome ? 24 : 0,
                 20,
-                widget.showChrome ? 128 : 6,
+                128 + MediaQuery.paddingOf(context).bottom,
               ),
               sliver: SliverToBoxAdapter(
                 child: FutureBuilder<_ProfileData>(
@@ -294,6 +310,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _ProfileSidebar(
                           onLogout: _logout,
                           onRequestDeletion: _requestAccountDeletion,
+                          onVerification: _openIdentityVerification,
+                          onPaymentMethods: _openPaymentMethods,
+                          identityVerifiedFuture: _identityVerifiedFuture,
                         ),
                       ],
                     );
@@ -343,6 +362,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
+  }
+
+  Future<void> _openIdentityVerification() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => const TransactionVerificationScreen(forProfile: true),
+      ),
+    );
+    if (mounted) _reloadProfile();
+  }
+
+  Future<void> _openPaymentMethods() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const PayoutSettingsScreen()),
+    );
+    if (mounted) _reloadProfile();
   }
 
   Future<void> _logout() async {
@@ -570,65 +605,61 @@ class _ProfileHeader extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                strings.myProfile,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _ProfileScreenState._text,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Wrap(
-          spacing: 12,
-          runSpacing: 10,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              data.user.fullName,
-              style: const TextStyle(
-                color: _ProfileScreenState._muted,
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: _ProfileScreenState._secondaryContainer,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 5,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 18,
-                      color: _ProfileScreenState._secondary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    data.user.fullName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _ProfileScreenState._text,
+                      fontSize: 23,
+                      height: 1.1,
+                      fontWeight: FontWeight.w800,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      strings.profileRatingListings(
-                        data.ratingLabel,
-                        data.listings.length,
+                  ),
+                  const SizedBox(height: 8),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: _ProfileScreenState._secondaryContainer,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
                       ),
-                      style: const TextStyle(
-                        color: _ProfileScreenState._secondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: _ProfileScreenState._secondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              strings.profileRatingListings(
+                                data.ratingLabel,
+                                data.listings.length,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: _ProfileScreenState._secondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -1066,28 +1097,53 @@ class _ProfileSidebar extends StatelessWidget {
   const _ProfileSidebar({
     required this.onLogout,
     required this.onRequestDeletion,
+    required this.onVerification,
+    required this.onPaymentMethods,
+    required this.identityVerifiedFuture,
   });
 
   final VoidCallback onLogout;
   final VoidCallback onRequestDeletion;
+  final VoidCallback onVerification;
+  final VoidCallback onPaymentMethods;
+  final Future<bool> identityVerifiedFuture;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _AccountCard(onLogout: onLogout, onRequestDeletion: onRequestDeletion),
-        const SizedBox(height: 20),
-        const _TrustBadge(),
+        _AccountCard(
+          onLogout: onLogout,
+          onRequestDeletion: onRequestDeletion,
+          onVerification: onVerification,
+          onPaymentMethods: onPaymentMethods,
+        ),
+        FutureBuilder<bool>(
+          future: identityVerifiedFuture,
+          builder: (context, snapshot) {
+            if (snapshot.data != true) return const SizedBox.shrink();
+            return const Column(
+              children: [SizedBox(height: 20), _TrustBadge()],
+            );
+          },
+        ),
       ],
     );
   }
 }
 
 class _AccountCard extends StatelessWidget {
-  const _AccountCard({required this.onLogout, required this.onRequestDeletion});
+  const _AccountCard({
+    required this.onLogout,
+    required this.onRequestDeletion,
+    required this.onVerification,
+    required this.onPaymentMethods,
+  });
 
   final VoidCallback onLogout;
   final VoidCallback onRequestDeletion;
+  final VoidCallback onVerification;
+  final VoidCallback onPaymentMethods;
 
   @override
   Widget build(BuildContext context) {
@@ -1131,10 +1187,12 @@ class _AccountCard extends StatelessWidget {
             _ActionRow(
               icon: Icons.verified_user_outlined,
               label: strings.verification,
+              onTap: onVerification,
             ),
             _ActionRow(
               icon: Icons.payments_outlined,
               label: strings.paymentMethods,
+              onTap: onPaymentMethods,
             ),
             _ActionRow(
               icon: Icons.contact_support_outlined,
@@ -1196,9 +1254,7 @@ class _ActionRow extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: color == _ProfileScreenState._text
-                  ? _ProfileScreenState._outline
-                  : color,
+              color: color,
             ),
           ],
         ),
@@ -1245,7 +1301,10 @@ class _TrustBadge extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            GeneratedLocalizations.of(context).profileSyncBody,
+            AppLocalizations.of(context).choose(
+              'Identitatea ta a fost confirmată.',
+              'Your identity has been confirmed.',
+            ),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,

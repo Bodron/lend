@@ -57,9 +57,7 @@ class _OwnerListingsScreenState extends State<OwnerListingsScreen> {
         backgroundColor: _background,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(LendBackTopBar.height),
-          child: LendBackTopBar(
-            title: english ? 'Owner profile' : 'Profil proprietar',
-          ),
+          child: const LendBackTopBar(title: ''),
         ),
         body: FutureBuilder<List<LendProduct>>(
           future: _listings,

@@ -299,7 +299,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                 20,
                 widget.showChrome ? 28 : 0,
                 20,
-                widget.showChrome ? 128 : 6,
+                128 + MediaQuery.paddingOf(context).bottom,
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
@@ -1513,9 +1513,15 @@ class _ActiveRentalCard extends StatelessWidget {
           ).choose('Contractul a fost salvat.', 'Contract saved.'),
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (context.mounted) {
-        LendToast.error(context, message: error.toString());
+        LendToast.error(
+          context,
+          message: AppLocalizations.of(context).choose(
+            'Nu am putut salva contractul. Încearcă din nou.',
+            'We couldn’t save the contract. Please try again.',
+          ),
+        );
       }
     }
   }

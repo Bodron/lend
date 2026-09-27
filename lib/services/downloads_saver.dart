@@ -1,6 +1,7 @@
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 class DownloadsSaver {
   DownloadsSaver._();
@@ -28,12 +29,10 @@ class DownloadsSaver {
 
     final nameWithoutExtension = fileName.replaceFirst(RegExp(r'\.pdf$'), '');
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      return FileSaver.instance.saveAs(
-        name: nameWithoutExtension,
-        bytes: bytes,
-        fileExtension: 'pdf',
-        mimeType: MimeType.pdf,
-      );
+      return _channel.invokeMethod<String>('savePdfWithPicker', {
+        'name': fileName,
+        'bytes': bytes,
+      });
     }
 
     return FileSaver.instance.saveFile(
@@ -65,12 +64,20 @@ class DownloadsSaver {
 
     final nameWithoutExtension = fileName.replaceFirst(RegExp(r'\.pdf$'), '');
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-      return FileSaver.instance.saveAs(
-        name: nameWithoutExtension,
-        link: LinkDetails(link: url.toString()),
-        fileExtension: 'pdf',
-        mimeType: MimeType.pdf,
-      );
+      final response = await http.get(url);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Nu am putut descărca acest contract.');
+      }
+      final bytes = response.bodyBytes;
+      if (bytes.length < 5 ||
+          bytes[0] != 0x25 ||
+          bytes[1] != 0x50 ||
+          bytes[2] != 0x44 ||
+          bytes[3] != 0x46 ||
+          bytes[4] != 0x2D) {
+        throw Exception('Contractul descărcat nu este un PDF valid.');
+      }
+      return savePdf(name: fileName, bytes: bytes);
     }
 
     return FileSaver.instance.saveFile(

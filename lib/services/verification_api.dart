@@ -19,6 +19,7 @@ class VerificationApi {
     final body = _decode(response);
     return VerificationStatus(
       identityVerified: body['identityVerified'] == true,
+      processing: body['processing'] == true,
     );
   }
 
@@ -71,9 +72,13 @@ class VerificationApi {
 }
 
 class VerificationStatus {
-  const VerificationStatus({required this.identityVerified});
+  const VerificationStatus({
+    required this.identityVerified,
+    this.processing = false,
+  });
 
   final bool identityVerified;
+  final bool processing;
   bool get complete => identityVerified;
 }
 

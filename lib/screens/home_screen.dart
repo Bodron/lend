@@ -1,48 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
-import '../widgets/lend_screen_frame.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   static const _primary = Color(0xFF4A70A9);
-  static const _backgroundImageUrl =
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCk2ufxl1A96CWQY6RebBOc6C50zXFuuQMJJDsyAMRmPoxMIpBMl0F3jkMZWi7-XWBjerQ4dpqBaQaXcWoRvEjo-qhDc58lNmMP3ysR5WHGn0ggqmZ8qG9VJMZSBzurQ-3wXltnTkI01cL--cbTDg6eTSfk47IAdrRpenSZ671Ouh9nZ1mwPX9IDpDd63I6BuG3XIwi2nCLxyY9F5TcQtQoArmZ54K7k3YkTLOiEcM47NI5HYzXHd8Kf4J-OVV3Gb9B_gi4zAukxjY';
+  static const _backgroundImage = 'assets/home_hero.png';
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return LendScreenFrame(
-      backgroundColor: Colors.black,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.network(
-            _backgroundImageUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return const ColoredBox(color: Color(0xFF303030));
-            },
-          ),
-          const _BackgroundOverlay(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                const Spacer(),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 576),
-                  child: const _HeroContent(),
-                ),
-                const SizedBox(height: 40),
-                const _FooterLinks(),
-                const SizedBox(height: 14),
-              ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+        systemNavigationBarContrastEnforced: false,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              _backgroundImage,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return const ColoredBox(color: Color(0xFF303030));
+              },
             ),
-          ),
-        ],
+            const _BackgroundOverlay(),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 576),
+                      child: const _HeroContent(),
+                    ),
+                    const SizedBox(height: 40),
+                    const _FooterLinks(),
+                    const SizedBox(height: 14),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -137,7 +168,7 @@ class _PrimaryActionButton extends StatelessWidget {
       child: FilledButton(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          backgroundColor: HomeScreen._primary,
+          backgroundColor: _HomeScreenState._primary,
           foregroundColor: Colors.white,
           elevation: 8,
           shadowColor: Colors.black.withValues(alpha: 0.18),
@@ -164,12 +195,13 @@ class _SecondaryActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 56,
-      child: OutlinedButton(
+      child: FilledButton(
         onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: Colors.white.withValues(alpha: 0.10),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.20)),
+        style: FilledButton.styleFrom(
+          foregroundColor: Colors.black,
+          backgroundColor: const Color(0xFFF7F8FA),
+          elevation: 5,
+          shadowColor: Colors.black.withValues(alpha: 0.20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -225,7 +257,7 @@ class _BackgroundOverlay extends StatelessWidget {
           colors: [
             Colors.black.withValues(alpha: 0.60),
             Colors.black.withValues(alpha: 0.20),
-            Colors.white.withValues(alpha: 0.10),
+            Colors.black.withValues(alpha: 0.30),
           ],
         ),
       ),

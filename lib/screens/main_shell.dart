@@ -138,16 +138,17 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomNavHeight = 86 + MediaQuery.paddingOf(context).bottom;
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.black,
         statusBarIconBrightness: Brightness.light,
         statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: _background,
+        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarContrastEnforced: false,
       ),
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: _background,
         body: SafeArea(
           bottom: false,
           child: ColoredBox(
@@ -155,39 +156,33 @@ class _MainShellState extends State<MainShell> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Padding(
-                    padding: EdgeInsets.only(bottom: bottomNavHeight),
-                    child: IndexedStack(
-                      index: _currentIndex,
-                      children: [
-                        ExploreScreen(
-                          showChrome: false,
-                          onNavigate: _selectTab,
-                        ),
-                        MyListingsScreen(
-                          showChrome: false,
-                          onNavigate: _selectTab,
-                        ),
-                        RentalsScreen(
-                          showChrome: false,
-                          onNavigate: _selectTab,
-                          initialRentalOrderId: _pendingRentalOrderId,
-                          initialShowOwnedRentals: _pendingOwnedRental,
-                          onRentalOpened: () {
-                            if (!mounted) return;
-                            setState(() {
-                              _pendingRentalOrderId = null;
-                              _pendingOwnedRental = false;
-                            });
-                          },
-                        ),
-                        ProfileScreen(
-                          showChrome: false,
-                          onNavigate: _selectTab,
-                          onAvatarChanged: _loadTopBarAvatar,
-                        ),
-                      ],
-                    ),
+                  child: IndexedStack(
+                    index: _currentIndex,
+                    children: [
+                      ExploreScreen(showChrome: false, onNavigate: _selectTab),
+                      MyListingsScreen(
+                        showChrome: false,
+                        onNavigate: _selectTab,
+                      ),
+                      RentalsScreen(
+                        showChrome: false,
+                        onNavigate: _selectTab,
+                        initialRentalOrderId: _pendingRentalOrderId,
+                        initialShowOwnedRentals: _pendingOwnedRental,
+                        onRentalOpened: () {
+                          if (!mounted) return;
+                          setState(() {
+                            _pendingRentalOrderId = null;
+                            _pendingOwnedRental = false;
+                          });
+                        },
+                      ),
+                      ProfileScreen(
+                        showChrome: false,
+                        onNavigate: _selectTab,
+                        onAvatarChanged: _loadTopBarAvatar,
+                      ),
+                    ],
                   ),
                 ),
                 Align(
