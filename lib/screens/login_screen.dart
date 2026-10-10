@@ -13,6 +13,7 @@ import '../widgets/language_toggle_button.dart';
 import '../widgets/lend_logo.dart';
 import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
+import 'legal_documents_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -72,7 +73,9 @@ class _LoginScreenState extends State<LoginScreen> {
         message: '${strings.welcomeBack}, ${session.user.fullName}!',
       );
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const MainShell()),
+        MaterialPageRoute<void>(
+          builder: (_) => const LegalGate(child: MainShell()),
+        ),
         (_) => false,
       );
     } on AuthApiException catch (error) {
@@ -125,7 +128,9 @@ class _LoginScreenState extends State<LoginScreen> {
         message: '${strings.welcomeBack}, ${session.user.fullName}!',
       );
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const MainShell()),
+        MaterialPageRoute<void>(
+          builder: (_) => const LegalGate(child: MainShell()),
+        ),
         (_) => false,
       );
     } on SignInWithAppleAuthorizationException catch (error) {
@@ -186,7 +191,9 @@ class _LoginScreenState extends State<LoginScreen> {
         message: '${strings.welcomeBack}, ${session.user.fullName}!',
       );
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const MainShell()),
+        MaterialPageRoute<void>(
+          builder: (_) => const LegalGate(child: MainShell()),
+        ),
         (_) => false,
       );
     } on GoogleSignInException catch (error) {

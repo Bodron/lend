@@ -27,6 +27,7 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
   static const _nearbyRadiusKm = 50.0;
 
   GoogleMapController? _mapController;
+  final ScrollController _productCardsController = ScrollController();
   String? _mapStyle;
   late List<_ProductMarker> _productMarkers;
   LatLng? _userLocation;
@@ -44,6 +45,7 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
   @override
   void dispose() {
     _mapController?.dispose();
+    _productCardsController.dispose();
     super.dispose();
   }
 
@@ -209,6 +211,7 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
                     child: SizedBox(
                       height: 132,
                       child: ListView.separated(
+                        controller: _productCardsController,
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: _productMarkers.length,
@@ -217,7 +220,6 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
                           final item = _productMarkers[index];
                           return _MapProductCard(
                             product: item.product,
-                            onTap: () => _focusProduct(item),
                             onOpen: () => Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (_) =>
@@ -279,6 +281,20 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
   }
 
   Future<void> _focusProduct(_ProductMarker item) async {
+    final index = _productMarkers.indexWhere(
+      (marker) => marker.product.id == item.product.id,
+    );
+    if (index >= 0 && _productCardsController.hasClients) {
+      final targetOffset = (index * 304.0).clamp(
+        0.0,
+        _productCardsController.position.maxScrollExtent,
+      );
+      _productCardsController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
     await _mapController?.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(target: item.position, zoom: 13.5),
@@ -443,12 +459,10 @@ class _MapTopBar extends StatelessWidget {
 class _MapProductCard extends StatelessWidget {
   const _MapProductCard({
     required this.product,
-    required this.onTap,
     required this.onOpen,
   });
 
   final LendProduct product;
-  final VoidCallback onTap;
   final VoidCallback onOpen;
 
   @override
@@ -459,7 +473,7 @@ class _MapProductCard extends StatelessWidget {
       elevation: 10,
       shadowColor: Colors.black26,
       child: InkWell(
-        onTap: onTap,
+        onTap: onOpen,
         borderRadius: BorderRadius.circular(8),
         child: SizedBox(
           width: 292,

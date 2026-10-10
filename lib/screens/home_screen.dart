@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../l10n/app_localizations.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+import 'legal_documents_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -234,9 +235,23 @@ class _FooterLinks extends StatelessWidget {
       spacing: 18,
       runSpacing: 8,
       children: [
-        Text(strings.terms, style: style),
+        InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const LegalDocumentsScreen(),
+            ),
+          ),
+          child: Text(strings.terms, style: style),
+        ),
         Text('•', style: style),
-        Text(strings.privacy, style: style),
+        InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const LegalDocumentsScreen(),
+            ),
+          ),
+          child: Text(strings.privacy, style: style),
+        ),
         Text('•', style: style),
         Text(strings.contact, style: style),
       ],

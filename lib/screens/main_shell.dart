@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../l10n/generated_localizations.dart';
 import '../services/auth_api.dart';
 import '../services/push_notifications.dart';
+import '../services/products_api.dart';
 import '../widgets/lend_bottom_navigation.dart';
 import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
@@ -11,6 +12,7 @@ import 'explore_screen.dart';
 import 'my_listings_screen.dart';
 import 'messages_screen.dart';
 import 'profile_screen.dart';
+import 'product_details_screen.dart';
 import 'rentals_screen.dart';
 
 class MainShell extends StatefulWidget {
@@ -51,6 +53,36 @@ class _MainShellState extends State<MainShell> {
     if (!mounted || message == null) return;
     PushNotifications.instance.pendingMessage.value = null;
     final type = message.data['type'];
+    if (type == 'viewing_update') {
+      final productId = message.data['productId'];
+      if (productId == null || productId.isEmpty) return;
+      try {
+        final token = await AuthSessionStore.getToken();
+        if (token == null) return;
+        final user = await _authApi.me(token);
+        if (!mounted || user.id != message.data['recipientId']) return;
+        final productsApi = ProductsApi();
+        final owned = await productsApi.findMine(token);
+        final product =
+            owned.where((item) => item.id == productId).firstOrNull ??
+            (await productsApi.findAll())
+                .where((item) => item.id == productId)
+                .firstOrNull;
+        if (!mounted || product == null) return;
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => ProductDetailsScreen(product: product),
+          ),
+        );
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Nu am putut deschide vizionarea.')),
+          );
+        }
+      }
+      return;
+    }
     if (type == 'rental_received' ||
         type == 'rental_request' ||
         type == 'rental_order_received') {

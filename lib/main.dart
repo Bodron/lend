@@ -5,8 +5,10 @@ import 'l10n/app_language.dart';
 import 'l10n/generated_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/main_shell.dart';
+import 'screens/legal_documents_screen.dart';
 import 'services/auth_api.dart';
 import 'services/push_notifications.dart';
+import 'widgets/app_update_checker.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -66,7 +68,7 @@ class _LendAppState extends State<LendApp> {
               fontFamily: 'Inter',
               useMaterial3: true,
             ),
-            home: const AuthGate(),
+            home: const AppUpdateChecker(child: AuthGate()),
           );
         },
       ),
@@ -110,7 +112,9 @@ class _AuthGateState extends State<AuthGate> {
           return const _SplashScreen();
         }
 
-        return snapshot.data! ? const MainShell() : const HomeScreen();
+        return snapshot.data!
+            ? const LegalGate(child: MainShell())
+            : const HomeScreen();
       },
     );
   }

@@ -8,6 +8,7 @@ import '../widgets/lend_logo.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_toast.dart';
 import 'main_shell.dart';
+import 'legal_documents_screen.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -32,7 +33,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _acceptedTerms = false;
   bool _showPassword = false;
   bool _isSubmitting = false;
 
@@ -47,11 +47,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     final strings = AppLocalizations.of(context);
-
-    if (!_acceptedTerms) {
-      LendToast.warning(context, message: strings.acceptTermsWarning);
-      return;
-    }
 
     setState(() {
       _isSubmitting = true;
@@ -72,7 +67,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         message: '${strings.accountCreatedFor} ${session.user.fullName}.',
       );
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const MainShell()),
+        MaterialPageRoute<void>(
+          builder: (_) => const LegalGate(child: MainShell()),
+        ),
         (_) => false,
       );
     } on AuthApiException catch (error) {
@@ -107,18 +104,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     builder: (context, constraints) {
                       final isWide = constraints.maxWidth >= 900;
                       final form = _RegisterColumn(
-                        acceptedTerms: _acceptedTerms,
                         showPassword: _showPassword,
                         isSubmitting: _isSubmitting,
                         fullNameController: _fullNameController,
                         emailController: _emailController,
                         phoneController: _phoneController,
                         passwordController: _passwordController,
-                        onTermsChanged: (value) {
-                          setState(() {
-                            _acceptedTerms = value ?? false;
-                          });
-                        },
                         onTogglePassword: () {
                           setState(() {
                             _showPassword = !_showPassword;
@@ -213,27 +204,23 @@ class _RegisterHeader extends StatelessWidget {
 
 class _RegisterColumn extends StatelessWidget {
   const _RegisterColumn({
-    required this.acceptedTerms,
     required this.showPassword,
     required this.isSubmitting,
     required this.fullNameController,
     required this.emailController,
     required this.phoneController,
     required this.passwordController,
-    required this.onTermsChanged,
     required this.onTogglePassword,
     required this.onOpenLogin,
     required this.onSubmit,
   });
 
-  final bool acceptedTerms;
   final bool showPassword;
   final bool isSubmitting;
   final TextEditingController fullNameController;
   final TextEditingController emailController;
   final TextEditingController phoneController;
   final TextEditingController passwordController;
-  final ValueChanged<bool?> onTermsChanged;
   final VoidCallback onTogglePassword;
   final VoidCallback onOpenLogin;
   final VoidCallback onSubmit;
@@ -327,7 +314,16 @@ class _RegisterColumn extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              _TermsCheckbox(value: acceptedTerms, onChanged: onTermsChanged),
+              Text(
+                Localizations.localeOf(context).languageCode == 'en'
+                    ? 'After creating your account, you will be asked to read and accept the PINLEND legal documents.'
+                    : 'După crearea contului vei putea citi și accepta documentele legale PINLEND.',
+                style: const TextStyle(
+                  color: _RegisterScreenState._muted,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
               const SizedBox(height: 28),
               SizedBox(
                 height: 56,
@@ -486,69 +482,6 @@ class _RegisterField extends StatelessWidget {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
       borderSide: BorderSide(color: color, width: width),
-    );
-  }
-}
-
-class _TermsCheckbox extends StatelessWidget {
-  const _TermsCheckbox({required this.value, required this.onChanged});
-
-  final bool value;
-  final ValueChanged<bool?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = AppLocalizations.of(context);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 24,
-          height: 24,
-          child: Checkbox(
-            value: value,
-            onChanged: onChanged,
-            activeColor: _RegisterScreenState._primary,
-            side: const BorderSide(color: Color(0xFFC3C6D1)),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                color: _RegisterScreenState._muted,
-                fontSize: 12,
-                height: 1.35,
-                fontWeight: FontWeight.w600,
-              ),
-              children: [
-                TextSpan(text: strings.iAgreeTo),
-                TextSpan(
-                  text: strings.termsAndConditions,
-                  style: const TextStyle(
-                    color: _RegisterScreenState._text,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                TextSpan(text: strings.andWord),
-                TextSpan(
-                  text: strings.privacyPolicy,
-                  style: const TextStyle(
-                    color: _RegisterScreenState._text,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const TextSpan(text: ' Lend.'),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

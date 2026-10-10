@@ -13,6 +13,7 @@ import 'add_listing_screen.dart';
 import 'availability_management_screen.dart';
 import 'explore_screen.dart';
 import 'profile_screen.dart';
+import 'product_details_screen.dart';
 import 'rentals_screen.dart';
 
 class MyListingsScreen extends StatefulWidget {
@@ -30,7 +31,6 @@ class _MyListingsScreenState extends State<MyListingsScreen> {
   static const _background = Color(0xFFF5F5F7);
   static const _text = Color(0xFF1B1B1B);
   static const _muted = Color(0xFF434750);
-  static const _outlineVariant = Color(0xFFC3C6D1);
   static const _avatarUrl =
       'https://lh3.googleusercontent.com/aida-public/AB6AXuAxU9zb3XzQztSdX10Pwsi94SR-JS7BeYbBv0zblLU2pbPw0NPogsqzSm2F5wbCc9DajEx_XEfHtHT0Ht07MAg4WOBvmk86NmGa_MPsfbBcEQQ5jSz2fokajuOWGZ7EovVUX_CP1JKPZavBkNo2W-rKqh442JG1-cWnVAr9crTtSjAFQiQRn99_ZYYKd2xlqTXx8SX1MuP-Ymj6MpmI0s9ZO0HNZcs1FN9DDoRw8-h0tcPVtj9BoHUUxk4eeimvDN9aqQA8Q2aTu6M';
 
@@ -292,20 +292,21 @@ class _ListingsGrid extends StatelessWidget {
             : constraints.maxWidth >= 640
             ? 2
             : 1;
+        const spacing = 20.0;
+        final cardWidth =
+            (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+            crossAxisCount;
 
-        return GridView.builder(
-          itemCount: items.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-            mainAxisExtent: 430,
-          ),
-          itemBuilder: (context, index) {
-            return _ListingCard(item: items[index]);
-          },
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final item in items)
+              SizedBox(
+                width: cardWidth,
+                child: _ListingCard(item: item),
+              ),
+          ],
         );
       },
     );
@@ -437,6 +438,8 @@ class _ListingCard extends StatelessWidget {
                           style: FilledButton.styleFrom(
                             backgroundColor: _MyListingsScreenState._primary,
                             foregroundColor: Colors.white,
+                            elevation: 2,
+                            shadowColor: Colors.black.withValues(alpha: 0.16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(999),
                             ),
@@ -464,9 +467,10 @@ class _ListingCard extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.zero,
                           foregroundColor: _MyListingsScreenState._muted,
-                          side: const BorderSide(
-                            color: _MyListingsScreenState._outlineVariant,
-                          ),
+                          backgroundColor: Colors.white,
+                          side: BorderSide.none,
+                          elevation: 2,
+                          shadowColor: Colors.black.withValues(alpha: 0.14),
                           shape: const CircleBorder(),
                         ),
                         child: const Icon(Icons.event_busy_rounded, size: 20),
@@ -474,6 +478,33 @@ class _ListingCard extends StatelessWidget {
                     ),
                   ],
                 ),
+                if (item.viewingsEnabled) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ProductDetailsScreen(product: item),
+                      ),
+                    ),
+                    icon: const Icon(Icons.calendar_month_outlined),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: _MyListingsScreenState._primary,
+                      backgroundColor: Colors.white,
+                      side: BorderSide.none,
+                      elevation: 6,
+                      shadowColor: Colors.black.withValues(alpha: 0.24),
+                      minimumSize: const Size.fromHeight(42),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    label: Text(
+                      Localizations.localeOf(context).languageCode == 'en'
+                          ? 'Viewings on this listing'
+                          : 'Vizionări pe acest anunț',
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

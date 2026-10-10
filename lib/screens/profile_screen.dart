@@ -25,7 +25,7 @@ import 'payout_settings_screen.dart';
 import 'rentals_screen.dart';
 import 'stripe_onboarding_screen.dart';
 import 'transaction_verification_screen.dart';
-import 'viewings_screen.dart';
+import 'legal_documents_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
@@ -1176,15 +1176,6 @@ class _AccountCard extends StatelessWidget {
               ),
             ),
             _ActionRow(
-              icon: Icons.calendar_month_outlined,
-              label: Localizations.localeOf(context).languageCode == 'en'
-                  ? 'Viewings'
-                  : 'Vizionari',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const ViewingsScreen()),
-              ),
-            ),
-            _ActionRow(
               icon: Icons.verified_user_outlined,
               label: strings.verification,
               onTap: onVerification,
@@ -1197,6 +1188,17 @@ class _AccountCard extends StatelessWidget {
             _ActionRow(
               icon: Icons.contact_support_outlined,
               label: strings.support,
+            ),
+            _ActionRow(
+              icon: Icons.description_outlined,
+              label: Localizations.localeOf(context).languageCode == 'en'
+                  ? 'Legal documents and acceptances'
+                  : 'Documente legale și acceptări',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const LegalDocumentsScreen(),
+                ),
+              ),
             ),
             const Divider(height: 24, color: _ProfileScreenState._outline),
             _ActionRow(
@@ -1252,10 +1254,7 @@ class _ActionRow extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: color,
-            ),
+            Icon(Icons.chevron_right_rounded, color: color),
           ],
         ),
       ),

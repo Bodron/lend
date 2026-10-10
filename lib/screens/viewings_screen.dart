@@ -8,9 +8,9 @@ import '../services/viewings_api.dart';
 import '../services/verification_api.dart';
 import 'transaction_verification_screen.dart';
 
-class ViewingsScreen extends StatefulWidget {
-  const ViewingsScreen({super.key, this.product});
-  final LendProduct? product;
+class ProductViewingsSection extends StatefulWidget {
+  const ProductViewingsSection({super.key, required this.product});
+  final LendProduct product;
 
   static Future<bool> showRequestSheet(
     BuildContext context,
@@ -31,10 +31,11 @@ class ViewingsScreen extends StatefulWidget {
   }
 
   @override
-  State<ViewingsScreen> createState() => _ViewingsScreenState();
+  State<ProductViewingsSection> createState() => _ProductViewingsSectionState();
 }
 
-class _ViewingsScreenState extends State<ViewingsScreen> {
+class _ProductViewingsSectionState extends State<ProductViewingsSection>
+    with WidgetsBindingObserver {
   final _api = ViewingsApi();
   bool _busy = false;
   String? _error;
@@ -47,7 +48,19 @@ class _ViewingsScreenState extends State<ViewingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refresh();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_busy) _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<String> _token() async {
@@ -79,8 +92,10 @@ class _ViewingsScreenState extends State<ViewingsScreen> {
 
   Future<void> _request() async {
     final product = widget.product;
-    if (product == null) return;
-    final created = await ViewingsScreen.showRequestSheet(context, product);
+    final created = await ProductViewingsSection.showRequestSheet(
+      context,
+      product,
+    );
     if (created && mounted) await _refresh();
   }
 
@@ -107,6 +122,84 @@ class _ViewingsScreenState extends State<ViewingsScreen> {
     await _api.action(await _token(), item.id, action);
     await _refresh();
   });
+
+  Future<void> _cancel(Viewing item) async {
+    final paid =
+        item.priceRon > 0 &&
+        (item.status == 'awaiting_verification' || item.status == 'confirmed');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(_label('Anulezi vizionarea?', 'Cancel viewing?')),
+        content: Text(
+          paid
+              ? _label(
+                  'Vizionarea va fi anulata si cei ${item.totalRon} RON vor fi rambursati pe metoda de plata initiala.',
+                  'The viewing will be cancelled and the full ${item.totalRon} RON will be refunded to the original payment method.',
+                )
+              : _label(
+                  'Cererea va fi anulata. Daca plata nu a fost facuta, nu exista suma de rambursat.',
+                  'The request will be cancelled. If no payment was made, there is nothing to refund.',
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(_label('Inapoi', 'Back')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(_label('Confirma anularea', 'Confirm cancellation')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) await _action(item, 'cancel');
+  }
+
+  Future<void> _propose(Viewing item) async {
+    final now = DateTime.now();
+    final initial = item.proposedStartsAt ?? item.startsAt;
+    final firstDate = DateTime(now.year, now.month, now.day);
+    final initialDate = initial.isAfter(now)
+        ? initial
+        : now.add(const Duration(days: 1));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: now.add(const Duration(days: 90)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initialDate),
+    );
+    if (time == null || !mounted) return;
+    final proposed = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    if (proposed.isBefore(DateTime.now().add(const Duration(hours: 2)))) {
+      setState(
+        () => _error = _label(
+          'Alege o ora cu cel putin doua ore in viitor.',
+          'Choose a time at least two hours from now.',
+        ),
+      );
+      return;
+    }
+    await _run(() async {
+      await _api.propose(await _token(), item.id, proposed);
+      await _refresh();
+    });
+  }
+
+  String _formatDateTime(DateTime value) =>
+      '${value.day.toString().padLeft(2, '0')}.${value.month.toString().padLeft(2, '0')}.${value.year}  ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
 
   Future<void> _pay(Viewing item) => _run(() async {
     final token = await _token();
@@ -165,6 +258,10 @@ class _ViewingsScreenState extends State<ViewingsScreen> {
 
   String _status(String status) => switch (status) {
     'requested' => _label('In asteptarea proprietarului', 'Waiting for owner'),
+    'counter_proposed' => _label(
+      'Proprietarul a propus alta ora',
+      'Owner proposed another time',
+    ),
     'awaiting_payment' => _label(
       'Acceptata, asteapta plata',
       'Accepted, awaiting payment',
@@ -181,172 +278,254 @@ class _ViewingsScreenState extends State<ViewingsScreen> {
     _ => status,
   };
 
+  String _refundStatus(String status) => switch (status) {
+    'succeeded' => _label('Suma a fost rambursata', 'Refund completed'),
+    'pending' => _label('Rambursare in curs', 'Refund in progress'),
+    'failed' => _label(
+      'Rambursarea a esuat. Contacteaza suportul.',
+      'Refund failed. Contact support.',
+    ),
+    _ => _label('Stare rambursare: $status', 'Refund status: $status'),
+  };
+
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final items = product == null
-        ? _items
-        : _items.where((item) => item.productId == product.id).toList();
-    return Scaffold(
-      appBar: AppBar(title: Text(_label('Vizionari', 'Viewings'))),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+    final items = _items.where((item) => item.productId == product.id).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            if (product != null) ...[
-              Text(
-                product.title,
+            Expanded(
+              child: Text(
+                _label('Vizionări', 'Viewings'),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 8),
-              Text(
-                product.viewingPriceRon == 0
-                    ? _label('Vizionare gratuita', 'Free viewing')
-                    : _label(
-                        'Vizionare: ${product.viewingPriceRon} RON + comision 5%. Platesti dupa acceptare, apoi va verificati amandoi identitatea.',
-                        'Viewing: ${product.viewingPriceRon} RON + 5% service fee. Pay after acceptance, then both participants verify identity.',
-                      ),
-              ),
-              if (product.viewingPriceRon > 0)
-                Text(
-                  _label(
-                    'Daca proprietarul anuleaza, primesti rambursarea. Dupa confirmarea vizionarii, contacteaza suportul pentru anulare.',
-                    'If the owner cancels, you receive a refund. After the viewing is confirmed, contact support to cancel.',
-                  ),
-                ),
-              if (product.viewingPriceRon > 0)
-                Text(
-                  _label(
-                    'Dupa plata aveti 48 de ore sa verificati identitatea, cel tarziu pana la ora vizionarii. Daca nu finalizati, plata este rambursata.',
-                    'After payment, you have 48 hours to verify identity, or until the viewing starts. Otherwise the payment is refunded.',
-                  ),
-                ),
-              const SizedBox(height: 12),
-              FilledButton.icon(
-                onPressed: _busy ? null : _request,
-                icon: const Icon(Icons.calendar_month),
-                label: Text(
-                  _label('Propune data si ora', 'Propose date and time'),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-            if (_busy) const LinearProgressIndicator(),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
-              ),
-            if (items.isEmpty && !_busy)
-              Text(
-                _label(
-                  'Nu exista vizionari programate.',
-                  'No viewings scheduled.',
-                ),
-              ),
-            for (final item in items)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.productTitle,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      if (_userId == item.ownerId) Text(item.visitorName),
-                      Text(
-                        '${item.startsAt.day.toString().padLeft(2, '0')}.${item.startsAt.month.toString().padLeft(2, '0')}.${item.startsAt.year}  ${item.startsAt.hour.toString().padLeft(2, '0')}:${item.startsAt.minute.toString().padLeft(2, '0')}',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(_status(item.status)),
-                      if (item.refundStatus != null)
-                        Text(
-                          _label(
-                            'Rambursare: ${item.refundStatus}',
-                            'Refund: ${item.refundStatus}',
-                          ),
-                        ),
-                      Text(
-                        item.priceRon == 0
-                            ? _label('Gratuit', 'Free')
-                            : _label(
-                                '${item.priceRon} RON + ${item.serviceFeeRon} RON comision = ${item.totalRon} RON',
-                                '${item.priceRon} RON + ${item.serviceFeeRon} RON fee = ${item.totalRon} RON',
-                              ),
-                      ),
-                      if (_userId == item.ownerId && item.status == 'requested')
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            TextButton(
-                              onPressed: _busy
-                                  ? null
-                                  : () => _action(item, 'accept'),
-                              child: Text(_label('Accepta', 'Accept')),
-                            ),
-                            TextButton(
-                              onPressed: _busy
-                                  ? null
-                                  : () => _action(item, 'reject'),
-                              child: Text(_label('Respinge', 'Decline')),
-                            ),
-                          ],
-                        ),
-                      if (_userId == item.visitorId &&
-                          item.status == 'awaiting_payment')
-                        FilledButton(
-                          onPressed: _busy ? null : () => _pay(item),
-                          child: Text(
-                            _label('Plateste vizionarea', 'Pay for viewing'),
-                          ),
-                        ),
-                      if (item.status == 'awaiting_verification')
-                        FilledButton.icon(
-                          onPressed: _busy ? null : () => _verify(item),
-                          icon: const Icon(Icons.verified_user_outlined),
-                          label: Text(
-                            _label('Verifica identitatea', 'Verify identity'),
-                          ),
-                        ),
-                      if (_userId == item.ownerId &&
-                          (item.status == 'confirmed' ||
-                              (item.status == 'completed' &&
-                                  item.priceRon > 0 &&
-                                  item.hasCommission &&
-                                  item.stripeTransferId == null)) &&
-                          !item.startsAt.isAfter(DateTime.now()))
-                        TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => _action(item, 'complete'),
-                          child: Text(
-                            _label('Marcheaza finalizata', 'Mark completed'),
-                          ),
-                        ),
-                      if (item.status == 'requested' ||
-                          item.status == 'awaiting_payment' ||
-                          (item.status == 'awaiting_verification' &&
-                              item.startsAt.isAfter(DateTime.now())) ||
-                          (item.status == 'confirmed' &&
-                              item.startsAt.isAfter(DateTime.now()) &&
-                              (item.priceRon == 0 || _userId == item.ownerId)))
-                        TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => _action(item, 'cancel'),
-                          child: Text(_label('Anuleaza', 'Cancel')),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+            ),
+            IconButton(
+              onPressed: _busy ? null : _refresh,
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: _label('Actualizează', 'Refresh'),
+            ),
           ],
         ),
-      ),
+        if (_userId != null && _userId != product.ownerId) ...[
+          Text(
+            product.viewingPriceRon == 0
+                ? _label('Vizionare gratuita', 'Free viewing')
+                : _label(
+                    'Vizionare: ${product.viewingPriceRon} RON + comision 5%. Platesti dupa acceptare, apoi va verificati amandoi identitatea.',
+                    'Viewing: ${product.viewingPriceRon} RON + 5% service fee. Pay after acceptance, then both participants verify identity.',
+                  ),
+          ),
+          if (product.viewingPriceRon > 0)
+            Text(
+              _label(
+                'Daca proprietarul anuleaza, primesti rambursarea. Dupa confirmarea vizionarii, contacteaza suportul pentru anulare.',
+                'If the owner cancels, you receive a refund. After the viewing is confirmed, contact support to cancel.',
+              ),
+            ),
+          if (product.viewingPriceRon > 0)
+            Text(
+              _label(
+                'Dupa plata aveti 48 de ore sa verificati identitatea, cel tarziu pana la ora vizionarii. Daca nu finalizati, plata este rambursata.',
+                'After payment, you have 48 hours to verify identity, or until the viewing starts. Otherwise the payment is refunded.',
+              ),
+            ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _busy ? null : _request,
+            icon: const Icon(Icons.calendar_month),
+            label: Text(_label('Propune data si ora', 'Propose date and time')),
+          ),
+          const SizedBox(height: 20),
+        ],
+        if (_busy) const LinearProgressIndicator(),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(_error!, style: const TextStyle(color: Colors.red)),
+          ),
+        if (items.isEmpty && !_busy)
+          Text(
+            _label('Nu exista vizionari programate.', 'No viewings scheduled.'),
+          ),
+        for (final item in items)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_userId == item.ownerId) Text(item.visitorName),
+                  Text(
+                    item.status == 'counter_proposed'
+                        ? _label('Ora solicitata: ', 'Requested: ') +
+                              _formatDateTime(item.startsAt)
+                        : _formatDateTime(item.startsAt),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(_status(item.status)),
+                  if (item.status == 'counter_proposed' &&
+                      item.proposedStartsAt != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _label(
+                            'Ora propusa de proprietar: ',
+                            'Owner proposed: ',
+                          ) +
+                          _formatDateTime(item.proposedStartsAt!),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (item.proposalExpiresAt != null)
+                      Text(
+                        item.proposalExpiresAt!.isAfter(DateTime.now())
+                            ? _label('Raspunde pana la: ', 'Reply by: ') +
+                                  _formatDateTime(item.proposalExpiresAt!)
+                            : _label(
+                                'Propunerea a expirat.',
+                                'Proposal expired.',
+                              ),
+                      ),
+                  ],
+                  if (item.refundStatus != null)
+                    Text(_refundStatus(item.refundStatus!)),
+                  Text(
+                    item.priceRon == 0
+                        ? _label('Gratuit', 'Free')
+                        : _label(
+                            '${item.priceRon} RON + ${item.serviceFeeRon} RON comision = ${item.totalRon} RON',
+                            '${item.priceRon} RON + ${item.serviceFeeRon} RON fee = ${item.totalRon} RON',
+                          ),
+                  ),
+                  if (_userId == item.ownerId && item.status == 'requested')
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _action(item, 'accept'),
+                          child: Text(_label('Accepta', 'Accept')),
+                        ),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _action(item, 'reject'),
+                          child: Text(_label('Respinge', 'Decline')),
+                        ),
+                        TextButton(
+                          onPressed: _busy ? null : () => _propose(item),
+                          child: Text(
+                            _label('Propune alta ora', 'Propose another time'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  if (_userId == item.ownerId &&
+                      item.status == 'counter_proposed')
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: _busy ? null : () => _propose(item),
+                          child: Text(
+                            _label('Schimba propunerea', 'Change proposal'),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _action(item, 'reject'),
+                          child: Text(_label('Respinge', 'Decline')),
+                        ),
+                      ],
+                    ),
+                  if (_userId == item.visitorId &&
+                      item.status == 'counter_proposed')
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton(
+                          onPressed:
+                              _busy ||
+                                  item.proposalExpiresAt == null ||
+                                  !item.proposalExpiresAt!.isAfter(
+                                    DateTime.now(),
+                                  )
+                              ? null
+                              : () => _action(item, 'accept-proposal'),
+                          child: Text(_label('Accepta ora', 'Accept time')),
+                        ),
+                        TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _action(item, 'decline-proposal'),
+                          child: Text(_label('Refuza', 'Decline')),
+                        ),
+                      ],
+                    ),
+                  if (_userId == item.visitorId &&
+                      item.status == 'awaiting_payment')
+                    FilledButton(
+                      onPressed: _busy ? null : () => _pay(item),
+                      child: Text(
+                        _label('Plateste vizionarea', 'Pay for viewing'),
+                      ),
+                    ),
+                  if (item.status == 'awaiting_verification')
+                    FilledButton.icon(
+                      onPressed: _busy ? null : () => _verify(item),
+                      icon: const Icon(Icons.verified_user_outlined),
+                      label: Text(
+                        _label('Verifica identitatea', 'Verify identity'),
+                      ),
+                    ),
+                  if (_userId == item.ownerId &&
+                      (item.status == 'confirmed' ||
+                          (item.status == 'completed' &&
+                              item.priceRon > 0 &&
+                              item.hasCommission &&
+                              item.stripeTransferId == null)) &&
+                      !item.startsAt.isAfter(DateTime.now()))
+                    TextButton(
+                      onPressed: _busy ? null : () => _action(item, 'complete'),
+                      child: Text(
+                        _label('Marcheaza finalizata', 'Mark completed'),
+                      ),
+                    ),
+                  if (item.status == 'requested' ||
+                      item.status == 'counter_proposed' ||
+                      item.status == 'awaiting_payment' ||
+                      (item.status == 'awaiting_verification' &&
+                          item.startsAt.isAfter(DateTime.now())) ||
+                      (item.status == 'confirmed' &&
+                          item.startsAt.isAfter(DateTime.now()) &&
+                          (item.priceRon == 0 || _userId == item.ownerId)))
+                    TextButton(
+                      onPressed: _busy ? null : () => _cancel(item),
+                      child: Text(
+                        _userId == item.ownerId &&
+                                item.priceRon > 0 &&
+                                (item.status == 'awaiting_verification' ||
+                                    item.status == 'confirmed')
+                            ? _label(
+                                'Anuleaza si ramburseaza',
+                                'Cancel and refund',
+                              )
+                            : _label('Anuleaza', 'Cancel'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

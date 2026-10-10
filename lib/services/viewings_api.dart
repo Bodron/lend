@@ -17,6 +17,8 @@ class Viewing {
     required this.priceRon,
     required this.serviceFeeRon,
     required this.hasCommission,
+    this.proposedStartsAt,
+    this.proposalExpiresAt,
     this.stripeTransferId,
     this.refundStatus,
   });
@@ -32,6 +34,8 @@ class Viewing {
   final int priceRon;
   final int serviceFeeRon;
   final bool hasCommission;
+  final DateTime? proposedStartsAt;
+  final DateTime? proposalExpiresAt;
   final String? stripeTransferId;
   int get totalRon => priceRon + serviceFeeRon;
   final String? refundStatus;
@@ -48,6 +52,12 @@ class Viewing {
     priceRon: (json['priceRon'] as num?)?.toInt() ?? 0,
     serviceFeeRon: (json['serviceFeeRon'] as num?)?.toInt() ?? 0,
     hasCommission: json.containsKey('serviceFeeRon'),
+    proposedStartsAt: DateTime.tryParse(
+      (json['proposedStartsAt'] ?? '').toString(),
+    )?.toLocal(),
+    proposalExpiresAt: DateTime.tryParse(
+      (json['proposalExpiresAt'] ?? '').toString(),
+    )?.toLocal(),
     stripeTransferId: json['stripeTransferId']?.toString(),
     refundStatus: json['refundStatus']?.toString(),
   );
@@ -85,6 +95,16 @@ class ViewingsApi {
 
   Future<Viewing> action(String token, String id, String action) async {
     final data = await _send('PATCH', '$id/$action', token);
+    return Viewing.fromJson(data as Map<String, dynamic>);
+  }
+
+  Future<Viewing> propose(String token, String id, DateTime startsAt) async {
+    final data = await _send(
+      'PATCH',
+      '$id/propose',
+      token,
+      body: {'startsAt': startsAt.toUtc().toIso8601String()},
+    );
     return Viewing.fromJson(data as Map<String, dynamic>);
   }
 

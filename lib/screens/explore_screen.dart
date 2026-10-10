@@ -429,8 +429,6 @@ class _RecommendedSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: _SectionHeader(
             title: strings.recommended,
-            action: strings.seeAll,
-            onAction: () {},
           ),
         ),
         const SizedBox(height: 12),
@@ -463,7 +461,7 @@ class _NearbyGrid extends StatelessWidget {
 
     return Column(
       children: [
-        _SectionHeader(title: strings.nearYou, action: '', onAction: onOpenMap),
+        _SectionHeader(title: strings.nearYou),
         const SizedBox(height: 12),
         _MapPreview(products: products, onTap: onOpenMap),
         const SizedBox(height: 16),
@@ -497,47 +495,23 @@ class _NearbyGrid extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.action,
-    required this.onAction,
-  });
+  const _SectionHeader({required this.title});
 
   final String title;
-  final String action;
-  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: _ExploreScreenState._text,
-              fontSize: 24,
-              height: 1.25,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: _ExploreScreenState._text,
+          fontSize: 24,
+          height: 1.25,
+          fontWeight: FontWeight.w700,
         ),
-        if (action.isNotEmpty)
-          TextButton(
-            onPressed: onAction,
-            style: TextButton.styleFrom(
-              foregroundColor: _ExploreScreenState._text,
-              minimumSize: Size.zero,
-              padding: EdgeInsets.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              action,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
