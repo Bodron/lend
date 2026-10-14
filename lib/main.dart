@@ -7,11 +7,13 @@ import 'screens/home_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/legal_documents_screen.dart';
 import 'services/auth_api.dart';
+import 'services/maps_configuration.dart';
 import 'services/push_notifications.dart';
 import 'widgets/app_update_checker.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await MapsConfiguration.initialize();
   await PushNotifications.instance.initialize();
   runApp(const LendApp());
 }

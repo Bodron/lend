@@ -1,3 +1,4 @@
+import '../widgets/configured_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -567,16 +568,18 @@ class _MapPreviewState extends State<_MapPreview> {
         height: 170,
         child: Stack(
           children: [
-            GoogleMap(
-              style: _mapStyle,
-              initialCameraPosition: const CameraPosition(
-                target: LatLng(44.4268, 26.1025),
-                zoom: 10.5,
+            ConfiguredMap(
+              child: GoogleMap(
+                style: _mapStyle,
+                initialCameraPosition: const CameraPosition(
+                  target: LatLng(44.4268, 26.1025),
+                  zoom: 10.5,
+                ),
+                markers: markers,
+                zoomControlsEnabled: false,
+                myLocationButtonEnabled: false,
+                mapToolbarEnabled: false,
               ),
-              markers: markers,
-              zoomControlsEnabled: false,
-              myLocationButtonEnabled: false,
-              mapToolbarEnabled: false,
             ),
             Positioned.fill(
               child: Material(

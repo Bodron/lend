@@ -1,3 +1,4 @@
+import '../widgets/configured_map.dart';
 import 'package:flutter/material.dart';
 import '../widgets/lend_back_top_bar.dart';
 import 'package:flutter/services.dart' show rootBundle, SystemUiOverlayStyle;
@@ -156,22 +157,24 @@ class _ExploreMapScreenState extends State<ExploreMapScreen> {
             color: _background,
             child: Stack(
               children: [
-                GoogleMap(
-                  style: _mapStyle,
-                  initialCameraPosition: CameraPosition(
-                    target: _initialTarget,
-                    zoom: widget.products.isEmpty ? 6 : 10,
+                ConfiguredMap(
+                  child: GoogleMap(
+                    style: _mapStyle,
+                    initialCameraPosition: CameraPosition(
+                      target: _initialTarget,
+                      zoom: widget.products.isEmpty ? 6 : 10,
+                    ),
+                    markers: markers,
+                    myLocationEnabled: _userLocation != null,
+                    myLocationButtonEnabled: _userLocation != null,
+                    mapToolbarEnabled: false,
+                    zoomControlsEnabled: false,
+                    compassEnabled: false,
+                    onMapCreated: (controller) {
+                      _mapController = controller;
+                      _showNearbyArea();
+                    },
                   ),
-                  markers: markers,
-                  myLocationEnabled: _userLocation != null,
-                  myLocationButtonEnabled: _userLocation != null,
-                  mapToolbarEnabled: false,
-                  zoomControlsEnabled: false,
-                  compassEnabled: false,
-                  onMapCreated: (controller) {
-                    _mapController = controller;
-                    _showNearbyArea();
-                  },
                 ),
                 Positioned(
                   left: 16,

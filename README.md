@@ -22,6 +22,52 @@ A new Flutter project.
 
 ## Run
 
+### macOS
+
+Flutter must be on your PATH. This project requires Dart 3.12.2 or newer
+within Dart 3.x (bundled with Flutter). Check your setup first:
+
+```bash
+flutter doctor -v
+flutter pub get
+```
+
+For iOS, install Xcode, complete its first-launch setup, and install an iOS
+simulator runtime. Follow the [Flutter iOS setup guide](https://docs.flutter.dev/platform-integration/ios/setup).
+This project has a CocoaPods Podfile; if Flutter reports missing CocoaPods,
+install it (with Homebrew installed: `brew install cocoapods`).
+
+Start the simulator from Xcode > Open Developer Tool > Device Hub (Xcode 27)
+or Simulator (older Xcode), then run:
+
+```bash
+cd /Users/bodronc/Flutter/lend
+bash run_lend.sh
+```
+
+Choose `2` to use the existing dev API without starting a local backend.
+Flutter will let you select a device if several are available. To target a
+specific simulator or connected phone:
+
+```bash
+flutter devices
+bash run_lend.sh -d <device-id>
+```
+
+The macOS runner reads `.env` as data and forwards Google sign-in and Maps
+settings just like the Windows runner. Copy `.env.example` to `.env` if needed
+(do not overwrite an existing `.env`), then add your Google configuration.
+The iOS Maps key is also written to the ignored `ios/Flutter/MapsKeys.xcconfig`.
+
+Option `1` requires a separately running local backend, which is not included
+in this checkout. The default iOS simulator API is `http://localhost:3000/api`;
+Android emulators use `http://10.0.2.2:3000/api`. A physical phone needs
+`APP_BASE_URL_LOCAL` set to a reachable address, such as your Mac's LAN IP.
+Running from a Mac does not require targeting the macOS desktop app; use an
+iOS simulator for the mobile app.
+
+### Windows
+
 On Windows, use the interactive runner:
 
 ```powershell
