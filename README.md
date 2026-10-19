@@ -1,14 +1,15 @@
 # lend
 
-## API și panou admin cu Docker
+## API, panou admin și site cu Docker
 
-După configurarea `backend/.env` (inclusiv `MONGODB_URI` și un `JWT_SECRET` sigur), pornește ambele servicii din rădăcina proiectului:
+După configurarea `backend/.env` (inclusiv `MONGODB_URI` și un `JWT_SECRET` sigur), pornește serviciile din rădăcina proiectului:
 
 ```powershell
 docker compose -f backend/docker-compose.yml up --build -d
 ```
 
-API: `http://localhost:3000/api/health`. Panou admin: `http://localhost:3001`.
+API: `http://localhost:3000/api/health`. Panou admin: `http://localhost:3001`. Site: `http://localhost:3002`.
+Site-ul rulează în mod de dezvoltare și preia automat modificările din folderul `site`.
 MongoDB este extern și trebuie să fie accesibil prin `MONGODB_URI` din `backend/.env`.
 Rolul `super_admin` se acordă o singură dată unui cont existent:
 

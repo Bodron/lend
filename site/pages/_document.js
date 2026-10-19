@@ -4,6 +4,7 @@ export default function Document() {
   return (
     <Html lang="ro">
       <Head>
+        <link rel="icon" type="image/svg+xml" href="/logo_mark.svg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link

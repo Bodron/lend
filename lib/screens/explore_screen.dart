@@ -18,16 +18,23 @@ import 'roommate_posts_screen.dart';
 import 'search_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
-  const ExploreScreen({super.key, this.showChrome = true, this.onNavigate});
+  const ExploreScreen({
+    super.key,
+    this.showChrome = true,
+    this.isActive = true,
+    this.onNavigate,
+  });
 
   final bool showChrome;
+  final bool isActive;
   final ValueChanged<int>? onNavigate;
 
   @override
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
+class _ExploreScreenState extends State<ExploreScreen>
+    with WidgetsBindingObserver {
   static const _primary = Color(0xFF30578F);
   static const _background = Color(0xFFF5F5F7);
   static const _text = Color(0xFF1B1B1B);
@@ -43,7 +50,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _exploreFuture = _loadExploreData();
+  }
+
+  @override
+  void didUpdateWidget(covariant ExploreScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.isActive && widget.isActive) {
+      _exploreFuture = _loadExploreData();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.isActive) {
+      _reloadProducts();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
@@ -71,7 +100,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
           FutureBuilder<_ExploreData>(
             future: _exploreFuture,
             builder: (context, snapshot) {
-              final products = snapshot.data?.products ?? const <LendProduct>[];
+              final products =
+                  snapshot.connectionState == ConnectionState.waiting
+                  ? const <LendProduct>[]
+                  : snapshot.data?.products ?? const <LendProduct>[];
               final categories = _categoriesFor(
                 snapshot.data?.categories ?? const <LendCategory>[],
               );
@@ -91,7 +123,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     child: _ExploreHeader(
                       categories: categories,
                       selectedIndex: selectedIndex,
-                      onSearch: () => _openSearch(products),
+                      onSearch: _openSearch,
                       onRoommates: _openRoommates,
                       onSelected: (index) {
                         setState(() {
@@ -215,12 +247,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  void _openSearch(List<LendProduct> products) {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => SearchScreen(initialProducts: products),
-      ),
-    );
+  void _openSearch() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen()));
   }
 
   void _openRoommates() {

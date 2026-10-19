@@ -7,15 +7,14 @@ import '../widgets/product_media_preview.dart';
 import 'product_details_screen.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key, this.initialProducts = const []});
-
-  final List<LendProduct> initialProducts;
+  const SearchScreen({super.key});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends State<SearchScreen>
+    with WidgetsBindingObserver {
   static const _primary = Color(0xFF30578F);
   static const _accent = Color(0xFF0B8FE8);
   static const _background = Color(0xFFF6F7FB);
@@ -34,14 +33,21 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    _productsFuture = widget.initialProducts.isEmpty
-        ? ProductsApi().findAll()
-        : Future.value(widget.initialProducts);
+    WidgetsBinding.instance.addObserver(this);
+    _productsFuture = ProductsApi().findAll();
     _controller.addListener(_handleQueryChanged);
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() => _productsFuture = ProductsApi().findAll());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_handleQueryChanged);
     _controller.dispose();
     _focusNode.dispose();
@@ -66,7 +72,10 @@ class _SearchScreenState extends State<SearchScreen> {
             child: FutureBuilder<List<LendProduct>>(
               future: _productsFuture,
               builder: (context, snapshot) {
-                final products = snapshot.data ?? widget.initialProducts;
+                final products =
+                    snapshot.connectionState == ConnectionState.waiting
+                    ? const <LendProduct>[]
+                    : snapshot.data ?? const <LendProduct>[];
                 final results = _matchingProducts(products);
                 final suggestions = _suggestionsFor(
                   GeneratedLocalizations.of(context),

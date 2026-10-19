@@ -191,7 +191,11 @@ class _MainShellState extends State<MainShell> {
                   child: IndexedStack(
                     index: _currentIndex,
                     children: [
-                      ExploreScreen(showChrome: false, onNavigate: _selectTab),
+                      ExploreScreen(
+                        showChrome: false,
+                        isActive: _currentIndex == 0,
+                        onNavigate: _selectTab,
+                      ),
                       MyListingsScreen(
                         showChrome: false,
                         onNavigate: _selectTab,

@@ -1,42 +1,24 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import BrandLogo from "./BrandLogo";
+import { useState } from "react";
 
 const navLinks = [
   { label: "Acasa", href: "/" },
   { label: "Functionalitati", href: "/features" },
-  { label: "Comunitate", href: "/community" },
-  { label: "Arhiva", href: "/archive" },
+  { label: "Anunțuri", href: "/archive" },
   { label: "Descarca", href: "/download" },
 ];
 
 export default function LegalLayout({ title, description, eyebrow, updated, children }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(maxScroll > 0 ? window.scrollY / maxScroll : 0);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   return (
     <>
       <Head>
-        <title>{title} | BorrowIt</title>
+        <title>{title} | PINLEND</title>
         <meta name="description" content={description} />
       </Head>
-
-      <div
-        className="fixed left-0 top-0 z-[70] h-0.5 w-full origin-left bg-[#4A70A9] transition-transform"
-        style={{ transform: `scaleX(${progress})` }}
-      />
 
       <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <Header onMenu={() => setMenuOpen(true)} />
@@ -81,27 +63,19 @@ function Header({ onMenu }) {
   return (
     <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
       <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <Link href="/" className="flex items-center gap-2" aria-label="BorrowIt">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black">
-            <span className="material-symbols-outlined text-white">sync_alt</span>
-          </div>
-          <span className="font-display text-[24px] font-bold uppercase tracking-normal text-black">BorrowIt</span>
-        </Link>
+        <BrandLogo />
         <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
           <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/archive">
-            Arhiva
-          </Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/community">
-            Povesti
+            Anunțuri
           </Link>
           <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
             <span className="h-px w-8 bg-black transition-all group-hover:w-12" />
             Meniu
           </button>
         </nav>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
+        <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black" href="/account">
           <span className="material-symbols-outlined text-[18px] text-white">person</span>
-        </div>
+        </Link>
       </div>
     </header>
   );
@@ -138,8 +112,7 @@ function Footer() {
         <FooterColumn title="Navigare">
           <Link href="/">Acasa</Link>
           <Link href="/features">Functionalitati</Link>
-          <Link href="/community">Povesti</Link>
-          <Link href="/archive">Arhiva</Link>
+          <Link href="/archive">Anunțuri</Link>
         </FooterColumn>
         <FooterColumn title="Legal">
           <Link href="/privacy-policy">Confidentialitate</Link>
@@ -148,7 +121,7 @@ function Footer() {
           <Link href="/account-deletion">Stergere cont</Link>
         </FooterColumn>
         <FooterColumn title="Contact">
-          <a href="mailto:support@borrowit.app">support@borrowit.app</a>
+          <a href="mailto:support@pinfers.com">support@pinfers.com</a>
           <Link href="/support">Suport</Link>
         </FooterColumn>
       </div>

@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
 import Link from "next/link";
+import BrandLogo from "../components/BrandLogo";
 import { useEffect, useState } from "react";
 
 const images = {
@@ -39,7 +40,6 @@ const features = [
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const heroLines = document.querySelectorAll(".hero-line");
@@ -63,9 +63,6 @@ export default function Home() {
     });
 
     const handleScroll = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(maxScroll > 0 ? window.scrollY / maxScroll : 0);
-
       reveals.forEach((el) => {
         const revealTop = el.getBoundingClientRect().top;
         if (revealTop < window.innerHeight - 150) {
@@ -118,17 +115,12 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>BorrowIt | Inchiriaza si ofera obiecte in comunitatea ta</title>
+        <title>PINLEND | Inchiriaza si ofera obiecte in comunitatea ta</title>
         <meta
           name="description"
-          content="BorrowIt este platforma prin care inchiriezi si oferi obiecte verificate, sigur si simplu, in comunitatea ta."
+          content="PINLEND este platforma prin care inchiriezi si oferi obiecte verificate, sigur si simplu, in comunitatea ta."
         />
       </Head>
-
-      <div
-        className="fixed left-0 top-0 z-[70] h-0.5 w-full origin-left bg-[#4A70A9] transition-transform"
-        style={{ transform: `scaleX(${progress})` }}
-      />
 
       <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <Header onMenu={() => setMenuOpen(true)} />
@@ -150,20 +142,10 @@ function Header({ onMenu }) {
   return (
     <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
       <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <Link href="/" className="flex items-center gap-2" aria-label="BorrowIt">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black">
-            <span className="material-symbols-outlined text-white">sync_alt</span>
-          </div>
-          <span className="font-display text-[24px] font-bold uppercase tracking-normal text-black">
-            BorrowIt
-          </span>
-        </Link>
+        <BrandLogo />
         <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
           <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/archive">
-            Arhiva
-          </Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/community">
-            Povesti
+            Anunțuri
           </Link>
           <button
             className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black"
@@ -174,9 +156,9 @@ function Header({ onMenu }) {
             Meniu
           </button>
         </nav>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
+        <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black" href="/account">
           <span className="material-symbols-outlined text-[18px] text-white">person</span>
-        </div>
+        </Link>
       </div>
     </header>
   );
@@ -186,8 +168,7 @@ function MegaMenu({ open, onClose }) {
   const links = [
     { label: "Acasa", href: "/" },
     { label: "Functionalitati", href: "/features" },
-    { label: "Comunitate", href: "/community" },
-    { label: "Arhiva", href: "/archive" },
+    { label: "Anunțuri", href: "/archive" },
     { label: "Descarca", href: "/download" },
   ];
 
@@ -246,11 +227,11 @@ function Hero() {
         </div>
         <div className="col-span-12 mt-12 lg:col-span-5 lg:col-start-8">
           <p className="hero-sub max-w-md text-xl leading-8 text-[#1a1c1c] transition-all delay-700 duration-1000">
-            BorrowIt este platforma prin care inchiriezi obiecte de calitate doar cand ai nevoie de ele si le oferi mai departe atunci cand stau nefolosite.
+            PINLEND este platforma prin care inchiriezi obiecte de calitate doar cand ai nevoie de ele si le oferi mai departe atunci cand stau nefolosite.
           </p>
           <div className="hero-sub mt-8 flex flex-col gap-5 transition-all delay-1000 duration-1000 sm:flex-row sm:items-center sm:gap-8">
             <a className="inline-flex justify-center bg-black px-10 py-5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:bg-[#30578F]" href="#impact-section">
-              Exploreaza arhiva
+              Explorează anunțurile
             </a>
             <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
               Deruleaza pentru detalii
@@ -313,7 +294,7 @@ function Impact() {
             </div>
           </div>
           <p className="text-base leading-6 text-[#444748]">
-            Fiecare inchiriere BorrowIt reduce nevoia de productie noua. Obiectele sunt folosite mai eficient, iar comunitatea castiga acces la lucruri bune fara risipa.
+            Fiecare inchiriere PINLEND reduce nevoia de productie noua. Obiectele sunt folosite mai eficient, iar comunitatea castiga acces la lucruri bune fara risipa.
           </p>
         </div>
       </div>
@@ -417,7 +398,7 @@ function ArchiveBreak() {
             <span className="block">fara improvizatii.</span>
           </h2>
           <p className="mt-8 max-w-[680px] text-lg leading-8 text-white/60 md:text-xl">
-            BorrowIt leaga cautarea, rezervarea, verificarea identitatii si contractul intr-un flux simplu, construit pentru incredere intre oameni reali.
+            PINLEND leaga cautarea, rezervarea, verificarea identitatii si contractul intr-un flux simplu, construit pentru incredere intre oameni reali.
           </p>
         </div>
 
@@ -499,7 +480,7 @@ function Footer() {
         <FooterColumn title="Navigare">
           <a href="#">Acasa</a>
           <Link href="/features">Functionalitati</Link>
-          <Link href="/archive">Arhiva</Link>
+          <Link href="/archive">Anunțuri</Link>
         </FooterColumn>
         <div className="flex flex-col gap-6 md:col-span-2">
           <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
@@ -517,7 +498,7 @@ function Footer() {
       </div>
       <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
         <span className="font-mono text-xs text-white/40">
-          © 2026 BorrowIt. Creat pentru economia colaborativa.
+          © 2026 PINLEND. Creat pentru economia colaborativa.
         </span>
         <div className="flex flex-wrap gap-6">
           <Link className="font-mono text-xs uppercase text-white/40" href="/privacy-policy">Confidentialitate</Link>

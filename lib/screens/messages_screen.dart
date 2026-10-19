@@ -705,7 +705,7 @@ class _OfferInfoRow extends StatelessWidget {
     final normalizedDate = dateMatch == null
         ? value
         : '${dateMatch.group(1)} – ${dateMatch.group(2)}';
-    final displayValue = value.replaceAll('â€“', '–');
+    final displayValue = value.replaceAll('\u00E2\u20AC\u201C', '–');
 
     final cleanDate = dateMatch == null
         ? displayValue

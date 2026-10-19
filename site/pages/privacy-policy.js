@@ -7,12 +7,12 @@ export default function PrivacyPolicy() {
       title="Politica de confidentialitate"
       eyebrow="Privacy Policy"
       updated="25 iulie 2026"
-      description="Explicam ce date colecteaza BorrowIt, cum le folosim, cu cine le partajam si ce drepturi ai asupra datelor tale."
+      description="Explicam ce date colecteaza PINLEND, cum le folosim, cu cine le partajam si ce drepturi ai asupra datelor tale."
     >
       <h2>1. Cine suntem</h2>
       <p>
-        BorrowIt este o platforma pentru inchirierea de obiecte intre utilizatori. Pentru intrebari despre datele tale, ne poti contacta la{" "}
-        <a href="mailto:privacy@borrowit.app">privacy@borrowit.app</a>.
+        PINLEND este o platforma pentru inchirierea de obiecte intre utilizatori. Pentru intrebari despre datele tale, ne poti contacta la{" "}
+        <a href="mailto:support@pinfers.com">support@pinfers.com</a>.
       </p>
 
       <h2>2. Date pe care le colectam</h2>
@@ -52,7 +52,7 @@ export default function PrivacyPolicy() {
       </p>
 
       <h2>8. Minori</h2>
-      <p>BorrowIt nu este destinat persoanelor sub 18 ani. Daca aflam ca am colectat date de la un minor, vom lua masuri pentru stergere.</p>
+      <p>PINLEND nu este destinat persoanelor sub 18 ani. Daca aflam ca am colectat date de la un minor, vom lua masuri pentru stergere.</p>
 
       <h2>9. Transferuri internationale</h2>
       <p>Datele pot fi procesate in UE, SUA sau alte tari, prin furnizori cu masuri contractuale si tehnice adecvate.</p>

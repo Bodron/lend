@@ -1,176 +1,105 @@
 /* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import BrandLogo from "../components/BrandLogo";
+import { useMemo, useState } from "react";
 
-const listingImages = {
-  leica:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuBw0wILOuL5WqkJpbfO8Fx3A8FMsUlijY-_Ivcqvyd001AYs4xCi3SWo_tvgQQJpEyEo_TSLiYZVayWVK0s5oidPQifftfRqccbCYFHft8CFlB27uiXdcH4Lvl9RdUZ0SkYuUZd9YR2Y7fgN6a3JtH5QlnJt7bgMUfK04sYeftqbxTKl8_EmHhQNbRfooDoHV6zUcDigjrk_kWwMj5bWKoGeaRb0IHRiJAgMdKp7GjwvkOZ2WzHgVA4paspzss2aI09wln8OnGqG10",
-  coat:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDvlVQa4yo7uYfleJIU7Vy0HaE-m5tBD1OnDztKxRQ2bVAa1UQ77tbYfLMXGULFH6GLRM-7LW_4FiLi48A8WxBU4yCKfQ9gzfNc3F0clyEdmwK9uc71xpy5nO_b7fg8m3gnz_34LG0a206uc6WL7q1kAKr4htgsyC_w0TmnAlhhSKcGNYb9ddnMkI1IoLn0FzM1xp9NoOFokT_KpR8frM-tdA6Bnikr--_SzzkpbKfgEyB0O0qg6tVNSFksJdUMaPA-bVMcVbxVaSk",
-  saw:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAfowsv9Hmfnfb5oP1qPvWs7WX7Q4S9vu3cmdELcCvkH5ZeqT8TMN6qdOnce8Ao3ruh8dfbIRMGhEzAWVqrdMMccJehJF0p7wiTw_6ARabh3V8C5apjZ5qa0kint6CLnQxlhF53XMGt8NR8Z1Z-VvZyObhGOhSwgoXfSg5wut7TmmQ6zL_vdlcXjmJC0xd8VKjMh8zpreO6HMJZDbgnwwHFB4Ys2qcpMY6Y3ojDQ08PBcNIt2NzHxmJEeXM0rgyYMqsCN1TYCuVqSw",
-  synth:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCs2K7RzUPa7S0pJD2kqzGIFg5z38vI33RTI_HtOGOTFRjeUU_kqin8INKhZE9on2ZrzgX6Phz17aqFZA_xga9Rce7voHydUsbuBDgZbTbj0Qfi3e6ebmP6VF2WRxvZtBCkAnpyKSPKy2d6QIlLGxR6HRW2vJ7tL5fAvXQ_XTgnaTDvugDbDpGIHC0wbcAVzUeD6o0J09--oZjLLHSVGNK7sWtcm59M5LsEa1-txe7VAjkVYLWS3o5RqbO7tjUo1_hBYCDkQrh1RkA",
-  boots:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuC73b-Wamopx94zzmc1TGA0pozSFGihK9ipeWy7mQtMo56-k3L9Tkwg6itn7RRObBXuj8CvHbLEZHioeriNqFRRjGt9y9BEK-t4QI8IYsROeehWj5CezXipcRuoq-MMp3r2p_1cfAJFxGz12m0mOLgN0a8ZuUapMyQLWXXnFwCrJxJfiPfmwWtt6gt9lCPOgnhSrW53iLf44UN6zHjMf4iwkZohO_8Uvr2369eshubGz3_YoMM5Dg-cbwMhA38YkLUQ7a4B5lRC1Q4",
-  drone:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCISQ7jShwxk_NB9QHps0h5_1QBI61Nc3wGQuKCNPZ7fq7sSvK-tXVuHjWL7kGOw4nq0CxfUSzAFjWCxguCz689T8fWU3fpUUiMX_TMYO_TjeEoecEV-WiPtck_eJ6EFXNZ6Uh9SAw8nhonE3P9SGkOQVLSzeQpf32lXUEDlVAWHIhLchkO-CBo6s8CxUxgj4szWn6E1c_nRWqFEirPwlgEMBGw_3a_vuSZ1eYa4o4xKBIK_9fw8On23232BIeQbO8YnzFAg92Pvsk",
-  hasselblad:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAlMPwJWDlplRN4rqS76QVG_M-4Pbm5rVe3NRwFRM9zvvQvztXo5aZzyz1rg393djxUZzebrEXEdThKqiHjU_MYFN5W7RhxPkCexeRSi6Cp_3YcF2ZZXt_SDaJjuzRnew82LqmQkru5T2KYtMWWd33t4U2cAWLQumOwLr1XvCFwiZcsVxWRSjaPckMxrXq--7GOCcyK913dzDoCyG35qu5LwyZYc18JtEVMVRxT1OAVjKIky6s6UDF6sDbkcGyTRgNM9J79hG_jsXU",
-  bag:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCCZ9NbhYqEJZaqdAGrBRsP7Sy30i5CDmUkB8MP5d09ewGjMhSV7bPDen-BIaYyn2P9CYPM_LKc2rV7V45v4MV4CkW_6wVFdH6wIKqq3AOBwsN5mZVNc4tl3hWtSFfNoyk9T-RohbPDMJ_Y0ITd4EKKos_dyY9ij0eFzhGpHngfO8xuWco8klWNAHF31Hyrh7tgxm3GCIDGtCYZ5I2JnIdxunhAcTw9qtXRwISc-mncGyAbcIGMS5JoZlZwpWEp0Q6uIph0fvCxF6A",
-};
+const cardAspects = ["aspect-[4/5]", "aspect-[3/4]", "aspect-square", "aspect-[4/3]"];
+const cardOffsets = ["", "md:mt-12", "", "xl:mt-16"];
 
-const categories = [
-  { id: "all", label: "Toate obiectele" },
-  { id: "electronics", label: "Electronice" },
-  { id: "tools", label: "Scule pro" },
-  { id: "fashion", label: "Moda premium" },
-];
+export async function getServerSideProps({ res }) {
+  try {
+    const apiUrl = (process.env.BACKEND_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
+    const response = await fetch(`${apiUrl}/products`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) throw new Error(`Products API returned ${response.status}`);
 
-const listings = [
-  {
-    title: "Leica M11 Black",
-    price: "390 RON / zi",
-    category: "electronics",
-    image: listingImages.leica,
-    aspect: "aspect-[4/5]",
-    offset: "",
-    action: "Vezi detalii",
-    text: "Aparat rangefinder profesional pentru fotografie de strada si proiecte editoriale.",
-  },
-  {
-    title: "Geaca puffer arhiva",
-    price: "550 RON / zi",
-    category: "fashion",
-    image: listingImages.coat,
-    aspect: "aspect-[3/4]",
-    offset: "md:mt-12",
-    action: "Inchiriaza acum",
-    text: "Piesa rara din colectia 2014, cu volum sculptural si umplutura premium.",
-  },
-  {
-    title: "Festool Kapex",
-    price: "210 RON / zi",
-    category: "tools",
-    image: listingImages.saw,
-    aspect: "aspect-square",
-    offset: "",
-    action: "Verifica disponibil",
-    text: "Fierastrau circular profesional pentru taieturi precise in atelier sau pe santier.",
-  },
-  {
-    title: "OP-1 Field",
-    price: "230 RON / zi",
-    category: "electronics",
-    image: listingImages.synth,
-    aspect: "aspect-[4/5]",
-    offset: "lg:-mt-20",
-    action: "Rezerva",
-    text: "Sintetizator si sequencer portabil pentru creatori, studio si live sessions.",
-  },
-  {
-    title: "Margiela Tabi",
-    price: "300 RON / zi",
-    category: "fashion",
-    image: listingImages.boots,
-    aspect: "aspect-[2/3]",
-    offset: "md:mt-4",
-    action: "Alege marimea",
-    text: "Ghete split-toe din piele, marimea 42, stare foarte buna.",
-  },
-  {
-    title: "Mavic 3 Pro",
-    price: "500 RON / zi",
-    category: "tools",
-    image: listingImages.drone,
-    aspect: "aspect-square",
-    offset: "",
-    action: "Vezi specificatii",
-    text: "Drona cu sistem triple camera si autonomie extinsa pentru filmari cine-grade.",
-  },
-  {
-    title: "Hasselblad 907X",
-    price: "670 RON / zi",
-    category: "electronics",
-    image: listingImages.hasselblad,
-    aspect: "aspect-[4/3]",
-    offset: "xl:mt-16",
-    action: "Detalii",
-    text: "Camera medium format cu design modular, potrivita pentru fotografie premium.",
-  },
-  {
-    title: "Birkin 35 Black",
-    price: "1.150 RON / zi",
-    category: "fashion",
-    image: listingImages.bag,
-    aspect: "aspect-[3/4]",
-    offset: "",
-    action: "Verifica autentic",
-    text: "Geanta premium din piele clemence, autentificata si documentata in aplicatie.",
-  },
-];
+    const products = await response.json();
+    if (!Array.isArray(products)) throw new Error("Products API returned an invalid list");
 
-export default function Archive() {
+    const listings = products
+      .filter((product) => product && product.isClosedByAdmin !== true)
+      .map((product, index) => {
+        const image = Array.isArray(product.images)
+          ? product.images.find((item) => item?.url && item.type !== "video" && item.contentType?.startsWith("image/"))
+          : null;
+        return {
+          id: String(product._id ?? product.id ?? ""),
+          slug: String(product.slug ?? ""),
+          title: String(product.title ?? ""),
+          category: String(product.categorySlug ?? ""),
+          categoryLabel: String(product.category ?? product.categorySlug ?? ""),
+          image: image?.url ?? null,
+          aspect: cardAspects[index % cardAspects.length],
+          offset: cardOffsets[index % cardOffsets.length],
+          price: `${new Intl.NumberFormat("ro-RO", { maximumFractionDigits: 2 }).format(Number(product.pricePerDay) || 0)} RON / ZI`,
+          text: String(product.description ?? ""),
+        };
+      })
+      .filter((item) => item.id && item.slug && item.title);
+
+    const categories = [
+      { id: "all", label: "Toate anunțurile" },
+      ...Array.from(new Map(listings.filter((item) => item.category).map((item) => [
+        item.category,
+        { id: item.category, label: item.categoryLabel },
+      ])).values()),
+    ];
+
+    return { props: { listings, categories, loadError: false } };
+  } catch (error) {
+    console.error("Could not load archive listings:", error);
+    res.statusCode = 503;
+    return {
+      props: {
+        listings: [],
+        categories: [{ id: "all", label: "Toate anunțurile" }],
+        loadError: true,
+      },
+    };
+  }
+}
+
+export default function Archive({ listings, categories, loadError }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
-  const [progress, setProgress] = useState(0);
   const [cursor, setCursor] = useState({ x: 0, y: 0, visible: false });
 
   const visibleListings = useMemo(() => {
     if (activeFilter === "all") return listings;
     return listings.filter((item) => item.category === activeFilter);
-  }, [activeFilter]);
+  }, [activeFilter, listings]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(maxScroll > 0 ? window.scrollY / maxScroll : 0);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   return (
     <>
       <Head>
-        <title>Arhiva BorrowIt | Obiecte disponibile pentru inchiriere</title>
+        <title>Anunțuri PINLEND | Obiecte disponibile pentru închiriere</title>
         <meta
           name="description"
-          content="Exploreaza arhiva BorrowIt cu obiecte verificate pentru inchiriere: electronice, scule profesionale si piese premium."
+          content="Explorează anunțurile PINLEND cu obiecte verificate pentru închiriere."
         />
       </Head>
-
-      <div
-        className="fixed left-0 top-0 z-[70] h-0.5 w-full origin-left bg-[#4A70A9] transition-transform"
-        style={{ transform: `scaleX(${progress})` }}
-      />
 
       <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <Header onMenu={() => setMenuOpen(true)} />
 
       <main className="w-full bg-[#f9f9f9] pt-20">
-        <section className="flex flex-col items-start justify-between gap-10 px-5 py-16 md:px-20 md:py-20 lg:flex-row lg:items-end">
-          <div className="max-w-3xl">
-            <p className="mb-4 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-[#444748]">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#4A70A9]" />
-              Inventar live / Romania
-            </p>
+        <section className="flex flex-col items-start gap-8 px-5 py-16 md:px-20 md:py-20">
+          <div>
             <h1 className="archive-title font-display font-extrabold uppercase text-black">
-              Arhiva
+              Anunțuri
             </h1>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex w-full flex-wrap gap-3">
             {categories.map((category) => {
               const active = activeFilter === category.id;
               return (
                 <button
-                  className={`border px-5 py-2 font-mono text-xs uppercase tracking-widest transition-all duration-300 ${
+                  className={`rounded-full border px-5 py-2 font-mono text-xs uppercase tracking-widest transition-all duration-300 ${
                     active
                       ? "border-black bg-black text-white"
                       : "border-black/20 text-black hover:border-black"
@@ -187,16 +116,27 @@ export default function Archive() {
         </section>
 
         <section className="min-h-screen px-5 pb-32 md:px-20 md:pb-40">
-          <div className="grid grid-cols-1 gap-8 transition-all duration-700 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {visibleListings.map((item) => (
-              <ListingCard
-                item={item}
-                key={item.title}
-                onCursorMove={setCursor}
-                onCursorLeave={() => setCursor((current) => ({ ...current, visible: false }))}
-              />
-            ))}
-          </div>
+          {loadError ? (
+            <div className="py-16 text-center text-[#444748]">
+              <p>Nu am putut încărca anunțurile. Încearcă din nou.</p>
+              <Link className="mt-6 inline-block border border-black px-5 py-2 font-mono text-xs uppercase tracking-widest text-black" href="/archive">
+                Reîncearcă
+              </Link>
+            </div>
+          ) : visibleListings.length === 0 ? (
+            <p className="py-16 text-center text-[#444748]">Nu există anunțuri în această categorie.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-8 transition-all duration-700 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {visibleListings.map((item) => (
+                <ListingCard
+                  item={item}
+                  key={item.id}
+                  onCursorMove={setCursor}
+                  onCursorLeave={() => setCursor((current) => ({ ...current, visible: false }))}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         <CustomCursor cursor={cursor} />
@@ -211,20 +151,10 @@ function Header({ onMenu }) {
   return (
     <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
       <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <Link href="/" className="flex items-center gap-2" aria-label="BorrowIt">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black">
-            <span className="material-symbols-outlined text-white">sync_alt</span>
-          </div>
-          <span className="font-display text-[24px] font-bold uppercase tracking-normal text-black">
-            BorrowIt
-          </span>
-        </Link>
+        <BrandLogo />
         <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
           <Link className="font-mono text-xs uppercase tracking-widest text-black" href="/archive">
-            Arhiva
-          </Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/community">
-            Povesti
+            Anunțuri
           </Link>
           <button
             className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black"
@@ -235,9 +165,9 @@ function Header({ onMenu }) {
             Meniu
           </button>
         </nav>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
+        <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black" href="/account">
           <span className="material-symbols-outlined text-[18px] text-white">person</span>
-        </div>
+        </Link>
       </div>
     </header>
   );
@@ -247,8 +177,7 @@ function MegaMenu({ open, onClose }) {
   const links = [
     { label: "Acasa", href: "/" },
     { label: "Functionalitati", href: "/features" },
-    { label: "Comunitate", href: "/community" },
-    { label: "Arhiva", href: "/archive" },
+    { label: "Anunțuri", href: "/archive" },
     { label: "Descarca", href: "/download" },
   ];
 
@@ -310,19 +239,27 @@ function ListingCard({ item, onCursorMove, onCursorLeave }) {
       onMouseLeave={handleMouseLeave}
       onMouseMove={handleMouseMove}
     >
-      <div
-        className="transition-all duration-500 ease-out"
+      <Link
+        aria-label={`Vezi detaliile anunțului ${item.title}`}
+        href={`/anunt/${encodeURIComponent(item.slug)}`}
+        className="block transition-all duration-500 ease-out"
         style={{ transform, transformStyle: "preserve-3d" }}
       >
-        <div className={`relative overflow-hidden bg-[#eeeeee] ${item.aspect}`}>
-          <img
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-            src={item.image}
-            alt={item.title}
-          />
+        <div className={`relative overflow-hidden rounded-xl bg-[#eeeeee] ${item.aspect}`}>
+          {item.image ? (
+            <img
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              src={item.image}
+              alt={item.title}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center font-mono text-xs uppercase tracking-widest text-[#444748]">
+              Fără imagine
+            </div>
+          )}
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
             <span className="border border-white px-4 py-2 font-mono text-xs uppercase tracking-widest text-white backdrop-blur-sm">
-              {item.action}
+              Vezi detalii
             </span>
           </div>
         </div>
@@ -335,9 +272,9 @@ function ListingCard({ item, onCursorMove, onCursorLeave }) {
               {item.price}
             </span>
           </div>
-          <p className="text-base leading-6 text-[#444748]/80">{item.text}</p>
+          <p className="line-clamp-3 text-base leading-6 text-[#444748]/80">{item.text}</p>
         </div>
-      </div>
+      </Link>
     </article>
   );
 }
@@ -389,7 +326,7 @@ function Footer() {
         <FooterColumn title="Navigare">
           <Link href="/">Acasa</Link>
           <Link href="/features">Functionalitati</Link>
-          <Link href="/archive">Arhiva</Link>
+          <Link href="/archive">Anunțuri</Link>
         </FooterColumn>
         <div className="flex flex-col gap-6 md:col-span-2">
           <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
@@ -407,7 +344,7 @@ function Footer() {
       </div>
       <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
         <span className="font-mono text-xs uppercase tracking-widest text-white/40">
-          © 2026 BorrowIt. Construit pentru economia de sharing.
+          © 2026 PINLEND. Construit pentru economia de sharing.
         </span>
         <div className="flex flex-wrap gap-6">
           <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/privacy-policy">

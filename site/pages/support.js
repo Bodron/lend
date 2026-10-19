@@ -4,20 +4,20 @@ import Link from "next/link";
 export default function Support() {
   return (
     <LegalLayout
-      title="Suport BorrowIt"
+      title="Suport PINLEND"
       eyebrow="Support"
       updated="25 iulie 2026"
       description="Pagina de suport pentru utilizatori, App Store review si Google Play. Gasesti aici contact, probleme frecvente si informatii despre cont."
     >
       <h2>Contact rapid</h2>
       <p>
-        Pentru suport general: <a href="mailto:support@borrowit.app">support@borrowit.app</a>
+        Pentru suport general: <a href="mailto:support@pinfers.com">support@pinfers.com</a>
       </p>
       <p>
-        Pentru confidentialitate: <a href="mailto:privacy@borrowit.app">privacy@borrowit.app</a>
+        Pentru confidentialitate: <a href="mailto:support@pinfers.com">support@pinfers.com</a>
       </p>
       <p>
-        Pentru termeni sau cereri legale: <a href="mailto:legal@borrowit.app">legal@borrowit.app</a>
+        Pentru termeni sau cereri legale: <a href="mailto:support@pinfers.com">support@pinfers.com</a>
       </p>
 
       <h2>Probleme frecvente</h2>
@@ -26,7 +26,7 @@ export default function Support() {
 
       <h3>Vreau sa sterg contul</h3>
       <p>
-        Foloseste pagina <Link href="/account-deletion">Stergere cont</Link> sau scrie la privacy@borrowit.app.
+        Foloseste pagina <Link href="/account-deletion">Stergere cont</Link> sau scrie la support@pinfers.com.
       </p>
 
       <h3>Am o problema cu o inchiriere</h3>

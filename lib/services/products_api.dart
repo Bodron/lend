@@ -28,6 +28,7 @@ class ProductsApi {
 
     return payload
         .whereType<Map<String, dynamic>>()
+        .where((product) => product['isClosedByAdmin'] != true)
         .map(LendProduct.fromJson)
         .toList();
   }

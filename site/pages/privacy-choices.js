@@ -20,7 +20,7 @@ export default function PrivacyChoices() {
 
       <h2>2. Cum trimiti o cerere</h2>
       <p>
-        Scrie la <a href="mailto:privacy@borrowit.app?subject=Cerere%20date%20personale%20BorrowIt">privacy@borrowit.app</a> si include emailul sau numarul de telefon asociat contului.
+        Scrie la <a href="mailto:support@pinfers.com?subject=Cerere%20date%20personale%20PINLEND">support@pinfers.com</a> si include emailul sau numarul de telefon asociat contului.
       </p>
 
       <h2>3. Verificarea cererii</h2>

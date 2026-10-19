@@ -1,3 +1,16 @@
+## Docker
+
+Din rădăcina proiectului, pornește site-ul împreună cu API-ul și panoul admin:
+
+```powershell
+docker compose -f backend/docker-compose.yml up --build -d
+```
+
+Deschide `http://localhost:3002`. Serverul Next.js rulează în mod de dezvoltare și reflectă modificările din folderul `site`.
+Pagina „Anunțuri” citește anunțurile publice din API la fiecare cerere; în Docker folosește `BACKEND_API_URL=http://api:3000/api`.
+
+Contul utilizatorului este la `http://localhost:3002/account`. Loginul folosește API-ul PINLEND, iar sesiunea este păstrată într-un cookie HttpOnly. Pentru întoarcerea din Stripe Connect către site, API-ul folosește `SITE_PUBLIC_URL` (implicit `http://localhost:3002` în Docker).
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
 
 ## Getting Started

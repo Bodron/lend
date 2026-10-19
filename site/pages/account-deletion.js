@@ -6,14 +6,14 @@ export default function AccountDeletion() {
       title="Stergere cont"
       eyebrow="Account deletion"
       updated="25 iulie 2026"
-      description="Aici poti solicita stergerea contului BorrowIt si a datelor asociate, conform cerintelor Google Play si regulilor de confidentialitate."
+      description="Aici poti solicita stergerea contului PINLEND si a datelor asociate, conform cerintelor Google Play si regulilor de confidentialitate."
     >
       <h2>1. Cum soliciti stergerea</h2>
       <p>
-        Trimite o cerere la <a href="mailto:privacy@borrowit.app?subject=Cerere%20stergere%20cont%20BorrowIt">privacy@borrowit.app</a> de pe adresa asociata contului tau sau include numarul de telefon folosit in aplicatie.
+        Trimite o cerere la <a href="mailto:support@pinfers.com?subject=Cerere%20stergere%20cont%20PINLEND">support@pinfers.com</a> de pe adresa asociata contului tau sau include numarul de telefon folosit in aplicatie.
       </p>
       <p>
-        Include in mesaj: numele, emailul contului, numarul de telefon si mentiunea clara „Solicit stergerea contului BorrowIt”.
+        Include in mesaj: numele, emailul contului, numarul de telefon si mentiunea clara „Solicit stergerea contului PINLEND”.
       </p>
 
       <h2>2. Ce stergem</h2>

@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import BrandLogo from "../components/BrandLogo";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const featureCards = [
@@ -40,7 +41,7 @@ const stats = [
     label: "Rating incredere",
     target: 4.9,
     suffix: "",
-    text: "Media ratingului pentru membrii verificati care folosesc BorrowIt.",
+    text: "Media ratingului pentru membrii verificati care folosesc PINLEND.",
   },
   {
     label: "Inventar activ",
@@ -75,7 +76,6 @@ const specs = [
 
 export default function FeaturesPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [horizontalHeight, setHorizontalHeight] = useState("180vh");
   const [counts, setCounts] = useState(["0", "0", "0"]);
   const horizontalSectionRef = useRef(null);
@@ -137,8 +137,6 @@ export default function FeaturesPage() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const maxPageScroll = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(maxPageScroll > 0 ? window.scrollY / maxPageScroll : 0);
       updateHorizontalPosition();
     };
 
@@ -178,17 +176,12 @@ export default function FeaturesPage() {
   return (
     <>
       <Head>
-        <title>Functionalitati BorrowIt | Siguranta, rezervari si incredere</title>
+        <title>Functionalitati PINLEND | Siguranta, rezervari si incredere</title>
         <meta
           name="description"
-          content="Descopera functionalitatile BorrowIt: verificare, garantii, contracte digitale, rezervari rapide si reputatie in comunitate."
+          content="Descopera functionalitatile PINLEND: verificare, garantii, contracte digitale, rezervari rapide si reputatie in comunitate."
         />
       </Head>
-
-      <div
-        className="fixed left-0 top-0 z-[70] h-0.5 w-full origin-left bg-[#4A70A9] transition-transform"
-        style={{ transform: `scaleX(${progress})` }}
-      />
 
       <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
       <Header onMenu={() => setMenuOpen(true)} />
@@ -206,7 +199,7 @@ export default function FeaturesPage() {
           </h1>
           <div className="flex w-full justify-end">
             <p className="max-w-xl text-xl leading-8 text-[#444748]">
-              Am reconstruit felul in care oamenii imprumuta obiecte. De la verificarea identitatii pana la rezervari rapide si contracte digitale, BorrowIt este gandit pentru acces sigur fara proprietate inutila.
+              Am reconstruit felul in care oamenii imprumuta obiecte. De la verificarea identitatii pana la rezervari rapide si contracte digitale, PINLEND este gandit pentru acces sigur fara proprietate inutila.
             </p>
           </div>
         </section>
@@ -361,27 +354,19 @@ function Header({ onMenu }) {
   return (
     <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
       <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <Link href="/" className="flex items-center gap-2" aria-label="BorrowIt">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black">
-            <span className="material-symbols-outlined text-white">sync_alt</span>
-          </div>
-          <span className="font-display text-[24px] font-bold uppercase tracking-normal text-black">BorrowIt</span>
-        </Link>
+        <BrandLogo />
         <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
           <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/archive">
-            Arhiva
-          </Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/community">
-            Povesti
+            Anunțuri
           </Link>
           <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
             <span className="h-px w-8 bg-black transition-all group-hover:w-12" />
             Meniu
           </button>
         </nav>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
+        <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black" href="/account">
           <span className="material-symbols-outlined text-[18px] text-white">person</span>
-        </div>
+        </Link>
       </div>
     </header>
   );
@@ -391,8 +376,7 @@ function MegaMenu({ open, onClose }) {
   const links = [
     { label: "Acasa", href: "/" },
     { label: "Functionalitati", href: "/features" },
-    { label: "Comunitate", href: "/community" },
-    { label: "Arhiva", href: "/archive" },
+    { label: "Anunțuri", href: "/archive" },
     { label: "Descarca", href: "/download" },
   ];
 
@@ -436,8 +420,7 @@ function Footer() {
         <FooterColumn title="Navigare">
           <Link href="/">Acasa</Link>
           <Link href="/features">Functionalitati</Link>
-          <Link href="/community">Povesti</Link>
-          <Link href="/archive">Arhiva</Link>
+          <Link href="/archive">Anunțuri</Link>
         </FooterColumn>
         <div className="flex flex-col gap-6 md:col-span-2">
           <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
@@ -448,7 +431,7 @@ function Footer() {
         </div>
       </div>
       <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
-        <span className="font-mono text-xs uppercase tracking-widest text-white/40">© 2026 BorrowIt. Construit pentru economia de sharing.</span>
+        <span className="font-mono text-xs uppercase tracking-widest text-white/40">© 2026 PINLEND. Construit pentru economia de sharing.</span>
         <div className="flex flex-wrap gap-6">
           <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/privacy-policy">Confidentialitate</Link>
           <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/terms-and-conditions">Termeni</Link>

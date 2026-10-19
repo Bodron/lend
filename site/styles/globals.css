@@ -34,6 +34,54 @@ a {
   text-decoration: none;
 }
 
+.account-input {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  border: 1px solid #c3c6d1;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.75rem 1rem;
+  outline: none;
+}
+
+.account-input:focus {
+  border-color: #30578f;
+  box-shadow: 0 0 0 3px #30578f22;
+}
+
+.account-card {
+  border-radius: 18px;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px #00000008;
+}
+
+.account-button,
+.account-button-light {
+  border-radius: 999px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.account-button {
+  background: #30578f;
+  color: #fff;
+}
+
+.account-button-light {
+  border: 1px solid #c3c6d1;
+  background: #fff;
+  color: #30578f;
+}
+
+.account-button:disabled,
+.account-button-light:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }
@@ -82,7 +130,11 @@ a {
   }
 }
 
-.archive-title,
+.archive-title {
+  font-size: clamp(2.75rem, 11vw, 9rem);
+  line-height: 0.9;
+}
+
 .community-title {
   font-size: clamp(4rem, 12vw, 9rem);
   line-height: 0.9;

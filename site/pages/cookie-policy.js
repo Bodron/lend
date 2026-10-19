@@ -6,7 +6,7 @@ export default function CookiePolicy() {
       title="Politica de cookies"
       eyebrow="Cookies"
       updated="25 iulie 2026"
-      description="Aceasta pagina explica modul in care BorrowIt poate folosi cookies si tehnologii similare pe site."
+      description="Aceasta pagina explica modul in care PINLEND poate folosi cookies si tehnologii similare pe site."
     >
       <h2>1. Ce sunt cookies</h2>
       <p>Cookies sunt fisiere mici salvate in browser pentru functionalitate, securitate, preferinte si masurarea performantei.</p>
@@ -23,7 +23,7 @@ export default function CookiePolicy() {
       <p>Poti bloca sau sterge cookies din setarile browserului. Unele functionalitati pot functiona limitat daca dezactivezi cookies strict necesare.</p>
 
       <h2>4. Contact</h2>
-      <p>Pentru intrebari despre cookies, scrie la <a href="mailto:privacy@borrowit.app">privacy@borrowit.app</a>.</p>
+      <p>Pentru intrebari despre cookies, scrie la <a href="mailto:support@pinfers.com">support@pinfers.com</a>.</p>
     </LegalLayout>
   );
 }
