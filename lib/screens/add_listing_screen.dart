@@ -1,3 +1,4 @@
+import '../widgets/configured_map.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:typed_data';
@@ -1389,31 +1390,33 @@ class _LocationPickerState extends State<_LocationPicker> {
           borderRadius: BorderRadius.circular(8),
           child: SizedBox(
             height: 220,
-            child: GoogleMap(
-              style: widget.mapStyle,
-              initialCameraPosition: CameraPosition(
-                target: widget.selectedLocation,
-                zoom: 13,
-              ),
-              markers: {
-                Marker(
-                  markerId: const MarkerId('listing-location'),
-                  position: widget.selectedLocation,
-                  draggable: true,
-                  onDragEnd: widget.onLocationChanged,
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueAzure,
-                  ),
+            child: ConfiguredMap(
+              child: GoogleMap(
+                style: widget.mapStyle,
+                initialCameraPosition: CameraPosition(
+                  target: widget.selectedLocation,
+                  zoom: 13,
                 ),
-              },
-              onMapCreated: (controller) {
-                _controller = controller;
-              },
-              onTap: widget.onLocationChanged,
-              myLocationButtonEnabled: false,
-              mapToolbarEnabled: false,
-              zoomControlsEnabled: false,
-              compassEnabled: false,
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('listing-location'),
+                    position: widget.selectedLocation,
+                    draggable: true,
+                    onDragEnd: widget.onLocationChanged,
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueAzure,
+                    ),
+                  ),
+                },
+                onMapCreated: (controller) {
+                  _controller = controller;
+                },
+                onTap: widget.onLocationChanged,
+                myLocationButtonEnabled: false,
+                mapToolbarEnabled: false,
+                zoomControlsEnabled: false,
+                compassEnabled: false,
+              ),
             ),
           ),
         ),

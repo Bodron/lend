@@ -7,6 +7,7 @@ import UIKit
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var identityInProgress = false
+  private var mapsConfigured = false
   private var pdfExportSession: PdfExportSession?
   override func application(
     _ application: UIApplication,
@@ -15,7 +16,7 @@ import UIKit
     if let apiKey = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
        !apiKey.isEmpty,
        !apiKey.hasPrefix("$(") {
-      GMSServices.provideAPIKey(apiKey)
+      mapsConfigured = GMSServices.provideAPIKey(apiKey)
     }
 
     let launched = super.application(application, didFinishLaunchingWithOptions: launchOptions)
@@ -33,6 +34,17 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    let mapsChannel = FlutterMethodChannel(
+      name: "lend/maps",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    mapsChannel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "isConfigured" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      result(self?.mapsConfigured ?? false)
+    }
     let downloadsChannel = FlutterMethodChannel(
       name: "lend/downloads",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()

@@ -1,3 +1,4 @@
+import '../widgets/configured_map.dart';
 import 'package:flutter/foundation.dart' show Factory;
 import 'package:flutter/gestures.dart'
     show EagerGestureRecognizer, OneSequenceGestureRecognizer;
@@ -559,34 +560,36 @@ class _ProductLocationMap extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            GoogleMap(
-              style: mapStyle,
-              initialCameraPosition: CameraPosition(
-                target: position,
-                zoom: product.latitude == null ? 12 : 15,
-              ),
-              markers: {
-                Marker(
-                  markerId: const MarkerId('product-location'),
-                  position: position,
-                  onTap: () => _showDirectionsSheet(context, position),
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueAzure,
+            ConfiguredMap(
+              child: GoogleMap(
+                style: mapStyle,
+                initialCameraPosition: CameraPosition(
+                  target: position,
+                  zoom: product.latitude == null ? 12 : 15,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('product-location'),
+                    position: position,
+                    onTap: () => _showDirectionsSheet(context, position),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueAzure,
+                    ),
                   ),
-                ),
-              },
-              myLocationButtonEnabled: false,
-              mapToolbarEnabled: false,
-              zoomControlsEnabled: false,
-              compassEnabled: false,
-              rotateGesturesEnabled: false,
-              tiltGesturesEnabled: false,
-              onTap: (_) => _showDirectionsSheet(context, position),
-              gestureRecognizers: {
-                Factory<OneSequenceGestureRecognizer>(
-                  EagerGestureRecognizer.new,
-                ),
-              },
+                },
+                myLocationButtonEnabled: false,
+                mapToolbarEnabled: false,
+                zoomControlsEnabled: false,
+                compassEnabled: false,
+                rotateGesturesEnabled: false,
+                tiltGesturesEnabled: false,
+                onTap: (_) => _showDirectionsSheet(context, position),
+                gestureRecognizers: {
+                  Factory<OneSequenceGestureRecognizer>(
+                    EagerGestureRecognizer.new,
+                  ),
+                },
+              ),
             ),
           ],
         ),

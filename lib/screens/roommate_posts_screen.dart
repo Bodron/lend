@@ -1,3 +1,4 @@
+import '../widgets/configured_map.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -859,48 +860,49 @@ class _RoommateLocationSheetState extends State<_RoommateLocationSheet> {
             borderRadius: BorderRadius.circular(16),
             child: SizedBox(
               height: 320,
-              child: GoogleMap(
-                style: _mapStyle,
-                initialCameraPosition: CameraPosition(
-                  target: _position,
-                  zoom: 11,
+              child: ConfiguredMap(
+                child: GoogleMap(
+                  style: _mapStyle,
+                  initialCameraPosition: CameraPosition(
+                    target: _position,
+                    zoom: 11,
+                  ),
+                  markers: {
+                    Marker(
+                      markerId: const MarkerId('roommate-location-filter'),
+                      position: _position,
+                      draggable: true,
+                      onDragEnd: _setPosition,
+                      icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueAzure,
+                      ),
+                    ),
+                  },
+                  circles: {
+                    Circle(
+                      circleId: const CircleId('roommate-location-radius'),
+                      center: _position,
+                      radius: _radiusKm * 1000,
+                      fillColor: _RoommatePostsScreenState._primary.withValues(
+                        alpha: 0.12,
+                      ),
+                      strokeColor: _RoommatePostsScreenState._primary
+                          .withValues(alpha: 0.45),
+                      strokeWidth: 2,
+                    ),
+                  },
+                  onTap: _setPosition,
+                  onMapCreated: (controller) => _controller = controller,
+                  gestureRecognizers: {
+                    Factory<OneSequenceGestureRecognizer>(
+                      () => EagerGestureRecognizer(),
+                    ),
+                  },
+                  myLocationButtonEnabled: false,
+                  mapToolbarEnabled: false,
+                  zoomControlsEnabled: false,
+                  compassEnabled: false,
                 ),
-                markers: {
-                  Marker(
-                    markerId: const MarkerId('roommate-location-filter'),
-                    position: _position,
-                    draggable: true,
-                    onDragEnd: _setPosition,
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueAzure,
-                    ),
-                  ),
-                },
-                circles: {
-                  Circle(
-                    circleId: const CircleId('roommate-location-radius'),
-                    center: _position,
-                    radius: _radiusKm * 1000,
-                    fillColor: _RoommatePostsScreenState._primary.withValues(
-                      alpha: 0.12,
-                    ),
-                    strokeColor: _RoommatePostsScreenState._primary.withValues(
-                      alpha: 0.45,
-                    ),
-                    strokeWidth: 2,
-                  ),
-                },
-                onTap: _setPosition,
-                onMapCreated: (controller) => _controller = controller,
-                gestureRecognizers: {
-                  Factory<OneSequenceGestureRecognizer>(
-                    () => EagerGestureRecognizer(),
-                  ),
-                },
-                myLocationButtonEnabled: false,
-                mapToolbarEnabled: false,
-                zoomControlsEnabled: false,
-                compassEnabled: false,
               ),
             ),
           ),
