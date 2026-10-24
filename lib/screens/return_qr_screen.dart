@@ -222,7 +222,7 @@ class _ReturnStatusBadge extends StatelessWidget {
                 style: const TextStyle(
                   color: ReturnQrScreen._text,
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -272,7 +272,7 @@ class _ReturnQrCard extends StatelessWidget {
                 color: ReturnQrScreen._text,
                 fontSize: 24,
                 height: 1.18,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 10),
@@ -402,7 +402,7 @@ class _ReturnItemSummary extends StatelessWidget {
                       color: ReturnQrScreen._muted,
                       fontSize: 11,
                       letterSpacing: 0.7,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -414,7 +414,7 @@ class _ReturnItemSummary extends StatelessWidget {
                       color: ReturnQrScreen._text,
                       fontSize: 18,
                       height: 1.2,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -464,7 +464,7 @@ class _SecondaryActionButton extends StatelessWidget {
           foregroundColor: ReturnQrScreen._muted,
           backgroundColor: Colors.white,
           side: const BorderSide(color: ReturnQrScreen._outlineVariant),
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
           ),
@@ -497,7 +497,7 @@ class _PrimaryActionButton extends StatelessWidget {
         style: FilledButton.styleFrom(
           backgroundColor: ReturnQrScreen._primary,
           foregroundColor: Colors.white,
-          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(999),
           ),
@@ -526,7 +526,7 @@ class _SecurityNote extends StatelessWidget {
               style: const TextStyle(
                 color: ReturnQrScreen._secondary,
                 fontSize: 14,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

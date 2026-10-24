@@ -352,7 +352,7 @@ class _LoginCard extends StatelessWidget {
               color: LoginScreen._text,
               fontSize: 28,
               height: 1.15,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
@@ -434,7 +434,7 @@ class _LoginCard extends StatelessWidget {
                       strings.signIn,
                       style: const TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
             ),
@@ -580,7 +580,7 @@ class _DividerLabel extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF7A828E),
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
             ),
           ),
@@ -674,7 +674,7 @@ class _CreateAccountPrompt extends StatelessWidget {
           ),
           child: Text(
             strings.createNewAccount,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
         ),
       ],
@@ -711,7 +711,7 @@ class _TrustBadge extends StatelessWidget {
                 style: const TextStyle(
                   color: LoginScreen._text,
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),

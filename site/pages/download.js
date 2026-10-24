@@ -1,8 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
+import { Input } from "../components/ui/input";
 import Link from "next/link";
 import BrandLogo from "../components/BrandLogo";
+import AccountAvatarLink from "../components/AccountAvatarLink";
 import { useEffect, useState } from "react";
+import StoreBadge from "../components/StoreBadge";
 
 const images = {
   qr:
@@ -88,9 +91,10 @@ export default function Download() {
                   onMouseMove={handleMagneticMove}
                 >
                   <button
-                    className="group relative flex items-center gap-4 overflow-hidden bg-black px-12 py-8 font-mono text-xs uppercase tracking-widest text-white transition-transform duration-300 ease-out hover:scale-110"
+                    className="group relative flex items-center gap-4 overflow-hidden rounded-full bg-black px-12 py-8 font-mono text-xs uppercase tracking-widest text-white transition-transform duration-300 ease-out hover:scale-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#4A70A9]"
                     style={{ transform: buttonTransform }}
                     type="button"
+                    onClick={() => document.getElementById("store-downloads")?.scrollIntoView({ behavior: "smooth", block: "center" })}
                   >
                     <span className="relative z-10 transition-transform" style={{ transform: labelTransform }}>
                       Descarca aplicatia
@@ -146,7 +150,7 @@ export default function Download() {
             </div>
           </section>
 
-          <section className="w-full border-y border-[#c4c7c7]/10 bg-[#eeeeee] px-5 py-24 md:px-20">
+          <section id="store-downloads" className="w-full scroll-mt-20 border-y border-[#c4c7c7]/10 bg-[#eeeeee] px-5 py-24 md:px-20">
             <div className="flex flex-col items-center justify-between gap-12 lg:flex-row">
               <div className="flex max-w-sm flex-col gap-4">
                 <h3 className="text-[32px] font-medium leading-10 text-black">Utilitate cross-platform</h3>
@@ -154,42 +158,18 @@ export default function Download() {
                   Sincronizează anunțurile tale intre dispozitive. Optimizat pentru iOS si Android.
                 </p>
               </div>
-              <div className="flex flex-wrap justify-center gap-8">
-                <StoreBadge icon="file_download" eyebrow="Descarca din" title="App Store" primary />
-                <StoreBadge icon="shop" eyebrow="Disponibil pe" title="Google Play" />
+              <div className="flex flex-wrap justify-center gap-4">
+                <StoreBadge store="apple" />
+                <StoreBadge store="google" />
               </div>
             </div>
           </section>
 
-          <div className="pointer-events-none fixed right-6 top-1/2 z-50 hidden -translate-y-1/2 mix-blend-difference [writing-mode:vertical-rl] lg:block">
-            <span className="font-mono text-xs uppercase tracking-[0.5em] text-white/40">
-              Release.V.2.0.4.Listings
-            </span>
-          </div>
         </div>
       </main>
 
       <Footer />
     </>
-  );
-}
-
-function StoreBadge({ icon, eyebrow, title, primary = false }) {
-  return (
-    <a
-      className={`group flex items-center gap-4 overflow-hidden px-8 py-4 transition-transform hover:-translate-y-1 ${
-        primary ? "bg-black text-white" : "border border-black text-black"
-      }`}
-      href="#"
-    >
-      <span className="material-symbols-outlined text-[32px]">{icon}</span>
-      <div className="flex flex-col">
-        <span className={`font-mono text-[10px] uppercase ${primary ? "text-white/60" : "text-[#444748]"}`}>
-          {eyebrow}
-        </span>
-        <span className="text-xl font-medium leading-8">{title}</span>
-      </div>
-    </a>
   );
 }
 
@@ -199,7 +179,7 @@ function Header({ onMenu }) {
       <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
         <BrandLogo />
         <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/archive">
+          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/">
             Anunțuri
           </Link>
           <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
@@ -207,9 +187,7 @@ function Header({ onMenu }) {
             Meniu
           </button>
         </nav>
-        <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black" href="/account">
-          <span className="material-symbols-outlined text-[18px] text-white">person</span>
-        </Link>
+        <AccountAvatarLink className="[&>span:last-child]:hidden" label="Contul meu" />
       </div>
     </header>
   );
@@ -217,9 +195,9 @@ function Header({ onMenu }) {
 
 function MegaMenu({ open, onClose }) {
   const links = [
-    { label: "Acasa", href: "/" },
+    { label: "Despre noi", href: "/despre-noi" },
     { label: "Functionalitati", href: "/features" },
-    { label: "Anunțuri", href: "/archive" },
+    { label: "Anunțuri", href: "/" },
     { label: "Descarca", href: "/download" },
   ];
 
@@ -250,7 +228,7 @@ function Footer() {
     <footer className="w-full bg-black px-5 py-32 md:px-20 md:py-40">
       <div className="mb-12 flex flex-col items-start justify-between gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end">
         <h2 className="max-w-4xl font-display text-6xl font-extrabold uppercase leading-none text-white md:text-[120px]">Gata sa imparti?</h2>
-        <Link className="bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
+        <Link className="rounded-full bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
           Incepe acum
         </Link>
       </div>
@@ -261,14 +239,14 @@ function Footer() {
           <a href="#">LinkedIn</a>
         </FooterColumn>
         <FooterColumn title="Navigare">
-          <Link href="/">Acasa</Link>
-          <Link href="/archive">Anunțuri</Link>
+          <Link href="/despre-noi">Despre noi</Link>
+          <Link href="/">Anunțuri</Link>
           <Link href="/download">Descarca</Link>
         </FooterColumn>
         <div className="flex flex-col gap-6 md:col-span-2">
           <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
           <form className="relative flex w-full items-center border-b border-white/20">
-            <input className="w-full bg-transparent py-4 text-xl leading-8 text-white outline-none placeholder:text-white/35" placeholder="Introdu adresa de email" type="email" />
+            <Input className="h-auto w-full rounded-none border-0 bg-transparent px-0 py-4 text-xl leading-8 text-white outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-white/35" placeholder="Introdu adresa de email" type="email" />
             <button className="material-symbols-outlined text-white" type="submit">arrow_forward</button>
           </form>
         </div>

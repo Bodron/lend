@@ -477,7 +477,7 @@ class _CalendarCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _AvailabilityManagementScreenState._text,
                       fontSize: 22,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -622,7 +622,7 @@ class _BlockForm extends StatelessWidget {
               style: const TextStyle(
                 color: _AvailabilityManagementScreenState._text,
                 fontSize: 18,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
@@ -722,7 +722,7 @@ class _BlocksList extends StatelessWidget {
               style: const TextStyle(
                 color: _AvailabilityManagementScreenState._text,
                 fontSize: 18,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
@@ -744,7 +744,7 @@ class _BlocksList extends StatelessWidget {
                   ),
                   title: Text(
                     _formatBlockedDays(context, block),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   subtitle: Text(
                     block.reason.isEmpty ? strings.unavailable : block.reason,
@@ -779,7 +779,7 @@ class _WeekDaysRow extends StatelessWidget {
                 style: const TextStyle(
                   color: _AvailabilityManagementScreenState._muted,
                   fontSize: 12,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -856,7 +856,7 @@ class _DayCell extends StatelessWidget {
             style: TextStyle(
               color: textColor,
               fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -909,7 +909,7 @@ class _LegendItem extends StatelessWidget {
           style: const TextStyle(
             color: _AvailabilityManagementScreenState._muted,
             fontSize: 12,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],

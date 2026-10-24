@@ -95,7 +95,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen>
                 strings.choose('Cum vei încasa?', 'How will you get paid?'),
                 style: const TextStyle(
                   fontSize: 22,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 8),
@@ -341,7 +341,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen>
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 25,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 7),
@@ -366,7 +366,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen>
                           style: const TextStyle(
                             color: _muted,
                             fontSize: 11,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: 1,
                           ),
                         ),
@@ -502,7 +502,7 @@ class _PayoutSettingsScreenState extends State<PayoutSettingsScreen>
                               ),
                               style: const TextStyle(
                                 color: _ink,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                                 fontSize: 16,
                               ),
                             ),

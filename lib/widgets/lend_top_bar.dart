@@ -55,7 +55,7 @@ class LendTopBar extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -104,7 +104,7 @@ class LendTopBar extends StatelessWidget {
           style: const TextStyle(
             color: Color(0xFF30578F),
             fontSize: 17,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

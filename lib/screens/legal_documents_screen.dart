@@ -15,6 +15,7 @@ class LegalGate extends StatefulWidget {
 class _LegalGateState extends State<LegalGate> {
   final _api = LegalApi();
   late Future<LegalAcceptanceStatus> _status = _load();
+  bool _showingSheet = false;
 
   Future<LegalAcceptanceStatus> _load() async {
     final token = await AuthSessionStore.getToken();
@@ -43,19 +44,61 @@ class _LegalGateState extends State<LegalGate> {
             ),
           );
         }
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState != ConnectionState.done ||
+            !snapshot.hasData) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
         if (snapshot.data!.current) return widget.child;
-        return LegalDocumentsScreen(
-          requireAcceptance: true,
-          onAccepted: () => setState(() => _status = _load()),
-        );
+        if (!_showingSheet) {
+          _showingSheet = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (!mounted) return;
+            await showLegalDocumentsSheet(
+              context,
+              requireAcceptance: true,
+              onAccepted: () => setState(() => _status = _load()),
+            );
+            if (mounted) setState(() => _showingSheet = false);
+          });
+        }
+        return widget.child;
       },
     );
   }
+}
+
+Future<void> showLegalDocumentsSheet(
+  BuildContext context, {
+  bool requireAcceptance = false,
+  VoidCallback? onAccepted,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: !requireAcceptance,
+    enableDrag: !requireAcceptance,
+    useSafeArea: true,
+    backgroundColor: const Color(0xFFF5F5F7),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    clipBehavior: Clip.antiAlias,
+    builder: (sheetContext) => PopScope(
+      canPop: !requireAcceptance,
+      child: FractionallySizedBox(
+        heightFactor: 0.94,
+        child: LegalDocumentsScreen(
+          requireAcceptance: requireAcceptance,
+          onAccepted: () {
+            Navigator.of(sheetContext).pop();
+            onAccepted?.call();
+          },
+        ),
+      ),
+    ),
+  );
 }
 
 class LegalDocumentsScreen extends StatefulWidget {
@@ -167,137 +210,172 @@ class _LegalDocumentsScreenState extends State<LegalDocumentsScreen> {
   @override
   Widget build(BuildContext context) {
     final isEnglish = Localizations.localeOf(context).languageCode == 'en';
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: !widget.requireAcceptance,
-        title: Text(isEnglish ? 'Legal documents' : 'Documente legale'),
-      ),
-      body: FutureBuilder<(List<LegalDocument>, LegalAcceptanceStatus?)>(
-        future: _data,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: TextButton(
-                onPressed: () => setState(() => _data = _load()),
+    return Column(
+      children: [
+        const SizedBox(height: 10),
+        Container(
+          width: 36,
+          height: 4,
+          decoration: BoxDecoration(
+            color: const Color(0xFFB7B7B7),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        SizedBox(
+          height: 58,
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              Expanded(
                 child: Text(
-                  isEnglish
-                      ? 'Retry loading documents'
-                      : 'Reîncearcă încărcarea documentelor',
+                  isEnglish ? 'Legal documents' : 'Documente legale',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            );
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final (documents, status) = snapshot.data!;
-          if (documents.isEmpty) {
-            return const Center(
-              child: Text('Documentele nu sunt disponibile.'),
-            );
-          }
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _checkReadToEnd(),
-          );
-          return Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 760),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.requireAcceptance
-                                ? (isEnglish
-                                      ? 'Read the documents below and scroll to the end to continue.'
-                                      : 'Citește documentele de mai jos și derulează până la final pentru a continua.')
-                                : (isEnglish
-                                      ? 'Current PINLEND documents and your acceptance record'
-                                      : 'Documentele PINLEND și dovada acceptării tale'),
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                          const SizedBox(height: 24),
-                          for (final document in documents) ...[
-                            Text(
-                              document.title,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${isEnglish ? 'Version' : 'Versiunea'} ${document.version}',
-                            ),
-                            if (status?.acceptedAt[document.id]
-                                case final acceptedAt?)
+              if (!widget.requireAcceptance)
+                IconButton(
+                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<(List<LegalDocument>, LegalAcceptanceStatus?)>(
+            future: _data,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: TextButton(
+                    onPressed: () => setState(() => _data = _load()),
+                    child: Text(
+                      isEnglish
+                          ? 'Retry loading documents'
+                          : 'Reîncearcă încărcarea documentelor',
+                    ),
+                  ),
+                );
+              }
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final (documents, status) = snapshot.data!;
+              if (documents.isEmpty) {
+                return const Center(
+                  child: Text('Documentele nu sunt disponibile.'),
+                );
+              }
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _checkReadToEnd(),
+              );
+              return Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(14, 16, 14, 32),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 760),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(
-                                '${isEnglish ? 'Accepted' : 'Acceptat'}: ${_formatDate(acceptedAt)}',
-                                style: const TextStyle(
-                                  color: Color(0xFF246A42),
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                widget.requireAcceptance
+                                    ? (isEnglish
+                                          ? 'Read the documents below and scroll to the end to continue.'
+                                          : 'Citește documentele de mai jos și derulează până la final pentru a continua.')
+                                    : (isEnglish
+                                          ? 'Current PINLEND documents and your acceptance record'
+                                          : 'Documentele PINLEND și dovada acceptării tale'),
+                                style: Theme.of(context).textTheme.bodyLarge,
                               ),
-                            const SizedBox(height: 16),
-                            SelectableText(
-                              document.body,
-                              style: const TextStyle(height: 1.5, fontSize: 15),
-                            ),
-                            const SizedBox(height: 32),
-                            const Divider(),
-                            const SizedBox(height: 24),
-                          ],
-                        ],
+                              const SizedBox(height: 24),
+                              for (final document in documents) ...[
+                                Text(
+                                  document.title,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineSmall,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${isEnglish ? 'Version' : 'Versiunea'} ${document.version}',
+                                ),
+                                if (status?.acceptedAt[document.id]
+                                    case final acceptedAt?)
+                                  Text(
+                                    '${isEnglish ? 'Accepted' : 'Acceptat'}: ${_formatDate(acceptedAt)}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF246A42),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                const SizedBox(height: 16),
+                                SelectableText(
+                                  document.body,
+                                  style: const TextStyle(
+                                    height: 1.5,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 32),
+                                const Divider(),
+                                const SizedBox(height: 24),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              if (widget.requireAcceptance)
-                SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (_error != null)
-                          Text(
-                            _error!,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        if (!_readToEnd)
-                          Text(
-                            isEnglish
-                                ? 'Scroll to the end to enable acceptance.'
-                                : 'Derulează până la final pentru a activa acceptarea.',
-                            textAlign: TextAlign.center,
-                          ),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: _readToEnd && !_submitting
-                                ? () => _accept(documents)
-                                : null,
-                            child: Text(
-                              _submitting
-                                  ? '...'
-                                  : isEnglish
-                                  ? 'I accept these documents'
-                                  : 'Accept aceste documente',
+                  if (widget.requireAcceptance)
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_error != null)
+                              Text(
+                                _error!,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4A70A9),
+                                  shape: const StadiumBorder(),
+                                ),
+                                onPressed: _readToEnd && !_submitting
+                                    ? () => _accept(documents)
+                                    : null,
+                                child: Text(
+                                  _submitting
+                                      ? '...'
+                                      : isEnglish
+                                      ? 'I accept these documents'
+                                      : 'Accept aceste documente',
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

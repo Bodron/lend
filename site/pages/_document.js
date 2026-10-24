@@ -1,8 +1,13 @@
-import { Html, Head, Main, NextScript } from "next/document";
+import Document, { Html, Head, Main, NextScript } from "next/document";
 
-export default function Document() {
-  return (
-    <Html lang="ro">
+export default class SiteDocument extends Document {
+  static async getInitialProps(ctx) {
+    const props = await Document.getInitialProps(ctx);
+    return { ...props, locale: ctx.locale || "ro" };
+  }
+
+  render() {
+    return <Html lang={this.props.locale}>
       <Head>
         <link rel="icon" type="image/svg+xml" href="/logo_mark.svg" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,6 +25,6 @@ export default function Document() {
         <Main />
         <NextScript />
       </body>
-    </Html>
-  );
+    </Html>;
+  }
 }

@@ -20,6 +20,7 @@ class RentalPeriodScreen extends StatefulWidget {
     this.initialStartDate,
     this.initialEndDate,
     this.negotiatedSubtotal,
+    this.offerId,
     this.lockSelection = false,
     this.rentalOrdersApi,
     this.enableRealtime = true,
@@ -30,6 +31,7 @@ class RentalPeriodScreen extends StatefulWidget {
   final DateTime? initialStartDate;
   final DateTime? initialEndDate;
   final int? negotiatedSubtotal;
+  final String? offerId;
   final bool lockSelection;
   final RentalOrdersApi? rentalOrdersApi;
   final bool enableRealtime;
@@ -496,6 +498,7 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                             rentalDays: _rentalDays,
                             totalPrice: _checkoutTotalPrice,
                             negotiatedSubtotal: widget.negotiatedSubtotal,
+                            offerId: widget.offerId,
                           ),
                         ),
                       );
@@ -598,7 +601,7 @@ class _ProductContextCard extends StatelessWidget {
                       color: _RentalPeriodScreenState._text,
                       fontSize: 14,
                       height: 1.35,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -669,7 +672,7 @@ class _CalendarCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _RentalPeriodScreenState._text,
                       fontSize: 24,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -796,7 +799,7 @@ class _WeekDaysRow extends StatelessWidget {
                   color: Color(0xFF737781),
                   fontSize: 12,
                   letterSpacing: 0.8,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -932,7 +935,7 @@ class _TimeSelectionCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _RentalPeriodScreenState._text,
                       fontSize: 20,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -986,7 +989,7 @@ class _TimeSelector extends StatelessWidget {
           style: const TextStyle(
             color: _RentalPeriodScreenState._muted,
             fontSize: 13,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
@@ -1016,7 +1019,7 @@ class _TimeSelector extends StatelessWidget {
                       ? _RentalPeriodScreenState._muted.withValues(alpha: 0.45)
                       : _RentalPeriodScreenState._text,
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
                 side: BorderSide(
                   color: selected
@@ -1154,7 +1157,7 @@ class _SummaryCard extends StatelessWidget {
                     ? _RentalPeriodScreenState._text
                     : const Color(0xFF737781),
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
@@ -1174,7 +1177,7 @@ class _SummaryCard extends StatelessWidget {
                           ? _RentalPeriodScreenState._text
                           : _RentalPeriodScreenState._text,
                       fontSize: highlighted ? 24 : 14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -1218,7 +1221,7 @@ class _TrustInfoCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _RentalPeriodScreenState._text,
                       fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1304,7 +1307,7 @@ class _PeriodActionBar extends StatelessWidget {
               icon: const Icon(Icons.shopping_cart_outlined),
               label: Text(
                 GeneratedLocalizations.of(context).addToCart,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
           );

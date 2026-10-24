@@ -105,6 +105,7 @@ class _MainShellState extends State<MainShell> {
         MaterialPageRoute<void>(
           builder: (_) => ProductChatScreen(
             productId: productId,
+            participantId: message.data['senderId'],
             productTitle: message.data['productTitle'] ?? 'Conversație',
             ownerName: 'Conversație',
           ),

@@ -344,7 +344,7 @@ class _ExploreHeader extends StatelessWidget {
                   color: _ExploreScreenState._text,
                   fontSize: 28,
                   height: 1.2,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -385,7 +385,7 @@ class _ExploreHeader extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -426,7 +426,7 @@ class _ExploreHeader extends StatelessWidget {
                 ).withValues(alpha: 0.15),
                 labelStyle: TextStyle(
                   color: selected ? Colors.white : _ExploreScreenState._text,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
                 side: BorderSide.none,
                 shape: RoundedRectangleBorder(
@@ -540,7 +540,7 @@ class _SectionHeader extends StatelessWidget {
           color: _ExploreScreenState._text,
           fontSize: 24,
           height: 1.25,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -669,7 +669,7 @@ class _RecommendedCard extends StatelessWidget {
                                 color: _ExploreScreenState._text,
                                 fontSize: 18,
                                 height: 1.25,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -756,7 +756,7 @@ class _NearbyCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _ExploreScreenState._text,
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -768,7 +768,7 @@ class _NearbyCard extends StatelessWidget {
                           style: const TextStyle(
                             color: _ExploreScreenState._text,
                             fontSize: 14,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -827,7 +827,7 @@ class _DistanceBadge extends StatelessWidget {
           style: const TextStyle(
             color: _ExploreScreenState._text,
             fontSize: 10,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -861,7 +861,7 @@ class _PriceText extends StatelessWidget {
       style: const TextStyle(
         color: _ExploreScreenState._text,
         fontSize: 16,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w700,
       ),
     );
   }

@@ -763,7 +763,7 @@ class _TrustBanner extends StatelessWidget {
                     style: const TextStyle(
                       color: Color(0xFF2B486C),
                       fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1016,7 +1016,7 @@ class _VideoMediaPreviewState extends State<_VideoMediaPreview> {
                   color: Colors.white,
                   fontSize: 12,
                   height: 1.2,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -1095,7 +1095,7 @@ class _VideoFallbackPreview extends StatelessWidget {
                     color: _AddListingScreenState._text,
                     fontSize: 12,
                     height: 1.2,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -1136,7 +1136,7 @@ class _VideoBadge extends StatelessWidget {
               style: TextStyle(
                 color: _AddListingScreenState._text,
                 fontSize: 10,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -1301,7 +1301,7 @@ class _AvailabilityScopeSelector extends StatelessWidget {
                     style: TextStyle(
                       color: _AddListingScreenState._text,
                       fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -1639,7 +1639,6 @@ class _RentalPriceRow extends StatelessWidget {
         title: Text(
           label,
           style: const TextStyle(
-            fontFamily: 'Inter',
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: _AddListingScreenState._text,
@@ -2026,7 +2025,7 @@ class _BottomActions extends StatelessWidget {
                     : strings.publishListing,
                 style: const TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),

@@ -112,7 +112,7 @@ class _HeroContent extends StatelessWidget {
             color: Colors.white,
             fontSize: titleSize,
             height: 1.08,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             letterSpacing: 0,
             shadows: const [
               Shadow(
@@ -179,7 +179,7 @@ class _PrimaryActionButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -225,7 +225,7 @@ class _FooterLinks extends StatelessWidget {
     final style = TextStyle(
       color: Colors.white.withValues(alpha: 0.60),
       fontSize: 10,
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.w700,
       letterSpacing: 1.4,
     );
 
@@ -236,20 +236,12 @@ class _FooterLinks extends StatelessWidget {
       runSpacing: 8,
       children: [
         InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const LegalDocumentsScreen(),
-            ),
-          ),
+          onTap: () => showLegalDocumentsSheet(context),
           child: Text(strings.terms, style: style),
         ),
         Text('•', style: style),
         InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => const LegalDocumentsScreen(),
-            ),
-          ),
+          onTap: () => showLegalDocumentsSheet(context),
           child: Text(strings.privacy, style: style),
         ),
         Text('•', style: style),

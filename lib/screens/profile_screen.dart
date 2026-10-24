@@ -617,7 +617,7 @@ class _ProfileHeader extends StatelessWidget {
                       color: _ProfileScreenState._text,
                       fontSize: 23,
                       height: 1.1,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -747,7 +747,7 @@ class _EditProfileCitySheetState extends State<_EditProfileCitySheet> {
               style: const TextStyle(
                 color: _ProfileScreenState._text,
                 fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 6),
@@ -848,7 +848,7 @@ class _ProfileCityCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _ProfileScreenState._text,
                       fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -909,7 +909,7 @@ class _PayoutCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _ProfileScreenState._text,
                       fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1042,7 +1042,7 @@ class _EditableProfileAvatar extends StatelessWidget {
           style: const TextStyle(
             color: Color(0xFF30578F),
             fontSize: 30,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -1072,7 +1072,7 @@ class _MetricCard extends StatelessWidget {
                 color: Color(0xFF737781),
                 fontSize: 11,
                 letterSpacing: 0.7,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 6),
@@ -1083,7 +1083,7 @@ class _MetricCard extends StatelessWidget {
               style: const TextStyle(
                 color: _ProfileScreenState._text,
                 fontSize: 24,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -1162,7 +1162,7 @@ class _AccountCard extends StatelessWidget {
                 color: Color(0xFF737781),
                 fontSize: 12,
                 letterSpacing: 1,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 18),
@@ -1194,11 +1194,7 @@ class _AccountCard extends StatelessWidget {
               label: Localizations.localeOf(context).languageCode == 'en'
                   ? 'Legal documents and acceptances'
                   : 'Documente legale și acceptări',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const LegalDocumentsScreen(),
-                ),
-              ),
+              onTap: () => showLegalDocumentsSheet(context),
             ),
             const Divider(height: 24, color: _ProfileScreenState._outline),
             _ActionRow(
@@ -1295,7 +1291,7 @@ class _TrustBadge extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
@@ -1349,7 +1345,7 @@ class _ProfileMessage extends StatelessWidget {
               style: const TextStyle(
                 color: _ProfileScreenState._text,
                 fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),

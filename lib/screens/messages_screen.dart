@@ -52,7 +52,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
   }
 
   String _threadKey(MessageThreadSummary thread) =>
-      '${thread.productId}:${thread.roommateInterestId ?? ''}';
+      '${thread.productId}:${thread.roommateInterestId ?? ''}:${thread.participantId ?? ''}';
 
   Future<void> _deleteThread(MessageThreadSummary thread) async {
     final key = _threadKey(thread);
@@ -65,6 +65,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
         accessToken: token,
         productId: thread.productId,
         roommateInterestId: thread.roommateInterestId,
+        participantId: thread.participantId,
       );
       if (!mounted) return;
       setState(() => _hiddenThreads.add(key));
@@ -118,6 +119,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         builder: (_) => ProductChatScreen(
                           productId: thread.productId,
                           roommateInterestId: thread.roommateInterestId,
+                          participantId: thread.participantId,
                           productTitle: thread.productTitle,
                           ownerName: thread.participantName,
                         ),
@@ -157,7 +159,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         fontSize: 16,
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ),
@@ -216,7 +218,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 11,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -375,7 +377,7 @@ class _ConversationAvatar extends StatelessWidget {
                 style: const TextStyle(
                   color: Color(0xFF30578F),
                   fontSize: 20,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               )
             : null,
@@ -564,14 +566,14 @@ class _OfferCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 mine ? 'Oferta ta' : 'Ofertă primită',
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               Text(
                 '${offer.amount} RON',
                 style: TextStyle(
                   fontSize: 17,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   color: color,
                 ),
               ),
@@ -731,7 +733,7 @@ class _OfferInfoRow extends StatelessWidget {
                 overflow: TextOverflow.visible,
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -782,7 +784,7 @@ class _RoommateProposalCard extends StatelessWidget {
                       : mine
                       ? 'Propunerea ta'
                       : 'Propunere de locuire',
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
               Text(
@@ -790,7 +792,7 @@ class _RoommateProposalCard extends StatelessWidget {
                 style: TextStyle(
                   color: color,
                   fontSize: 17,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -999,7 +1001,7 @@ class _ChatAvatar extends StatelessWidget {
               style: TextStyle(
                 color: const Color(0xFF30578F),
                 fontSize: 12,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             )
           : null,
@@ -1091,7 +1093,7 @@ class _RoommateProposalSheetState extends State<_RoommateProposalSheet> {
           children: [
             const Text(
               'Propunere pentru proprietar',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             Text(
@@ -1126,7 +1128,7 @@ class _RoommateProposalSheetState extends State<_RoommateProposalSheet> {
                     style: const TextStyle(
                       color: Color(0xFF30578F),
                       fontSize: 28,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -1333,7 +1335,7 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
                     child: Text(
                       'Trimite o ofertă',
                       style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
                   TextButton(
@@ -1405,7 +1407,7 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
                         '$_normalPrice RON',
                         style: const TextStyle(
                           fontSize: 25,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           color: Color(0xFF30578F),
                         ),
                       ),
@@ -1598,7 +1600,7 @@ class _OfferRangeCalendarState extends State<_OfferRangeCalendar> {
                             ? Colors.white
                             : Colors.black87,
                         fontWeight: isStart || isEnd
-                            ? FontWeight.w800
+                            ? FontWeight.w700
                             : FontWeight.w400,
                       ),
                     ),
@@ -1638,6 +1640,7 @@ class ProductChatScreen extends StatefulWidget {
     required this.productTitle,
     required this.ownerName,
     this.roommateInterestId,
+    this.participantId,
     this.contextLabel,
   });
 
@@ -1645,6 +1648,7 @@ class ProductChatScreen extends StatefulWidget {
   final String productTitle;
   final String ownerName;
   final String? roommateInterestId;
+  final String? participantId;
   final String? contextLabel;
 
   @override
@@ -1698,6 +1702,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         accessToken: token,
         productId: widget.productId,
         roommateInterestId: widget.roommateInterestId,
+        participantId: widget.participantId,
       );
       if (!mounted) return;
       setState(() {
@@ -1726,6 +1731,11 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
             return;
           }
           if (message.roommateInterestId != widget.roommateInterestId) return;
+          if (widget.participantId != null &&
+              message.senderId != widget.participantId &&
+              message.recipientId != widget.participantId) {
+            return;
+          }
           setState(() => _messages = [..._messages, message]);
         },
       );
@@ -1738,6 +1748,11 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
             if (data is! Map) return;
             final offer = RentalOffer.fromJson(Map<String, dynamic>.from(data));
             if (!mounted) return;
+            if (widget.participantId != null &&
+                offer.senderId != widget.participantId &&
+                offer.recipientId != widget.participantId) {
+              return;
+            }
             _upsertOffer(offer);
           },
         );
@@ -1801,6 +1816,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         accessToken: _token!,
         productId: widget.productId,
         roommateInterestId: widget.roommateInterestId,
+        recipientId: widget.participantId,
         body: body,
       );
       if (!mounted) return;
@@ -1980,6 +1996,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         accessToken: _token!,
         productId: widget.productId,
         roommateInterestId: widget.roommateInterestId,
+        recipientId: widget.participantId,
         body: proposal.encode(),
       );
       if (!mounted) return;
@@ -2048,6 +2065,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         accessToken: _token!,
         productId: widget.productId,
         roommateInterestId: widget.roommateInterestId,
+        recipientId: widget.participantId,
         body: acceptance.encode(),
       );
       await _api.send(
@@ -2145,6 +2163,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
             initialStartDate: offer.startDate,
             initialEndDate: offer.endDate,
             negotiatedSubtotal: offer.amount,
+            offerId: offer.id,
             lockSelection: true,
           ),
         ),
@@ -2199,7 +2218,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                         style: const TextStyle(
                           color: _blue,
                           fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       )
                     : null,
@@ -2286,7 +2305,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
                           widget.productTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 3),
                         const Text(

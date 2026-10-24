@@ -281,7 +281,7 @@ class _TransactionVerificationScreenState
               color: Colors.white,
               fontSize: 25,
               height: 1.12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
@@ -363,7 +363,7 @@ class _TransactionVerificationScreenState
                       style: const TextStyle(
                         color: _text,
                         fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -457,7 +457,7 @@ class _TransactionVerificationScreenState
             style: const TextStyle(
               color: _blue,
               fontSize: 13,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),

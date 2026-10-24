@@ -33,10 +33,13 @@ class MessagesApi {
     required String accessToken,
     required String productId,
     String? roommateInterestId,
+    String? participantId,
   }) async {
     final query = {
       if (roommateInterestId != null && roommateInterestId.isNotEmpty)
         'roommateInterestId': roommateInterestId,
+      if (participantId != null && participantId.isNotEmpty)
+        'participantId': participantId,
     };
     final response = await _client.delete(
       Uri.parse(
@@ -53,10 +56,13 @@ class MessagesApi {
     required String accessToken,
     required String productId,
     String? roommateInterestId,
+    String? participantId,
   }) async {
     final query = {
       if (roommateInterestId != null && roommateInterestId.isNotEmpty)
         'roommateInterestId': roommateInterestId,
+      if (participantId != null && participantId.isNotEmpty)
+        'participantId': participantId,
     };
     final response = await _client.get(
       Uri.parse(
@@ -72,6 +78,7 @@ class MessagesApi {
     required String productId,
     required String body,
     String? roommateInterestId,
+    String? recipientId,
   }) async {
     final response = await _client.post(
       Uri.parse('${AuthApi.baseUrl}/messages'),
@@ -83,6 +90,8 @@ class MessagesApi {
         'productId': productId,
         if (roommateInterestId != null && roommateInterestId.isNotEmpty)
           'roommateInterestId': roommateInterestId,
+        if (recipientId != null && recipientId.isNotEmpty)
+          'recipientId': recipientId,
         'body': body,
       }),
     );
@@ -174,6 +183,7 @@ class MessageThread {
   const MessageThread({
     required this.productId,
     this.roommateInterestId,
+    this.participantId,
     required this.productTitle,
     required this.ownerId,
     required this.ownerName,
@@ -185,6 +195,7 @@ class MessageThread {
 
   final String productId;
   final String? roommateInterestId;
+  final String? participantId;
   final String productTitle;
   final String ownerId;
   final String ownerName;
@@ -198,6 +209,7 @@ class MessageThread {
     return MessageThread(
       productId: (json['productId'] ?? '').toString(),
       roommateInterestId: _optionalString(json['roommateInterestId']),
+      participantId: _optionalString(json['participantId']),
       productTitle: (json['productTitle'] ?? '').toString(),
       ownerId: (json['ownerId'] ?? '').toString(),
       ownerName: (json['ownerName'] ?? '').toString(),
@@ -225,6 +237,7 @@ class MessageThreadSummary {
   const MessageThreadSummary({
     required this.productId,
     this.roommateInterestId,
+    this.participantId,
     required this.productTitle,
     required this.ownerName,
     required this.participantName,
@@ -237,6 +250,7 @@ class MessageThreadSummary {
 
   final String productId;
   final String? roommateInterestId;
+  final String? participantId;
   final String productTitle;
   final String ownerName;
   final String participantName;
@@ -251,6 +265,7 @@ class MessageThreadSummary {
     return MessageThreadSummary(
       productId: (json['productId'] ?? '').toString(),
       roommateInterestId: _optionalString(json['roommateInterestId']),
+      participantId: _optionalString(json['participantId']),
       productTitle: (json['productTitle'] ?? '').toString(),
       ownerName: (json['ownerName'] ?? '').toString(),
       participantName:
@@ -277,6 +292,7 @@ class Message {
   const Message({
     required this.id,
     required this.senderId,
+    this.recipientId,
     this.roommateInterestId,
     required this.body,
     required this.createdAt,
@@ -284,6 +300,7 @@ class Message {
 
   final String id;
   final String senderId;
+  final String? recipientId;
   final String? roommateInterestId;
   final String body;
   final DateTime? createdAt;
@@ -292,6 +309,7 @@ class Message {
     return Message(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       senderId: (json['senderId'] ?? '').toString(),
+      recipientId: _optionalString(json['recipientId']),
       roommateInterestId: _optionalString(json['roommateInterestId']),
       body: (json['body'] ?? '').toString(),
       createdAt: DateTime.tryParse((json['createdAt'] ?? '').toString()),
@@ -305,6 +323,7 @@ class RentalOffer {
     required this.amount,
     required this.status,
     required this.senderId,
+    this.recipientId,
     required this.startDate,
     required this.endDate,
     required this.rentalMode,
@@ -314,6 +333,7 @@ class RentalOffer {
   final int amount;
   final String status;
   final String senderId;
+  final String? recipientId;
   final DateTime startDate;
   final DateTime endDate;
   final String rentalMode;
@@ -323,6 +343,7 @@ class RentalOffer {
     amount: (json['amount'] as num?)?.toInt() ?? 0,
     status: (json['status'] ?? 'pending').toString(),
     senderId: (json['senderId'] ?? '').toString(),
+    recipientId: _optionalString(json['recipientId']),
     startDate:
         DateTime.tryParse((json['startDate'] ?? '').toString()) ??
         DateTime.now(),

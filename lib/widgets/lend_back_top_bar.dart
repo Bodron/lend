@@ -70,7 +70,7 @@ class LendBackTopBar extends StatelessWidget {
                         style: TextStyle(
                           color: foregroundColor,
                           fontSize: 20,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: -0.3,
                         ),
                       )
@@ -85,7 +85,7 @@ class LendBackTopBar extends StatelessWidget {
                             style: TextStyle(
                               color: foregroundColor,
                               fontSize: 20,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               letterSpacing: -0.3,
                             ),
                           ),

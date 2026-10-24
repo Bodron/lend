@@ -19,6 +19,7 @@ class RentalOrdersApi {
     required DateTime endDate,
     required RentalMode rentalMode,
     int? negotiatedSubtotal,
+    String? offerId,
     required String pickupTime,
     required String returnTime,
     double? renterLatitude,
@@ -38,6 +39,7 @@ class RentalOrdersApi {
     };
     if (negotiatedSubtotal != null) {
       body['negotiatedSubtotal'] = negotiatedSubtotal;
+      if (offerId != null) body['offerId'] = offerId;
     }
     if (renterLatitude != null) body['renterLatitude'] = renterLatitude;
     if (renterLongitude != null) body['renterLongitude'] = renterLongitude;

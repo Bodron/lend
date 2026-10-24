@@ -370,7 +370,7 @@ class _SuggestionList extends StatelessWidget {
                         style: const TextStyle(
                           color: _SearchScreenState._accent,
                           fontSize: 16,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       if (suggestion.subtitle.isNotEmpty) ...[
@@ -443,7 +443,7 @@ class _SearchResults extends StatelessWidget {
             style: const TextStyle(
               color: _SearchScreenState._text,
               fontSize: 17,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -504,7 +504,7 @@ class _SearchProductTile extends StatelessWidget {
                         color: _SearchScreenState._text,
                         fontSize: 16,
                         height: 1.18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -524,7 +524,7 @@ class _SearchProductTile extends StatelessWidget {
                       style: const TextStyle(
                         color: _SearchScreenState._primary,
                         fontSize: 15,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],

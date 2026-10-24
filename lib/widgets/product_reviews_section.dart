@@ -246,7 +246,7 @@ class _ReviewAvatar extends StatelessWidget {
               initial,
               style: const TextStyle(
                 color: Color(0xFF30578F),
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             )
           : null,
@@ -305,7 +305,7 @@ class _ReviewCard extends StatelessWidget {
                     review.reviewerName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -528,7 +528,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
             const Expanded(
               child: Text(
                 'Recenzii',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
             ),
             if (_eligibleOrderId != null)
@@ -550,7 +550,7 @@ class _ProductReviewsSectionState extends State<ProductReviewsSection> {
                   ),
                   textStyle: const TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

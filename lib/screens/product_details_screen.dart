@@ -20,6 +20,7 @@ import 'owner_listings_screen.dart';
 import 'rental_period_screen.dart';
 import 'roommate_posts_screen.dart';
 import 'viewings_screen.dart';
+import 'login_screen.dart';
 
 class ProductDetailsScreen extends StatefulWidget {
   const ProductDetailsScreen({super.key, required this.product});
@@ -45,6 +46,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
 
   RentalMode _rentalMode = RentalMode.day;
   bool _isFavorite = false;
+  bool _favoriteBusy = false;
   String? _mapStyle;
 
   @override
@@ -60,6 +62,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       if (mounted) {
         setState(() => _isFavorite = ids.contains(widget.product.id));
       }
+    }).catchError((Object error) {
+      // Favoritele necesită autentificare; butonul rămâne disponibil pentru conectare.
     });
   }
 
@@ -102,8 +106,31 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 child: _DetailsTopBar(
                   isFavorite: _isFavorite,
                   onFavorite: () async {
-                    final value = await FavoritesService.toggle(product.id);
-                    if (mounted) setState(() => _isFavorite = value);
+                    if (_favoriteBusy) return;
+                    setState(() => _favoriteBusy = true);
+                    try {
+                      final value = await FavoritesService.toggle(product.id);
+                      if (mounted) setState(() => _isFavorite = value);
+                    } on FavoritesException catch (error) {
+                      if (!mounted) return;
+                      if (error.requiresLogin) {
+                        Navigator.of(this.context).push(MaterialPageRoute<void>(
+                          builder: (_) => const LoginScreen(),
+                        ));
+                      } else {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          SnackBar(content: Text(error.message)),
+                        );
+                      }
+                    } catch (_) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          const SnackBar(content: Text('Nu am putut actualiza favoritele. Încearcă din nou.')),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => _favoriteBusy = false);
+                    }
                   },
                 ),
               ),
@@ -182,7 +209,7 @@ class _RoommateInviteCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _ProductDetailsScreenState._text,
                       fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -423,7 +450,7 @@ class _TitleBlock extends StatelessWidget {
             color: _ProductDetailsScreenState._text,
             fontSize: 28,
             height: 1.2,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
@@ -449,7 +476,7 @@ class _TitleBlock extends StatelessWidget {
               style: const TextStyle(
                 color: _ProductDetailsScreenState._text,
                 fontSize: 14,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(width: 8),
@@ -524,7 +551,7 @@ class _StatusBadge extends StatelessWidget {
               style: TextStyle(
                 color: color,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -622,7 +649,7 @@ class _ProductLocationMap extends StatelessWidget {
                   style: const TextStyle(
                     color: _ProductDetailsScreenState._text,
                     fontSize: 18,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -911,7 +938,7 @@ class _SpecCard extends StatelessWidget {
                   style: const TextStyle(
                     color: _ProductDetailsScreenState._text,
                     fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -953,7 +980,7 @@ class _OwnerCard extends StatelessWidget {
                 color: _ProductDetailsScreenState._muted,
                 fontSize: 12,
                 letterSpacing: 1.1,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 16),
@@ -1009,7 +1036,7 @@ class _OwnerCard extends StatelessWidget {
                           style: const TextStyle(
                             color: _ProductDetailsScreenState._text,
                             fontSize: 24,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -1059,7 +1086,7 @@ class _OwnerCard extends StatelessWidget {
                 ),
                 child: Text(
                   GeneratedLocalizations.of(context).viewOwnerListings,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -1090,7 +1117,7 @@ class _OwnerCard extends StatelessWidget {
                 ),
                 child: Text(
                   GeneratedLocalizations.of(context).sendMessage,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -1130,7 +1157,7 @@ class _ProtectCard extends StatelessWidget {
                     style: TextStyle(
                       color: _ProductDetailsScreenState._secondary,
                       fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1217,7 +1244,7 @@ class _BottomActionBar extends StatelessWidget {
               style: const TextStyle(
                 color: _ProductDetailsScreenState._text,
                 fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -1267,7 +1294,7 @@ class _BottomActionBar extends StatelessWidget {
                               maxLines: 1,
                               softWrap: false,
                               style: const TextStyle(
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -1347,7 +1374,7 @@ class _SectionTitle extends StatelessWidget {
       style: const TextStyle(
         color: _ProductDetailsScreenState._text,
         fontSize: 24,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
@@ -1368,7 +1395,7 @@ class _OwnerStat extends StatelessWidget {
           style: const TextStyle(
             color: _ProductDetailsScreenState._text,
             fontSize: 18,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 4),

@@ -1,6 +1,8 @@
 import Head from "next/head";
+import { Input } from "../components/ui/input";
 import Link from "next/link";
 import BrandLogo from "../components/BrandLogo";
+import AccountAvatarLink from "../components/AccountAvatarLink";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const featureCards = [
@@ -356,7 +358,7 @@ function Header({ onMenu }) {
       <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
         <BrandLogo />
         <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/archive">
+          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/">
             Anunțuri
           </Link>
           <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
@@ -364,9 +366,7 @@ function Header({ onMenu }) {
             Meniu
           </button>
         </nav>
-        <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black" href="/account">
-          <span className="material-symbols-outlined text-[18px] text-white">person</span>
-        </Link>
+        <AccountAvatarLink className="[&>span:last-child]:hidden" label="Contul meu" />
       </div>
     </header>
   );
@@ -374,9 +374,9 @@ function Header({ onMenu }) {
 
 function MegaMenu({ open, onClose }) {
   const links = [
-    { label: "Acasa", href: "/" },
+    { label: "Despre noi", href: "/despre-noi" },
     { label: "Functionalitati", href: "/features" },
-    { label: "Anunțuri", href: "/archive" },
+    { label: "Anunțuri", href: "/" },
     { label: "Descarca", href: "/download" },
   ];
 
@@ -418,14 +418,14 @@ function Footer() {
           <a href="#">LinkedIn</a>
         </FooterColumn>
         <FooterColumn title="Navigare">
-          <Link href="/">Acasa</Link>
+          <Link href="/despre-noi">Despre noi</Link>
           <Link href="/features">Functionalitati</Link>
-          <Link href="/archive">Anunțuri</Link>
+          <Link href="/">Anunțuri</Link>
         </FooterColumn>
         <div className="flex flex-col gap-6 md:col-span-2">
           <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
           <form className="relative flex w-full items-center border-b border-white/20">
-            <input className="w-full bg-transparent py-4 text-xl leading-8 text-white outline-none placeholder:text-white/35" placeholder="Introdu adresa de email" type="email" />
+            <Input className="h-auto w-full rounded-none border-0 bg-transparent px-0 py-4 text-xl leading-8 text-white outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-white/35" placeholder="Introdu adresa de email" type="email" />
             <button className="material-symbols-outlined text-white" type="submit">arrow_forward</button>
           </form>
         </div>

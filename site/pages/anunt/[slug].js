@@ -1,8 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
+import { Textarea } from "../../components/ui/textarea";
 import Link from "next/link";
-import { useState } from "react";
-import BrandLogo from "../../components/BrandLogo";
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useState } from "react";
+import PublicHeader from "../../components/PublicHeader";
+import UserAvatar from "../../components/UserAvatar";
+import PinlendMap from "../../components/PinlendMap";
+import { getBackendApiUrl } from "../../lib/backendApi";
+import { accountRequest } from "../../lib/accountRequest";
+import { favoriteIds, setFavorite as saveFavorite } from "../../lib/favorites";
+import { useToastError } from "../../lib/useToastError";
+import { listingsWithMapLocations } from "../../lib/mapLocations";
+import { getPublicProducts } from "../../lib/publicProductsServer";
 
 const money = new Intl.NumberFormat("ro-RO", { maximumFractionDigits: 2 });
 
@@ -26,7 +36,7 @@ function availableModes(product) {
 }
 
 export async function getServerSideProps({ params, res }) {
-  const apiUrl = (process.env.BACKEND_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
+  const apiUrl = getBackendApiUrl();
   const slug = String(params.slug || "");
 
   try {
@@ -47,7 +57,7 @@ export async function getServerSideProps({ params, res }) {
       productId
         ? fetch(`${apiUrl}/reviews/product/${encodeURIComponent(productId)}`, { cache: "no-store", signal: AbortSignal.timeout(8000) })
         : Promise.resolve(null),
-      fetch(`${apiUrl}/products`, { cache: "no-store", signal: AbortSignal.timeout(10000) }),
+      getPublicProducts(),
     ]);
     try {
       if (reviewsResult.status === "fulfilled" && reviewsResult.value?.ok) {
@@ -58,8 +68,8 @@ export async function getServerSideProps({ params, res }) {
       console.error("Could not read listing reviews:", error);
     }
     try {
-      if (listingsResult.status === "fulfilled" && listingsResult.value.ok) {
-        const payload = await listingsResult.value.json();
+      if (listingsResult.status === "fulfilled") {
+        const payload = listingsResult.value;
         if (Array.isArray(payload)) {
           ownerListings = payload
             .filter((item) => item && item.isClosedByAdmin !== true && String(item._id ?? item.id ?? "") !== productId)
@@ -88,8 +98,30 @@ export async function getServerSideProps({ params, res }) {
 }
 
 export default function ListingDetails({ product, reviews, ownerListings, loadError }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
   const [activeMedia, setActiveMedia] = useState(0);
+  const [favorite, setFavorite] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const [, setFavoriteError] = useToastError();
+  useEffect(() => {
+    if (!product) return;
+    let active = true;
+    favoriteIds().then((ids) => { if (active) setFavorite(ids.includes(String(product._id || product.id))); }).catch(() => {});
+    return () => { active = false; };
+  }, [product]);
+  async function changeFavorite() {
+    if (favoriteBusy) return;
+    setFavoriteBusy(true);
+    setFavoriteError("");
+    try {
+      await saveFavorite(String(product._id || product.id), !favorite);
+      setFavorite(!favorite);
+    } catch (error) {
+      if (error.status === 401) {
+        router.push(`/account?returnTo=${encodeURIComponent(router.asPath)}`);
+      } else setFavoriteError(error.message);
+    } finally { setFavoriteBusy(false); }
+  }
   const modes = product ? availableModes(product) : [];
   const [selectedMode, setSelectedMode] = useState(modes[0]?.id ?? "day");
   const currentMode = modes.find((mode) => mode.id === selectedMode) ?? modes[0];
@@ -97,25 +129,27 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
     ? product.images.filter((item) => item?.url)
     : [];
   const activeItem = media[activeMedia] ?? media[0];
+  const mapPoints = useMemo(() => {
+    if (!product) return [];
+    return listingsWithMapLocations([{ id: String(product._id || product.id || "listing"), latitude: product.latitude, longitude: product.longitude, city: product.city, title: product.title }]);
+  }, [product]);
 
   if (loadError) {
     return (
       <>
         <Head><title>Anunț indisponibil | PINLEND</title></Head>
-        <SiteHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        <PublicHeader current="/" />
         <main className="mx-auto min-h-screen max-w-4xl px-5 pb-24 pt-40 text-center md:px-20">
           <h1 className="font-display text-4xl font-extrabold">Nu am putut încărca anunțul.</h1>
           <p className="mt-5 text-[#434750]">Încearcă din nou peste câteva momente.</p>
-          <Link className="mt-8 inline-block rounded-full bg-[#30578F] px-7 py-3 font-bold text-white" href="/archive">Înapoi la anunțuri</Link>
+          <Link className="mt-8 inline-block rounded-full bg-[#30578F] px-7 py-3 font-bold text-white" href="/">Înapoi la anunțuri</Link>
         </main>
       </>
     );
   }
 
   const description = product.description || `Descoperă ${product.title} pe PINLEND.`;
-  const hasCoordinates = Number.isFinite(Number(product.latitude)) && Number.isFinite(Number(product.longitude))
-    && product.latitude != null && product.longitude != null;
-  const mapUrl = hasCoordinates ? makeMapUrl(Number(product.latitude), Number(product.longitude)) : null;
+  const hasMapLocation = mapPoints.length > 0;
   const rating = Number(product.rating) || 0;
   const isAvailable = product.isAvailable !== false;
   const ownerInitial = String(product.ownerName || "P").trim().charAt(0).toUpperCase();
@@ -123,14 +157,14 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
   return (
     <>
       <Head>
-        <title>{product.title} | PINLEND</title>
+        <title>{`${product.title} | PINLEND`}</title>
         <meta name="description" content={description.slice(0, 160)} />
       </Head>
-      <SiteHeader menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <PublicHeader current="/" />
 
       <main className="mx-auto max-w-[1600px] px-5 pb-36 pt-28 md:px-12 lg:px-20 lg:pt-32">
         <nav aria-label="Navigare" className="mb-8 flex flex-wrap items-center gap-2 font-mono text-xs uppercase tracking-widest text-[#434750]">
-          <Link className="hover:text-[#30578F]" href="/archive">Anunțuri</Link>
+          <Link className="hover:text-[#30578F]" href="/">Anunțuri</Link>
           <span>/</span>
           <span className="text-black">{product.category || "Detalii"}</span>
         </nav>
@@ -197,19 +231,17 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
             <section className="order-3 rounded-[18px] bg-white p-6 shadow-sm md:p-8 lg:mt-10">
               <h2 className="text-2xl font-extrabold text-[#1B1B1B]">Locație</h2>
               <p className="mt-2 text-[#434750]">{[product.address, product.city].filter(Boolean).join(", ") || "Locația nu este specificată."}</p>
-              {mapUrl && (
-                <div className="mt-5 overflow-hidden rounded-[14px]">
-                  <iframe className="h-64 w-full border-0" loading="lazy" referrerPolicy="no-referrer" src={mapUrl} title={`Locația anunțului ${product.title}`} />
-                </div>
-              )}
-              {hasCoordinates && (
-                <a className="mt-4 inline-flex items-center gap-2 font-bold text-[#30578F]" href={`https://www.google.com/maps/search/?api=1&query=${product.latitude},${product.longitude}`} rel="noopener noreferrer" target="_blank">
-                  Vezi indicațiile <span className="material-symbols-outlined text-lg">open_in_new</span>
+              {hasMapLocation && <PinlendMap className="mt-5 h-72 w-full" points={mapPoints} selectedId={mapPoints[0].id} />}
+              {mapPoints[0]?.approximate && <p className="mt-2 text-xs text-[#626977]">Poziție aproximativă bazată pe oraș. Adresa nu este marcată exact pe hartă.</p>}
+              {hasMapLocation && (
+                <a className="mt-4 inline-flex items-center gap-2 font-bold text-[#30578F]" href={`https://www.openstreetmap.org/?mlat=${mapPoints[0].latitude}&mlon=${mapPoints[0].longitude}#map=15/${mapPoints[0].latitude}/${mapPoints[0].longitude}`} rel="noopener noreferrer" target="_blank">
+                  Deschide în OpenStreetMap <span className="material-symbols-outlined text-lg">open_in_new</span>
                 </a>
               )}
             </section>
 
             <Reviews reviews={reviews} />
+            <ReviewComposer productId={String(product._id || product.id)} />
             {ownerListings.length > 0 && <OwnerListings listings={ownerListings} />}
           </div>
 
@@ -227,14 +259,16 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
                 </span>
                 {product.availabilityScope === "national" && <span className="rounded-full bg-[#446085]/10 px-3 py-2 text-xs font-bold text-[#446085]">Disponibil în toată țara</span>}
               </div>
+              <button aria-pressed={favorite} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#30578F]" disabled={favoriteBusy} onClick={changeFavorite} type="button"><span className="material-symbols-outlined">{favorite ? "favorite" : "favorite_border"}</span>{favorite ? "Salvat la favorite" : "Salvează la favorite"}</button>
+              
 
               {modes.length > 0 && (
                 <>
-                  <div className="mt-8 inline-flex flex-wrap gap-1 rounded-full bg-[#F3F3F3] p-1" aria-label="Perioada de închiriere">
+                  <div className="mt-8 flex w-fit max-w-full flex-wrap gap-1 rounded-full bg-[#F3F3F3] p-1" aria-label="Perioada de închiriere">
                     {modes.map((mode) => (
                       <button
                         aria-pressed={selectedMode === mode.id}
-                        className={`rounded-full px-5 py-2 text-sm font-bold transition-colors ${selectedMode === mode.id ? "bg-[#30578F] text-white" : "text-[#434750] hover:bg-white"}`}
+                        className={`rounded-full px-5 py-2 text-sm font-bold transition-[background-color,color,box-shadow] duration-150 ${selectedMode === mode.id ? "bg-[#30578F] text-white shadow-[0_2px_6px_#00000014]" : "text-[#434750] hover:bg-white"}`}
                         key={mode.id}
                         onClick={() => setSelectedMode(mode.id)}
                         type="button"
@@ -246,12 +280,12 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
                   <p className="mt-6 text-3xl font-extrabold text-[#1B1B1B]">{formatRon(currentMode.price)} <span className="text-base font-semibold text-[#434750]">{currentMode.suffix}</span></p>
                 </>
               )}
-              <Link className="mt-7 flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#30578F] px-6 py-3 text-center font-bold text-white transition-colors hover:bg-[#23436F]" href="/download">
-                {isAvailable ? "Închiriază în aplicație" : "Vezi disponibilitatea în aplicație"} <span className="material-symbols-outlined text-lg">arrow_forward</span>
+              <Link className="mt-7 flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#30578F] px-6 py-3 text-center font-bold text-white transition-colors hover:bg-[#23436F]" href={`/inchiriaza/${encodeURIComponent(product.slug)}?mode=${selectedMode}`}>
+                {isAvailable ? "Închiriază" : "Vezi disponibilitatea"} <span className="material-symbols-outlined text-lg">arrow_forward</span>
               </Link>
               {product.viewingsEnabled && (
                 <p className="mt-4 rounded-xl bg-[#F3F3F3] p-4 text-sm leading-6 text-[#434750]">
-                  Vizionare disponibilă în aplicație{Number(product.viewingPriceRon) > 0 ? ` pentru ${formatRon(product.viewingPriceRon)}` : " gratuit"}.
+                  Vizionare disponibilă{Number(product.viewingPriceRon) > 0 ? ` pentru ${formatRon(product.viewingPriceRon)}` : " gratuit"}. <Link className="font-bold text-[#30578F] underline" href={`/vizionari?productId=${encodeURIComponent(product._id || product.id)}`}>Propune o dată</Link>
                 </p>
               )}
             </div>
@@ -259,23 +293,21 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
             <div className="order-4 rounded-[18px] bg-white p-6 shadow-sm md:p-8 lg:mt-6">
               <p className="font-mono text-xs uppercase tracking-widest text-[#434750]">Proprietar</p>
               <div className="mt-5 flex items-center gap-4">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#D3E3FF] text-2xl font-extrabold text-[#30578F]">
-                  {product.ownerAvatarUrl ? <img className="h-full w-full object-cover" src={product.ownerAvatarUrl} alt={product.ownerName || "Proprietar"} /> : ownerInitial}
-                </div>
+                <UserAvatar className="size-16" fallbackClassName="text-2xl" user={{ fullName: product.ownerName || ownerInitial, avatarUrl: product.ownerAvatarUrl }} />
                 <div className="min-w-0">
                   <h2 className="truncate text-xl font-extrabold">{product.ownerName || "Proprietar PINLEND"}</h2>
                   <p className="mt-1 text-sm text-[#434750]">{Number(product.ownerRentalCount) || 0} închirieri</p>
                 </div>
               </div>
-              <Link className="mt-6 flex min-h-12 items-center justify-center rounded-xl border border-[#30578F] px-5 py-3 text-center font-bold text-[#30578F] hover:bg-[#30578F]/5" href="/download">Trimite mesaj în aplicație</Link>
+              <Link className="mt-6 flex min-h-12 items-center justify-center rounded-xl border border-[#30578F] px-5 py-3 text-center font-bold text-[#30578F] hover:bg-[#30578F]/5" href={`/mesaje?productId=${encodeURIComponent(product._id || product.id)}`}>Trimite mesaj proprietarului</Link>
               {ownerListings.length > 0 && <a className="mt-4 block text-center text-sm font-bold text-[#30578F]" href="#owner-listings">Vezi și alte anunțuri ale proprietarului</a>}
             </div>
 
             {product.categorySlug === "imobiliare" && (
               <div className="order-5 rounded-[18px] bg-white p-6 shadow-sm md:p-8 lg:mt-6">
                 <div className="flex items-center gap-2 text-lg font-extrabold"><span className="material-symbols-outlined text-[#30578F]">groups</span> Cauți un coleg de apartament?</div>
-                <p className="mt-3 text-sm leading-6 text-[#434750]">Poți publica o cerere și poți programa o vizionare din aplicația PINLEND.</p>
-                <Link className="mt-5 inline-flex rounded-full bg-[#30578F] px-5 py-3 text-sm font-bold text-white" href="/download">Deschide aplicația</Link>
+                <p className="mt-3 text-sm leading-6 text-[#434750]">Poți publica o cerere și poți programa o vizionare direct pe site.</p>
+                <Link className="mt-5 inline-flex rounded-full bg-[#30578F] px-5 py-3 text-sm font-bold text-white" href="/colegi">Caută coleg</Link>
               </div>
             )}
 
@@ -286,11 +318,11 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
           </aside>
         </div>
       </main>
-      <footer className="bg-black px-5 py-12 text-white md:px-20">
+      <footer className="bg-black px-5 py-12 text-white md:px-12 lg:px-20">
         <div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-6 border-b border-white/10 pb-8 md:flex-row md:items-center">
           <span className="font-display text-2xl font-bold">PINLEND</span>
           <nav className="flex flex-wrap gap-5 text-sm text-white/70">
-            <Link className="hover:text-white" href="/archive">Anunțuri</Link>
+            <Link className="hover:text-white" href="/">Anunțuri</Link>
             <Link className="hover:text-white" href="/download">Aplicația mobilă</Link>
             <Link className="hover:text-white" href="/support">Suport</Link>
           </nav>
@@ -301,7 +333,7 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
         <div className="min-w-0 flex-1">
           {currentMode ? <><p className="truncate text-lg font-extrabold">{formatRon(currentMode.price)}</p><p className="text-xs text-[#434750]">{currentMode.suffix}</p></> : <p className="font-bold">Vezi anunțul în aplicație</p>}
         </div>
-        <Link className="shrink-0 rounded-full bg-[#30578F] px-5 py-3 text-sm font-bold text-white" href="/download">{isAvailable ? "Închiriază" : "Vezi în aplicație"}</Link>
+        <Link className="shrink-0 rounded-full bg-[#30578F] px-5 py-3 text-sm font-bold text-white" href={`/inchiriaza/${encodeURIComponent(product.slug)}?mode=${selectedMode}`}>{isAvailable ? "Închiriază" : "Vezi disponibilitatea"}</Link>
       </div>
     </>
   );
@@ -309,12 +341,6 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
 
 function isVideo(item) {
   return item?.type === "video" || String(item?.contentType || "").startsWith("video/");
-}
-
-function makeMapUrl(latitude, longitude) {
-  const delta = 0.012;
-  const bbox = [longitude - delta, latitude - delta, longitude + delta, latitude + delta].join(",");
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${latitude}%2C${longitude}`;
 }
 
 function Spec({ icon, label, value }) {
@@ -341,9 +367,7 @@ function Reviews({ reviews }) {
             return (
               <article className="rounded-xl bg-white p-5 shadow-sm" key={review._id || review.id || index}>
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#E7F0FD] font-extrabold text-[#30578F]">
-                    {review.reviewer?.avatarUrl ? <img className="h-full w-full object-cover" src={review.reviewer.avatarUrl} alt={name} /> : name.charAt(0).toUpperCase()}
-                  </div>
+                  <UserAvatar className="size-11" user={{ fullName: name, avatarUrl: review.reviewer?.avatarUrl }} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-extrabold">{name}</p>
                     {review.createdAt && <p className="text-xs text-[#434750]">{new Date(review.createdAt).toLocaleDateString("ro-RO", { timeZone: "UTC" })}</p>}
@@ -358,6 +382,29 @@ function Reviews({ reviews }) {
       )}
     </section>
   );
+}
+
+function ReviewComposer({ productId }) {
+  const [eligible, setEligible] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [, setError] = useToastError();
+  useEffect(() => {
+    accountRequest(`reviewEligibility?id=${encodeURIComponent(productId)}`)
+      .then((result) => setEligible(result.canReview === true))
+      .catch(() => {});
+  }, [productId]);
+  async function submit(event) {
+    event.preventDefault(); setBusy(true); setError("");
+    try {
+      await accountRequest("reviewCreate", { method: "POST", body: JSON.stringify({ id: productId, rating, comment: comment.trim() }) });
+      window.location.reload();
+    } catch (cause) { setError(cause.message); }
+    finally { setBusy(false); }
+  }
+  if (!eligible) return null;
+  return <form className="order-3 rounded-[18px] bg-white p-6 shadow-sm md:p-8 lg:mt-6" onSubmit={submit}><h2 className="text-xl font-extrabold">Lasă o recenzie</h2><p className="mt-2 text-sm text-[#626977]">Poți evalua după o închiriere finalizată.</p><p className="mt-5 text-sm font-semibold">{rating} {rating === 1 ? "stea" : "stele"}</p><div className="mt-2 flex gap-1" role="group" aria-label="Rating">{[1, 2, 3, 4, 5].map((value) => <button aria-label={`${value} ${value === 1 ? "stea" : "stele"}`} aria-pressed={rating === value} className={`review-star rounded-full p-1 text-[38px] leading-none focus-visible:outline-2 focus-visible:outline-[#30578F] ${value <= rating ? "review-star-selected" : ""}`} key={value} onClick={() => setRating(value)} style={{ transitionDuration: `${220 + value * 35}ms` }} type="button">★</button>)}</div><label className="mt-4 block text-sm font-bold">Comentariu<Textarea className="account-input min-h-24" maxLength={1000} minLength={2} onChange={(event) => setComment(event.target.value)} required value={comment} /></label><button className="account-button mt-5" disabled={busy} type="submit">Publică recenzia</button></form>;
 }
 
 function OwnerListings({ listings }) {
@@ -378,30 +425,5 @@ function OwnerListings({ listings }) {
         ))}
       </div>
     </section>
-  );
-}
-
-function SiteHeader({ menuOpen, setMenuOpen }) {
-  return (
-    <>
-      <header className="fixed left-0 right-0 top-0 z-50 bg-[#f9f9f9]/90 backdrop-blur-md">
-        <div className="flex h-20 items-center justify-between px-5 md:px-20">
-          <BrandLogo />
-          <nav className="flex items-center gap-6 font-mono text-xs uppercase tracking-widest md:gap-14">
-            <Link className="hidden hover:text-[#30578F] sm:inline" href="/archive">Anunțuri</Link>
-            <button className="flex items-center gap-3" onClick={() => setMenuOpen(true)} type="button"><span className="h-px w-8 bg-black" /> Meniu</button>
-            <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black text-white" href="/account"><span className="material-symbols-outlined text-[18px]">person</span></Link>
-          </nav>
-        </div>
-      </header>
-      <div aria-hidden={!menuOpen} className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center bg-black px-5 md:px-20 ${menuOpen ? "mega-menu-open" : ""}`}>
-        <button className="absolute right-6 top-8 font-mono text-xs uppercase tracking-widest text-white" onClick={() => setMenuOpen(false)} type="button">Închide ✕</button>
-        <nav className="flex flex-col gap-6">
-          {[["Acasă", "/"], ["Funcționalități", "/features"], ["Anunțuri", "/archive"], ["Descarcă", "/download"]].map(([label, href]) => (
-            <Link className="font-display text-5xl font-bold text-white transition-colors hover:text-[#8FABD4] md:text-7xl" href={href} key={href} onClick={() => setMenuOpen(false)}>{label}</Link>
-          ))}
-        </nav>
-      </div>
-    </>
   );
 }

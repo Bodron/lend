@@ -204,7 +204,7 @@ class _NotificationSummary extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -304,7 +304,7 @@ class _FilterButton extends StatelessWidget {
           style: TextStyle(
             color: selected ? Colors.white : _NotificationsScreenState._muted,
             fontSize: 13,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -371,7 +371,7 @@ class _NotificationTile extends StatelessWidget {
                             style: const TextStyle(
                               color: _NotificationsScreenState._text,
                               fontSize: 15,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -406,7 +406,7 @@ class _NotificationTile extends StatelessWidget {
                       style: TextStyle(
                         color: item.color,
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -449,7 +449,7 @@ class _EmptyNotifications extends StatelessWidget {
               style: const TextStyle(
                 color: _NotificationsScreenState._text,
                 fontSize: 16,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

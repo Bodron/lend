@@ -77,7 +77,7 @@ class _OwnerListingsScreenState extends State<OwnerListingsScreen> {
                     style: const TextStyle(
                       color: _text,
                       fontSize: 23,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -166,7 +166,7 @@ class _OwnerHeader extends StatelessWidget {
                   style: const TextStyle(
                     color: _OwnerListingsScreenState._text,
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -239,7 +239,7 @@ class _ListingCard extends StatelessWidget {
                           style: const TextStyle(
                             color: _OwnerListingsScreenState._text,
                             fontSize: 10,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -277,7 +277,7 @@ class _ListingCard extends StatelessWidget {
                         style: const TextStyle(
                           color: _OwnerListingsScreenState._text,
                           fontSize: 14,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),

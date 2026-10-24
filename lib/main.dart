@@ -67,7 +67,7 @@ class _LendAppState extends State<LendApp> {
                 primary: const Color(0xFF4A70A9),
                 surface: const Color(0xFFF9F9F9),
               ),
-              fontFamily: 'Inter',
+              fontFamily: 'Plus Jakarta Sans',
               useMaterial3: true,
             ),
             home: const AppUpdateChecker(child: AuthGate()),

@@ -505,7 +505,7 @@ class _MapProductCard extends StatelessWidget {
                           color: _ExploreMapScreenState._text,
                           fontSize: 15,
                           height: 1.2,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -530,7 +530,7 @@ class _MapProductCard extends StatelessWidget {
                               style: const TextStyle(
                                 color: _ExploreMapScreenState._primary,
                                 fontSize: 14,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),

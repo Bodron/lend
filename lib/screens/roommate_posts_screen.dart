@@ -676,7 +676,7 @@ class _BudgetRangeFilter extends StatelessWidget {
                 style: TextStyle(
                   color: _RoommatePostsScreenState._text,
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -685,7 +685,7 @@ class _BudgetRangeFilter extends StatelessWidget {
               style: const TextStyle(
                 color: _RoommatePostsScreenState._muted,
                 fontSize: 13,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -830,7 +830,7 @@ class _RoommateLocationSheetState extends State<_RoommateLocationSheet> {
                       style: TextStyle(
                         color: _RoommatePostsScreenState._text,
                         fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -921,7 +921,7 @@ class _RoommateLocationSheetState extends State<_RoommateLocationSheet> {
                   style: TextStyle(
                     color: _RoommatePostsScreenState._text,
                     fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -930,7 +930,7 @@ class _RoommateLocationSheetState extends State<_RoommateLocationSheet> {
                 style: const TextStyle(
                   color: _RoommatePostsScreenState._muted,
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -1100,7 +1100,7 @@ class _RoommatePostCard extends StatelessWidget {
                         style: const TextStyle(
                           color: _RoommatePostsScreenState._text,
                           fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
@@ -1129,7 +1129,7 @@ class _RoommatePostCard extends StatelessWidget {
                 color: _RoommatePostsScreenState._text,
                 fontSize: 20,
                 height: 1.2,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
@@ -1218,7 +1218,7 @@ class _RoommateProductStrip extends StatelessWidget {
                   style: const TextStyle(
                     color: _RoommatePostsScreenState._text,
                     fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1283,7 +1283,7 @@ class _AttachedProductCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _RoommatePostsScreenState._text,
                       fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -1334,7 +1334,7 @@ class _InterestSheetState extends State<_InterestSheet> {
                 style: const TextStyle(
                   color: _RoommatePostsScreenState._text,
                   fontSize: 20,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1438,7 +1438,7 @@ class _BudgetPill extends StatelessWidget {
           style: const TextStyle(
             color: _RoommatePostsScreenState._primary,
             fontSize: 12,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

@@ -22,6 +22,7 @@ class CartScreen extends StatefulWidget {
     required this.rentalDays,
     required this.totalPrice,
     this.negotiatedSubtotal,
+    this.offerId,
   });
 
   final LendProduct product;
@@ -34,6 +35,7 @@ class CartScreen extends StatefulWidget {
   final int rentalDays;
   final int totalPrice;
   final int? negotiatedSubtotal;
+  final String? offerId;
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -105,6 +107,7 @@ class _CartScreenState extends State<CartScreen> {
                             deposit: _deposit,
                             total: _total,
                             negotiatedSubtotal: widget.negotiatedSubtotal,
+                            offerId: widget.offerId,
                             enabled: _hasItem,
                           ),
                         ],
@@ -146,6 +149,7 @@ class _CartScreenState extends State<CartScreen> {
                             deposit: _deposit,
                             total: _total,
                             negotiatedSubtotal: widget.negotiatedSubtotal,
+                            offerId: widget.offerId,
                             enabled: _hasItem,
                           ),
                         ),
@@ -193,7 +197,7 @@ class _CartTitle extends StatelessWidget {
             color: _CartScreenState._text,
             fontSize: 42,
             height: 1.15,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.5,
           ),
         ),
@@ -368,7 +372,7 @@ class _CartProductImage extends StatelessWidget {
                         color: _CartScreenState._secondary,
                         fontSize: 10,
                         letterSpacing: 0.6,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -429,7 +433,7 @@ class _CartItemDetails extends StatelessWidget {
                       color: _CartScreenState._text,
                       fontSize: 24,
                       height: 1.25,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -473,7 +477,7 @@ class _CartItemDetails extends StatelessWidget {
                     style: const TextStyle(
                       color: _CartScreenState._text,
                       fontSize: 14,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -498,7 +502,7 @@ class _CartItemDetails extends StatelessWidget {
                       style: const TextStyle(
                         color: _CartScreenState._text,
                         fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -516,7 +520,7 @@ class _CartItemDetails extends StatelessWidget {
                 style: const TextStyle(
                   color: _CartScreenState._text,
                   fontSize: 24,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -533,7 +537,7 @@ class _CartItemDetails extends StatelessWidget {
                 style: const TextStyle(
                   color: _CartScreenState._text,
                   fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -579,7 +583,7 @@ class _CartMetric extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF9CA0AA),
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
@@ -605,6 +609,7 @@ class _OrderSummaryCard extends StatelessWidget {
     required this.deposit,
     required this.total,
     this.negotiatedSubtotal,
+    this.offerId,
     required this.enabled,
   });
 
@@ -621,6 +626,7 @@ class _OrderSummaryCard extends StatelessWidget {
   final int deposit;
   final int total;
   final int? negotiatedSubtotal;
+  final String? offerId;
   final bool enabled;
 
   @override
@@ -639,7 +645,7 @@ class _OrderSummaryCard extends StatelessWidget {
               style: const TextStyle(
                 color: _CartScreenState._text,
                 fontSize: 24,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 24),
@@ -671,7 +677,7 @@ class _OrderSummaryCard extends StatelessWidget {
                     style: const TextStyle(
                       color: _CartScreenState._text,
                       fontSize: 24,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -684,7 +690,7 @@ class _OrderSummaryCard extends StatelessWidget {
                         color: _CartScreenState._text,
                         fontSize: 32,
                         height: 1.1,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -720,6 +726,7 @@ class _OrderSummaryCard extends StatelessWidget {
                               serviceFee: serviceFee,
                               total: total,
                               negotiatedSubtotal: negotiatedSubtotal,
+                              offerId: offerId,
                             ),
                           ),
                         );
@@ -742,7 +749,7 @@ class _OrderSummaryCard extends StatelessWidget {
                       child: Text(
                         GeneratedLocalizations.of(context).continueToCheckout,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -823,7 +830,7 @@ class _SummaryRow extends StatelessWidget {
           style: const TextStyle(
             color: _CartScreenState._text,
             fontSize: 14,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ],
@@ -854,7 +861,7 @@ class _EmptyCartState extends StatelessWidget {
               style: const TextStyle(
                 color: _CartScreenState._text,
                 fontSize: 24,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),

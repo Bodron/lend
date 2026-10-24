@@ -1,474 +1,307 @@
-/* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
+import dynamic from "next/dynamic";
+import FormSelect from "../components/FormSelect";
+import { Input } from "../components/ui/input";
 import Link from "next/link";
-import BrandLogo from "../components/BrandLogo";
-import { useEffect, useState } from "react";
+import PublicHeader from "../components/PublicHeader";
+import ListingCard from "../components/ListingCard";
+import { getPublicProducts } from "../lib/publicProductsServer";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import { useToastError } from "../lib/useToastError";
 
-const images = {
-  chair:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuAtgQOPtSqsgqb_M42r6q_y_uuvZf_doQ2rxXI4ejJAAd89UkbMwZ1aQuFwMREtC-7AB4B0zaphmGITuC0leC-OTuAYHNKQ5HlSxmwI2_p0uQu4giq740jyORsn6EDOdGuuiabwnHZhfBxw8tywS8JBrkaZJXaxBYAuefXIHPF82zuvartfG5RqXmgchP9_menPPrmq5MHYmvAs8zLy1W_NldTlnd5RPr_ghYOmKt--0tU-CH6sCLPTIUaCAB8dcwfw0LfChhY86Wo",
-  fabric:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDNwyufGstvX6r-5N3LCQHmREFe5SV3rKFuqIS53Q2IL35T6IGlra4Ilu9mLE56d7vTqdNulN6Z6CyXUCn4qZthi4bQdZ0izPwV7yKSQ0kd9hGiF_9CxPEeyBZ0yBvnaAQDBWktb5rrQpQm_H6cPMZSbkLJaBJkmd86JbbkNla4yk2VgZyCc-5cAhGahJY25QYrmhoRiPpyob6w0NAymGqRfAbDqXqSP1iVejOqflJlRYiHpaTBYlDGn0MGJANbWtssXFkx23ArmKE",
-  dashboard:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCWm1bARJg17gDENBM8bN1LS9H1IxjNCMH8Wno7yIesL6fviVeQJQnFA-8hLD1sq6sIpc0KzZM7HtsOQMsbSzg14rEmQOOT8ST6hQr8FXm_gv69p3RMy9cA9IMFZ7jlPpxw3z0u0Ja9RfuDmFFbpwA93YMp5r4dZVj-O8u-i1GaYJjrkOLlEHRsqiDAWBWmEBuCkEuai2xxahL9TmJDQgVWCzEtrf-yiHt-zIkgE-te6zoQoElelaYrxDoqSd8iUaoWKoIHk7_jfaY",
-  community:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDoTxCJbPVCzPfQx6x1GTAwtte-BdAJEJRoF2-ip5A0ZunpaVJrjhIyWLDB9QAoyILKw5Le0YqzTzNdsuOw1CGa9NCUIzLAo7Sc9EddJUoVrpV9M0mZMkMIEYtmq894gE-kwKJECC9QgfWCIo24rR3xaCY83HYwGw2ota-HVW-osWZUmFGhLU6bxvd0CYo00nVnfuI1aXMb4JgUHkQkTH_LVhxeKRE0tKbySvW4AB_MPBq3D959RBBsxrN0d5PuFq1Gn43oM_PWDyM",
-  house:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuD8ya4pMcY2U57Xg626iw1wbyldOPVuIW1NOVonBh_8-RGZlfFcquG3yW-Y44f26KVxucNw3Truw_wipIMZcYkWSin0iA9HkWCBzfECaHjkabo7IBU7jMknrUOUV3moG_ZcgdHShF0M3w-G5KU6IN6LVDLf19ZORO0KMb5bJpj_kFx7ZQPLfHiiSCxzxRscg0c0fvJ23ogwm8m2AF7O10LxxUAvfj0HD2S_6OPhPlK0DleavNXi6gz5k3kRLtmlEYSYPl8tF-QaNfE",
+const ListingMapExplore = dynamic(() => import("../components/ListingMapExplore"), {
+  ssr: false,
+  loading: () => <div className="mb-8 h-[480px] animate-pulse rounded-2xl bg-[#E8EDF3] sm:h-[520px] lg:h-[560px]" />,
+});
+
+const copy = {
+  ro: {
+    title: "Anunțuri", metaTitle: "Anunțuri PINLEND | Obiecte disponibile pentru închiriere",
+    metaDescription: "Explorează anunțurile PINLEND cu obiecte verificate pentru închiriere.",
+    search: "Caută anunțuri", searchPlaceholder: "Ce cauți?", city: "Oraș", anyCity: "Orice oraș",
+    maxPrice: "Preț maxim / zi", maxPriceLabel: "Preț maxim pe zi", anyPrice: "Orice preț",
+    oneResult: "anunț găsit", manyResults: "anunțuri găsite", radius: "Rază", radiusLabel: "Rază în kilometri",
+    locating: "Se caută...", nearbyActive: "Lângă mine activ", nearby: "Lângă mine",
+    hideMap: "Ascunde harta", showMap: "Vezi harta", favorites: "Favorite", reset: "Resetează",
+    noMap: "Nu sunt anunțuri cu locație pe hartă.", map: "Harta", view: "Vezi",
+    approximateLocation: "locație aproximativă", previousMapCards: "Anunțurile anterioare", nextMapCards: "Anunțurile următoare", mapCards: "Anunțuri pe hartă",
+    loadError: "Nu am putut încărca anunțurile. Încearcă din nou.", retry: "Reîncearcă",
+    empty: "Nu am găsit anunțuri pentru filtrele alese.", noImage: "Fără imagine",
+    details: "Vezi detalii", detailsLabel: "Vezi detaliile anunțului", unknownCity: "Oraș nespecificat",
+    ready: "Gata să împarți?", start: "Începe acum", navigation: "Navigare",
+    emailPlaceholder: "Introdu adresa de email", privacy: "Confidențialitate", terms: "Termeni", support: "Suport",
+    copyright: "© 2026 PINLEND. Construit pentru economia de sharing.",
+  },
+  en: {
+    title: "Listings", metaTitle: "PINLEND listings | Items available to rent",
+    metaDescription: "Explore verified items available to rent on PINLEND.",
+    search: "Search listings", searchPlaceholder: "What are you looking for?", city: "City", anyCity: "Any city",
+    maxPrice: "Maximum price / day", maxPriceLabel: "Maximum daily price", anyPrice: "Any price",
+    oneResult: "listing found", manyResults: "listings found", radius: "Radius", radiusLabel: "Radius in kilometers",
+    locating: "Locating...", nearbyActive: "Nearby active", nearby: "Nearby",
+    hideMap: "Hide map", showMap: "View map", favorites: "Favorites", reset: "Reset",
+    noMap: "No listings with a map location.", map: "Map of", view: "View",
+    approximateLocation: "approximate location", previousMapCards: "Previous listings", nextMapCards: "Next listings", mapCards: "Listings on the map",
+    loadError: "We couldn't load the listings. Please try again.", retry: "Try again",
+    empty: "No listings match your filters.", noImage: "No image",
+    details: "View details", detailsLabel: "View listing details for", unknownCity: "City not specified",
+    ready: "Ready to share?", start: "Get started", navigation: "Navigation",
+    emailPlaceholder: "Enter your email address", privacy: "Privacy", terms: "Terms", support: "Support",
+    copyright: "© 2026 PINLEND. Built for the sharing economy.",
+  },
 };
 
-const features = [
-  {
-    icon: "verified_user",
-    image: images.fabric,
-    title: "Verificare de nivel inalt",
-    text: "Fiecare membru si fiecare obiect trece printr-un proces riguros de verificare, pentru incredere reala intre utilizatori.",
-  },
-  {
-    icon: "travel_explore",
-    image: images.dashboard,
-    title: "Predare si retur simple",
-    text: "Fluxuri clare pentru predare, retur, garantii si documentare digitala, gandite pentru obiecte valoroase si inchirieri fara stres.",
-  },
-  {
-    icon: "group_work",
-    image: images.community,
-    title: "Reputatie in comunitate",
-    text: "Construieste incredere prin recenzii, verificari si inchirieri reusite. Cu cat esti mai activ, cu atat ai acces la mai multe obiecte.",
-  },
-];
+const cardAspects = ["aspect-[4/5]", "aspect-[3/4]", "aspect-square", "aspect-[4/3]"];
+const cardOffsets = ["", "md:mt-12", "", "xl:mt-16"];
+function distanceKm(lat1, lng1, lat2, lng2) {
+  if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return Infinity;
+  const rad = Math.PI / 180;
+  const a = Math.sin((lat2 - lat1) * rad / 2) ** 2
+    + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin((lng2 - lng1) * rad / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
-export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
+export async function getServerSideProps({ res, locale }) {
+  try {
+    const products = await getPublicProducts();
 
-  useEffect(() => {
-    const heroLines = document.querySelectorAll(".hero-line");
-    const heroSubs = document.querySelectorAll(".hero-sub");
-    const reveals = document.querySelectorAll(".reveal-text");
+    const listings = products
+      .filter((product) => product && product.isClosedByAdmin !== true)
+      .map((product, index) => {
+        const image = Array.isArray(product.images)
+          ? product.images.find((item) => item?.url && item.type !== "video" && item.contentType?.startsWith("image/"))
+          : null;
+        return {
+          id: String(product._id ?? product.id ?? ""),
+          slug: String(product.slug ?? ""),
+          title: String(product.title ?? ""),
+          category: String(product.categorySlug ?? ""),
+          categoryLabel: String(product.category ?? product.categorySlug ?? ""),
+          city: String(product.city ?? "").trim(),
+          priceNumber: Number(product.pricePerDay) || 0,
+          latitude: product.latitude ?? null,
+          longitude: product.longitude ?? null,
+          image: image?.url ?? null,
+          aspect: cardAspects[index % cardAspects.length],
+          offset: cardOffsets[index % cardOffsets.length],
+          price: `${new Intl.NumberFormat(locale === "en" ? "en-GB" : "ro-RO", { maximumFractionDigits: 2 }).format(Number(product.pricePerDay) || 0)} RON / ${locale === "en" ? "DAY" : "ZI"}`,
+          text: String(product.description ?? ""),
+        };
+      })
+      .filter((item) => item.id && item.slug && item.title);
 
-    const introTimer = window.setTimeout(() => {
-      heroLines.forEach((line) => {
-        line.style.transform = "translateY(0)";
-      });
-      heroSubs.forEach((sub) => {
-        sub.style.opacity = "1";
-        sub.style.transform = "translateY(0)";
-      });
-    }, 300);
+    const categories = [
+      { id: "all", label: locale === "en" ? "All listings" : "Toate anunțurile" },
+      ...Array.from(new Map(listings.filter((item) => item.category).map((item) => [
+        item.category,
+        { id: item.category, label: item.categoryLabel },
+      ])).values()),
+    ];
 
-    reveals.forEach((el) => {
-      el.style.opacity = "0";
-      el.style.transform = "translateY(30px)";
-      el.style.transition = "all 1s cubic-bezier(0.23, 1, 0.32, 1)";
-    });
-
-    const handleScroll = () => {
-      reveals.forEach((el) => {
-        const revealTop = el.getBoundingClientRect().top;
-        if (revealTop < window.innerHeight - 150) {
-          el.style.opacity = "1";
-          el.style.transform = "translateY(0)";
-        }
-      });
-    };
-
-    const counterObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.querySelectorAll(".counter").forEach((counter) => {
-            const target = Number(counter.getAttribute("data-target"));
-            const duration = 1600;
-            const increment = target / (duration / 16);
-            let current = 0;
-
-            const updateCounter = () => {
-              current += increment;
-              if (current < target) {
-                counter.textContent = Math.ceil(current);
-                requestAnimationFrame(updateCounter);
-              } else {
-                counter.textContent = String(target);
-              }
-            };
-
-            updateCounter();
-          });
-          counterObserver.unobserve(entry.target);
-        });
+    return { props: { listings, categories, loadError: false } };
+  } catch (error) {
+    console.error("Could not load archive listings:", error);
+    res.statusCode = 503;
+    return {
+      props: {
+        listings: [],
+        categories: [{ id: "all", label: locale === "en" ? "All listings" : "Toate anunțurile" }],
+        loadError: true,
       },
-      { threshold: 0.45 },
-    );
-
-    const impactSection = document.querySelector("#impact-section");
-    if (impactSection) counterObserver.observe(impactSection);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-
-    return () => {
-      window.clearTimeout(introTimer);
-      window.removeEventListener("scroll", handleScroll);
-      counterObserver.disconnect();
     };
-  }, []);
+  }
+}
+
+export default function ListingsHome({ listings, categories, loadError }) {
+  const { locale } = useRouter();
+  const t = copy[locale] || copy.ro;
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [city, setCity] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [position, setPosition] = useState(null);
+  const [radiusKm, setRadiusKm] = useState(25);
+  const [showMap, setShowMap] = useState(true);
+  const [locating, setLocating] = useState(false);
+  const [, setLocationError] = useToastError();
+  const [cursor, setCursor] = useState({ x: 0, y: 0, visible: false });
+
+  function toggleNearby() {
+    if (position) {
+      setPosition(null);
+      setLocationError("");
+      return;
+    }
+    if (!navigator.geolocation) {
+      setLocationError("Browserul nu poate accesa locația.");
+      return;
+    }
+    setLocating(true);
+    setLocationError("");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => { setPosition({ latitude: coords.latitude, longitude: coords.longitude }); setLocating(false); },
+      () => { setLocationError("Nu am putut obține locația. Verifică permisiunea browserului."); setLocating(false); },
+      { enableHighAccuracy: false, timeout: 10000 },
+    );
+  }
+
+  function resetFilters() {
+    setSearch("");
+    setCity("");
+    setMaxPrice("");
+    setPosition(null);
+    setRadiusKm(25);
+    setLocationError("");
+  }
+
+  const visibleListings = useMemo(() => {
+    return listings.filter((item) =>
+      (activeFilter === "all" || item.category === activeFilter)
+      && (!search || `${item.title} ${item.text}`.toLocaleLowerCase("ro-RO").includes(search.toLocaleLowerCase("ro-RO")))
+      && (!city || item.city.toLocaleLowerCase("ro-RO").includes(city.toLocaleLowerCase("ro-RO")))
+      && (!maxPrice || item.priceNumber <= Number(maxPrice))
+      && (!position || (item.latitude != null && item.longitude != null && distanceKm(position.latitude, position.longitude, Number(item.latitude), Number(item.longitude)) <= radiusKm)));
+  }, [activeFilter, listings, search, city, maxPrice, position, radiusKm]);
+  const hasSearchFilters = Boolean(search || city || maxPrice || position);
+
 
   return (
     <>
       <Head>
-        <title>PINLEND | Inchiriaza si ofera obiecte in comunitatea ta</title>
+        <title>{t.metaTitle}</title>
         <meta
           name="description"
-          content="PINLEND este platforma prin care inchiriezi si oferi obiecte verificate, sigur si simplu, in comunitatea ta."
+          content={t.metaDescription}
         />
       </Head>
 
-      <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <Header onMenu={() => setMenuOpen(true)} />
+      <PublicHeader current="/" />
 
-      <main className="w-full pt-20">
-        <Hero />
-        <Vision />
-        <Impact />
-        <Features />
-        <ArchiveBreak />
+      <main className="w-full bg-[#f9f9f9] pt-20">
+        <section className="flex flex-col items-start gap-8 px-5 py-16 md:px-20 md:py-20">
+          <div>
+            <h1 className="archive-title font-display font-extrabold uppercase text-black">
+              {t.title}
+            </h1>
+          </div>
+
+          <div className="flex w-full flex-wrap gap-3">
+            {categories.map((category) => {
+              const active = activeFilter === category.id;
+              return (
+                <button
+                  className={`cursor-pointer rounded-full border px-5 py-2 font-mono text-xs uppercase tracking-widest transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30578F] ${
+                    active
+                      ? "border-black bg-black text-white"
+                      : "border-black/20 text-black hover:border-black"
+                  }`}
+                  key={category.id}
+                  onClick={() => setActiveFilter(category.id)}
+                  type="button"
+                >
+                  {category.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid w-full gap-5 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)] md:gap-8">
+            <label className="block min-w-0 border-b border-black/30 pb-3 focus-within:border-black">
+              <span className="block font-mono text-[11px] uppercase tracking-widest text-black">{t.search}</span>
+              <Input aria-label={t.search} className="mt-2 h-auto w-full rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45" onChange={(event) => setSearch(event.target.value)} placeholder={t.searchPlaceholder} type="search" value={search} />
+            </label>
+            <label className="block min-w-0 border-b border-black/30 pb-3 focus-within:border-black">
+              <span className="block font-mono text-[11px] uppercase tracking-widest text-black">{t.city}</span>
+              <Input aria-label={t.city} className="mt-2 h-auto w-full rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45" onChange={(event) => setCity(event.target.value)} placeholder={t.anyCity} value={city} />
+            </label>
+            <label className="block min-w-0 border-b border-black/30 pb-3 focus-within:border-black">
+              <span className="block font-mono text-[11px] uppercase tracking-widest text-black">{t.maxPrice}</span>
+              <span className="mt-2 flex items-baseline gap-2"><Input aria-label={t.maxPriceLabel} className="h-auto w-full min-w-0 appearance-none rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" min="1" onChange={(event) => setMaxPrice(event.target.value)} placeholder={t.anyPrice} type="number" value={maxPrice} />{maxPrice && <span className="shrink-0 font-mono text-xs text-black/60">RON</span>}</span>
+            </label>
+          </div>
+          <div className="flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-4 border-b border-black/10 pb-6">
+            <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-[0.16em] text-black/55">{visibleListings.length} {visibleListings.length === 1 ? t.oneResult : t.manyResults}</p>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              {position && <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-black/60">{t.radius}<FormSelect aria-label={t.radiusLabel} className="border-b border-black/30 bg-transparent py-1 text-black outline-none focus:border-[#30578F]" onChange={(event) => setRadiusKm(Number(event.target.value))} value={radiusKm}><option value={5}>5 km</option><option value={10}>10 km</option><option value={25}>25 km</option><option value={50}>50 km</option><option value={100}>100 km</option></FormSelect></label>}
+              <button aria-pressed={Boolean(position)} className={`inline-flex items-center gap-2 border-b py-1 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${position ? "border-[#30578F] text-[#30578F]" : "border-transparent text-black/65 hover:border-black hover:text-black"}`} disabled={locating} onClick={toggleNearby} type="button"><span aria-hidden="true" className="material-symbols-outlined text-[18px]">near_me</span>{locating ? t.locating : position ? t.nearbyActive : t.nearby}</button>
+              <button aria-pressed={showMap} className={`inline-flex items-center gap-2 border-b py-1 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${showMap ? "border-[#30578F] text-[#30578F]" : "border-transparent text-black/65 hover:border-black hover:text-black"}`} onClick={() => setShowMap(!showMap)} type="button"><span aria-hidden="true" className="material-symbols-outlined text-[18px]">map</span>{showMap ? t.hideMap : t.showMap}</button>
+              <Link className="inline-flex items-center gap-2 border-b border-transparent py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-black/65 transition-colors hover:border-black hover:text-black" href="/favorite"><span aria-hidden="true" className="material-symbols-outlined text-[18px]">favorite_border</span>{t.favorites}</Link>
+              {hasSearchFilters && <button className="border-b border-transparent py-1 font-mono text-[11px] uppercase tracking-[0.12em] text-black/45 transition-colors hover:border-black hover:text-black" onClick={resetFilters} type="button">{t.reset}</button>}
+            </div>
+          </div>
+          
+        </section>
+
+        <section className="min-h-screen px-5 pb-32 md:px-20 md:pb-40">
+          {showMap && <ListingMapExplore listings={visibleListings} t={t} />}
+          {loadError ? (
+            <div className="py-16 text-center text-[#444748]">
+              <p>{t.loadError}</p>
+              <Link className="mt-6 inline-block border border-black px-5 py-2 font-mono text-xs uppercase tracking-widest text-black" href="/">
+                {t.retry}
+              </Link>
+            </div>
+          ) : visibleListings.length === 0 ? (
+            <p className="py-16 text-center text-[#444748]">{t.empty}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-8 transition-all duration-700 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {visibleListings.map((item) => (
+                <ListingCard
+                  item={item}
+                  t={t}
+                  key={item.id}
+                  onCursorMove={setCursor}
+                  onCursorLeave={() => setCursor((current) => ({ ...current, visible: false }))}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <CustomCursor cursor={cursor} />
       </main>
 
-      <Footer />
+      <Footer t={t} />
     </>
   );
 }
 
-function Header({ onMenu }) {
-  return (
-    <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
-      <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <BrandLogo />
-        <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/archive">
-            Anunțuri
-          </Link>
-          <button
-            className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black"
-            onClick={onMenu}
-            type="button"
-          >
-            <span className="h-px w-8 bg-black transition-all group-hover:w-12" />
-            Meniu
-          </button>
-        </nav>
-        <Link aria-label="Contul meu" className="flex h-8 w-8 items-center justify-center rounded-full bg-black" href="/account">
-          <span className="material-symbols-outlined text-[18px] text-white">person</span>
-        </Link>
-      </div>
-    </header>
-  );
-}
-
-function MegaMenu({ open, onClose }) {
-  const links = [
-    { label: "Acasa", href: "/" },
-    { label: "Functionalitati", href: "/features" },
-    { label: "Anunțuri", href: "/archive" },
-    { label: "Descarca", href: "/download" },
-  ];
-
+function CustomCursor({ cursor }) {
   return (
     <div
-      className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center bg-black px-5 md:px-20 ${
-        open ? "mega-menu-open" : ""
+      className={`pointer-events-none fixed left-0 top-0 z-[100] hidden h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center mix-blend-difference transition-opacity duration-300 md:flex ${
+        cursor.visible ? "opacity-100" : "opacity-0"
       }`}
-      aria-hidden={!open}
+      style={{ transform: `translate(${cursor.x}px, ${cursor.y}px) translate(-50%, -50%)` }}
     >
-      <button
-        className="absolute right-6 top-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-white md:right-10 md:top-10"
-        onClick={onClose}
-        type="button"
+      <div
+        className={`h-full w-full rounded-full border-2 border-white transition-transform duration-300 ${
+          cursor.visible ? "scale-[2]" : "scale-50"
+        }`}
+      />
+      <span
+        className={`material-symbols-outlined absolute text-[12px] text-white transition-opacity duration-300 ${
+          cursor.visible ? "opacity-100" : "opacity-0"
+        }`}
       >
-        <span className="material-symbols-outlined">close</span>
-        Inchide
-      </button>
-      <nav className="flex flex-col space-y-6">
-        {links.map((link, index) => (
-          <a
-            className={`font-display text-5xl font-bold transition-all duration-300 md:text-7xl ${
-              index === 0 ? "text-[#8FABD4]" : "text-white hover:text-[#8FABD4]"
-            }`}
-            href={link.href}
-            key={link.label}
-            onClick={onClose}
-          >
-            {link.label}
-          </a>
-        ))}
-      </nav>
+        add
+      </span>
     </div>
   );
 }
 
-function Hero() {
-  return (
-    <section className="relative flex min-h-[calc(100vh+180px)] items-center overflow-hidden px-5 py-24 md:px-20">
-      <div className="pointer-events-none relative z-10 grid w-full grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-10">
-          <h1 className="font-display text-[18vw] font-extrabold uppercase leading-[0.92] tracking-normal text-black md:text-[120px]">
-            {["DETINE MAI", "PUTIN.", "ACCESEAZA TOT."].map((line, index) => (
-              <span className="block overflow-hidden" key={line}>
-                <span
-                  className={`hero-line inline-block transition-transform duration-1000 ease-out ${
-                    index === 2 ? "text-outline" : ""
-                  }`}
-                  style={{ transitionDelay: `${100 + index * 180}ms` }}
-                >
-                  {line}
-                </span>
-              </span>
-            ))}
-          </h1>
-        </div>
-        <div className="col-span-12 mt-12 lg:col-span-5 lg:col-start-8">
-          <p className="hero-sub max-w-md text-xl leading-8 text-[#1a1c1c] transition-all delay-700 duration-1000">
-            PINLEND este platforma prin care inchiriezi obiecte de calitate doar cand ai nevoie de ele si le oferi mai departe atunci cand stau nefolosite.
-          </p>
-          <div className="hero-sub mt-8 flex flex-col gap-5 transition-all delay-1000 duration-1000 sm:flex-row sm:items-center sm:gap-8">
-            <a className="inline-flex justify-center bg-black px-10 py-5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:bg-[#30578F]" href="#impact-section">
-              Explorează anunțurile
-            </a>
-            <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
-              Deruleaza pentru detalii
-              <span className="material-symbols-outlined animate-bounce">arrow_downward</span>
-            </span>
-          </div>
-        </div>
-      </div>
-      <div className="absolute right-10 top-1/2 hidden -translate-y-1/2 [writing-mode:vertical-rl] lg:block">
-        <span className="font-mono text-xs uppercase tracking-[0.5em] text-[#444748]">
-          Comunitate globala - 2026
-        </span>
-      </div>
-    </section>
-  );
-}
-
-function Vision() {
-  return (
-    <section className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-black px-5 py-32 md:px-20 md:py-40">
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-1 -mt-10 font-mono text-7xl text-white/20">01</div>
-        <div className="col-span-11 lg:col-span-8 lg:col-start-3">
-          <p className="mb-8 font-mono text-xs uppercase tracking-widest text-[#8FABD4]">
-            Viziunea
-          </p>
-          <h2 className="reveal-text font-display text-5xl font-bold leading-tight text-white md:text-7xl">
-            O economie circulara construita pentru oameni practici. Inlocuim proprietatea inutila cu acces flexibil si transformam obiectele nefolosite in experiente comune.
-          </h2>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Impact() {
-  return (
-    <section className="relative bg-[#f9f9f9] px-5 py-32 md:px-20 md:py-40" id="impact-section">
-      <div className="flex flex-col items-start justify-between gap-20 lg:flex-row">
-        <div className="w-full lg:sticky lg:top-40 lg:w-1/2">
-          <h3 className="mb-12 font-display text-5xl font-bold uppercase text-black md:text-7xl">
-            Impact masurabil
-          </h3>
-          <div className="flex flex-col gap-12">
-            <Stat label="Carbon redus" target="42" suffix="%" />
-            <Stat label="Schimburi active" target="185" suffix="K" />
-          </div>
-        </div>
-        <div className="flex w-full flex-col gap-8 pt-8 lg:w-1/3 lg:pt-20">
-          <div className="group relative aspect-[4/5] overflow-hidden bg-[#eeeeee]">
-            <img
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-              src={images.chair}
-              alt="Obiect premium intr-un spatiu minimalist, fotografiat editorial"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-              <span className="bg-black px-6 py-3 font-mono text-xs uppercase tracking-widest text-white">
-                Vezi obiectul
-              </span>
-            </div>
-          </div>
-          <p className="text-base leading-6 text-[#444748]">
-            Fiecare inchiriere PINLEND reduce nevoia de productie noua. Obiectele sunt folosite mai eficient, iar comunitatea castiga acces la lucruri bune fara risipa.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Stat({ label, target, suffix }) {
-  return (
-    <div className="border-b border-[#c4c7c7] pb-8">
-      <span className="font-mono text-xs uppercase tracking-widest text-[#444748]">{label}</span>
-      <div className="flex items-baseline gap-4">
-        <span className="counter font-display text-[96px] font-bold leading-none text-black md:text-[120px]" data-target={target}>
-          0
-        </span>
-        <span className="font-display text-6xl font-bold text-black">{suffix}</span>
-      </div>
-    </div>
-  );
-}
-
-function Features() {
-  return (
-    <section className="relative overflow-hidden bg-black px-5 py-32 md:px-20 md:py-40" id="features">
-      <div className="mb-24 flex flex-col justify-between gap-12 lg:flex-row lg:items-end">
-        <div className="max-w-2xl">
-          <span className="mb-6 block font-mono text-xs uppercase tracking-widest text-[#8FABD4]">
-            Redefinim accesul
-          </span>
-          <h2 className="font-display text-5xl font-bold uppercase text-white md:text-7xl">
-            Ecosistemul
-          </h2>
-        </div>
-        <a className="group flex items-center gap-4 font-mono text-xs uppercase tracking-widest text-white" href="#">
-          Exploreaza toate functionalitatile
-          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 transition-all group-hover:bg-[#4A70A9] group-hover:text-white">
-            <span className="material-symbols-outlined">arrow_forward</span>
-          </span>
-        </a>
-      </div>
-      <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
-        {features.map((feature, index) => (
-          <article
-            className="flex flex-col gap-8 transition-transform duration-500 hover:-translate-y-4"
-            style={{ transform: `translateY(${index * 48}px)` }}
-            key={feature.title}
-          >
-            <div className="relative h-80 overflow-hidden bg-[#e2e2e2]">
-              <img
-                className="h-full w-full object-cover grayscale transition-all duration-700 hover:grayscale-0"
-                src={feature.image}
-                alt={feature.title}
-              />
-              <div className="absolute left-6 top-6 flex h-10 w-10 items-center justify-center bg-black">
-                <span className="material-symbols-outlined text-white">{feature.icon}</span>
-              </div>
-            </div>
-            <div>
-              <h4 className="mb-4 text-3xl font-medium leading-10 text-white">{feature.title}</h4>
-              <p className="text-base leading-6 text-white/60">{feature.text}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ArchiveBreak() {
-  const steps = [
-    {
-      number: "01",
-      title: "Alegi obiectul",
-      text: "Cauti in comunitate, verifici pozele, pretul pe zi si ratingul proprietarului.",
-      icon: "search",
-    },
-    {
-      number: "02",
-      title: "Rezervi perioada",
-      text: "Selectezi zilele, vezi costul total si garantia inainte sa confirmi.",
-      icon: "calendar_month",
-    },
-    {
-      number: "03",
-      title: "Predare verificata",
-      text: "Identitatea, contractul si returul sunt documentate digital in aplicatie.",
-      icon: "verified_user",
-    },
-  ];
-
-  return (
-    <section className="relative overflow-hidden bg-black px-5 py-32 md:px-20 md:py-40">
-      <div className="absolute right-0 top-0 h-full w-1/2 bg-[radial-gradient(circle_at_center,#4A70A933,transparent_60%)]" />
-      <div className="relative z-10 grid grid-cols-1 gap-14">
-        <div className="min-w-0 max-w-6xl">
-          <p className="mb-6 font-mono text-xs uppercase tracking-widest text-[#8FABD4]">
-            Cum functioneaza
-          </p>
-          <h2 className="section-flow-title font-display font-extrabold uppercase text-white">
-            <span className="block">Inchiriere clara,</span>
-            <span className="block">fara improvizatii.</span>
-          </h2>
-          <p className="mt-8 max-w-[680px] text-lg leading-8 text-white/60 md:text-xl">
-            PINLEND leaga cautarea, rezervarea, verificarea identitatii si contractul intr-un flux simplu, construit pentru incredere intre oameni reali.
-          </p>
-        </div>
-
-        <div className="min-w-0">
-          <div className="grid gap-5 lg:grid-cols-3">
-            {steps.map((step) => (
-              <article
-                className="group grid min-w-0 grid-cols-[56px_1fr] gap-4 border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-[#4A70A9]/70 hover:bg-white/[0.06] sm:grid-cols-[72px_1fr] md:grid-cols-[96px_64px_1fr] md:gap-5 md:p-7 lg:grid-cols-1"
-                key={step.number}
-              >
-                <span className="font-display text-4xl font-extrabold text-white/20 transition-colors group-hover:text-[#8FABD4]">
-                  {step.number}
-                </span>
-                <span className="hidden h-14 w-14 items-center justify-center rounded-full border border-white/10 text-[#8FABD4] md:flex">
-                  <span className="material-symbols-outlined">{step.icon}</span>
-                </span>
-                <div>
-                  <h3 className="text-2xl font-semibold text-white">
-                    {step.title}
-                  </h3>
-                  <p className="mt-2 text-base leading-6 text-white/55">
-                    {step.text}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="mt-8 grid gap-5 border border-[#4A70A9]/50 bg-[#30578F] p-6 text-white md:grid-cols-[1fr_auto] md:items-end">
-            <div>
-              <p className="font-mono text-xs uppercase tracking-widest text-white/65">
-                Exemplu din app
-              </p>
-              <h3 className="mt-3 text-3xl font-bold">
-                PlayStation 5 Digital Edition
-              </h3>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <span className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#30578F]">
-                  85 RON / zi
-                </span>
-                <span className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">
-                  Garantie 300 RON
-                </span>
-                <span className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">
-                  Proprietar verificat
-                </span>
-              </div>
-            </div>
-            <a
-              className="inline-flex justify-center bg-white px-8 py-4 font-mono text-xs uppercase tracking-widest text-[#30578F] transition-colors hover:bg-black hover:text-white"
-              href="#features"
-            >
-              Vezi siguranta
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Footer() {
+function Footer({ t }) {
   return (
     <footer className="w-full bg-black px-5 py-32 md:px-20 md:py-40">
       <div className="mb-12 flex flex-col items-start justify-between gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end">
         <h2 className="max-w-4xl font-display text-6xl font-extrabold uppercase leading-none text-white md:text-[120px]">
-          Gata sa imparti?
+          {t.ready}
         </h2>
-        <Link className="bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
-          Incepe acum
+        <Link
+          className="bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]"
+          href="/download"
+        >
+          {t.start}
         </Link>
       </div>
       <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -477,33 +310,39 @@ function Footer() {
           <a href="#">Twitter/X</a>
           <a href="#">LinkedIn</a>
         </FooterColumn>
-        <FooterColumn title="Navigare">
-          <a href="#">Acasa</a>
-          <Link href="/features">Functionalitati</Link>
-          <Link href="/archive">Anunțuri</Link>
+        <FooterColumn title={t.navigation}>
+          <Link href="/despre-noi">{t === copy.en ? "About us" : "Despre noi"}</Link>
+          <Link href="/features">{t === copy.en ? "Features" : "Funcționalități"}</Link>
+          <Link href="/">{t.title}</Link>
         </FooterColumn>
         <div className="flex flex-col gap-6 md:col-span-2">
           <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
           <form className="relative flex w-full items-center border-b border-white/20">
-            <input
-              className="w-full bg-transparent py-4 text-xl leading-8 text-white outline-none"
-              placeholder="Introdu adresa de email"
+            <Input
+              className="h-auto w-full rounded-none border-0 bg-transparent px-0 py-4 text-xl leading-8 text-white outline-none focus-visible:border-transparent focus-visible:ring-0 transition-colors placeholder:text-white/35"
+              placeholder={t.emailPlaceholder}
               type="email"
             />
-            <button className="material-symbols-outlined text-white" type="button">
+            <button className="material-symbols-outlined text-white" type="submit">
               arrow_forward
             </button>
           </form>
         </div>
       </div>
       <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
-        <span className="font-mono text-xs text-white/40">
-          © 2026 PINLEND. Creat pentru economia colaborativa.
+        <span className="font-mono text-xs uppercase tracking-widest text-white/40">
+          {t.copyright}
         </span>
         <div className="flex flex-wrap gap-6">
-          <Link className="font-mono text-xs uppercase text-white/40" href="/privacy-policy">Confidentialitate</Link>
-          <Link className="font-mono text-xs uppercase text-white/40" href="/terms-and-conditions">Termeni</Link>
-          <Link className="font-mono text-xs uppercase text-white/40" href="/support">Suport</Link>
+          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/privacy-policy">
+            {t.privacy}
+          </Link>
+          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/terms-and-conditions">
+            {t.terms}
+          </Link>
+          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/support">
+            {t.support}
+          </Link>
         </div>
       </div>
     </footer>
@@ -514,9 +353,7 @@ function FooterColumn({ title, children }) {
   return (
     <div className="flex flex-col gap-6">
       <p className="font-mono text-xs uppercase tracking-widest text-white/60">{title}</p>
-      <div className="flex flex-col gap-2 text-xl leading-8 text-white [&_a:hover]:text-[#8FABD4]">
-        {children}
-      </div>
+      <div className="flex flex-col gap-2 text-xl leading-8 text-white">{children}</div>
     </div>
   );
 }

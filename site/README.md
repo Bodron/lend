@@ -6,10 +6,41 @@ Din rădăcina proiectului, pornește site-ul împreună cu API-ul și panoul ad
 docker compose -f backend/docker-compose.yml up --build -d
 ```
 
-Deschide `http://localhost:3002`. Serverul Next.js rulează în mod de dezvoltare și reflectă modificările din folderul `site`.
-Pagina „Anunțuri” citește anunțurile publice din API la fiecare cerere; în Docker folosește `BACKEND_API_URL=http://api:3000/api`.
+Deschide `http://localhost:3002`. Comanda implicită rulează build-ul optimizat (`next start`), fără compilarea fiecărei pagini la navigare. După modificări în `site`, reconstruiește containerul cu `docker compose -f backend/docker-compose.yml up -d --build site`.
+
+Pentru editări cu actualizare automată folosește varianta de dezvoltare (prima accesare a unei pagini poate fi mai lentă):
+
+```powershell
+docker compose -f backend/docker-compose.yml -f backend/docker-compose.dev.yml up -d --build site
+```
+
+Ca să revii la varianta rapidă, rulează din nou comanda implicită cu `--build`. Navigarea cu `next/link` preîncarcă paginile în modul de producție.
+Pagina principală `/` afișează direct anunțurile. Prezentarea platformei este la `/despre-noi`, iar vechea adresă `/archive` redirecționează către `/`.
+Site-ul citește `site/.env` pentru a alege backendul. Copiază `site/.env.example` în `site/.env`, apoi setează `SITE_USE_PRODUCTION_BACKEND=true` pentru API-ul live (`SITE_PRODUCTION_BACKEND_API_URL`) sau `false` pentru API-ul local. În Docker, adresa locală este `http://api:3000/api`; când rulezi site-ul separat, adresa implicită este `http://localhost:3000/api`. Repornește containerul site-ului după schimbarea `.env`:
+
+```powershell
+docker compose -f backend/docker-compose.yml restart site
+```
+
+Aceeași alegere este folosită pentru lista de anunțuri, pagina fiecărui anunț și contul utilizatorului. Containerul citește `site/.env` la pornire dacă fișierul există.
+
+Lista publică de produse este partajată între paginile de anunțuri, detalii și favorite într-un cache de server de 10 secunde, invalidat imediat după publicarea sau editarea unui anunț prin site. Pagina de anunțuri încarcă separat componenta hărții; imaginile cardurilor de sub hartă se încarcă pe măsură ce intră în ecran. Acestea reduc cererile repetate și codul necesar pentru navigarea inițială.
+
+Când folosești API-ul live, poți porni doar site-ul, fără API-ul local:
+
+```powershell
+docker compose -f backend/docker-compose.yml up --build -d site
+```
 
 Contul utilizatorului este la `http://localhost:3002/account`. Loginul folosește API-ul PINLEND, iar sesiunea este păstrată într-un cookie HttpOnly. Pentru întoarcerea din Stripe Connect către site, API-ul folosește `SITE_PUBLIC_URL` (implicit `http://localhost:3002` în Docker).
+
+Mesajele sunt la `http://localhost:3002/mesaje`. Din pagina unui anunț poți începe o conversație cu proprietarul; lista, trimiterea, citirea și ștergerea conversațiilor folosesc același API ca aplicația mobilă. Conversația deschisă se actualizează la fiecare cinci secunde cât timp pagina este vizibilă.
+
+Funcțiile contului sunt accesibile și pe web: `/anunturile-mele` pentru publicare, editare și perioade blocate, `/vizionari` pentru cereri și plăți de vizionare, `/colegi` pentru cereri de coleg, `/retur` pentru instrucțiunile de descărcare a aplicației în care se face returul cu QR, `/notificari` pentru activitatea contului și `/favorite` pentru anunțuri salvate în cont. Favoritele se sincronizează cu aplicația mobilă prin API-ul `favorites`; listele locale mai vechi sunt importate automat după autentificare. Arhiva include căutare, filtre și afișarea locațiilor pe hartă. Recenziile se pot publica din pagina anunțului după o închiriere eligibilă.
+
+Hărțile web folosesc MapLibre și date OpenStreetMap servite de [OpenFreeMap](https://openfreemap.org/), fără cheie API. Stilul din `public/maps/pinlend-style.json` adaptează paleta `assets/maps/altus_map_3.json` din Flutter: teren gri deschis, apă albastră și fără puncte de interes sau transport. Atribuirea rămâne vizibilă pe hartă. Serviciul public OpenFreeMap este gratuit, inclusiv pentru uz comercial, dar nu oferă SLA; dacă traficul sau disponibilitatea cer alt furnizor, schimbați sursele din stilul hărții.
+
+Butonul „Închiriază” din pagina unui anunț deschide `/inchiriaza/[slug]`. Fluxul folosește același backend ca aplicația mobilă: verifică disponibilitatea, creează cererea, încarcă PDF-ul semnat, autorizează plata prin Stripe și cere verificarea identității înainte de a trimite cererea proprietarului. Cererile întrerupte se pot relua din secțiunea „Închirieri” a contului; proprietarul poate accepta sau refuza acolo cererile pregătite. Modul Stripe (test/live) este determinat de backendul ales și de cheile configurate pe acesta.
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
 

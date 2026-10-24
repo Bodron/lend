@@ -292,6 +292,9 @@ class _ProductViewingsSectionState extends State<ProductViewingsSection>
   Widget build(BuildContext context) {
     final product = widget.product;
     final items = _items.where((item) => item.productId == product.id).toList();
+    final hasActiveViewing =
+        _userId != null &&
+        items.any((item) => item.visitorId == _userId && item.isActive);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -334,10 +337,24 @@ class _ProductViewingsSectionState extends State<ProductViewingsSection>
               ),
             ),
           const SizedBox(height: 12),
+          if (hasActiveViewing)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                _label(
+                  'Ai deja o vizionare in curs pentru acest anunt. Poti trimite alta cerere dupa respingere, anulare sau finalizare.',
+                  'You already have an active viewing for this listing. You can send another request after it is declined, cancelled, or completed.',
+                ),
+              ),
+            ),
           FilledButton.icon(
-            onPressed: _busy ? null : _request,
+            onPressed: _busy || hasActiveViewing ? null : _request,
             icon: const Icon(Icons.calendar_month),
-            label: Text(_label('Propune data si ora', 'Propose date and time')),
+            label: Text(
+              hasActiveViewing
+                  ? _label('Vizionare in curs', 'Viewing in progress')
+                  : _label('Propune data si ora', 'Propose date and time'),
+            ),
           ),
           const SizedBox(height: 20),
         ],
@@ -877,7 +894,7 @@ class _ViewingCalendarSheetState extends State<_ViewingCalendarSheet> {
                 english ? 'Choose the viewing date' : 'Alege data vizionarii',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: _text,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 18),
@@ -906,7 +923,7 @@ class _ViewingCalendarSheetState extends State<_ViewingCalendarSheet> {
                               style: const TextStyle(
                                 color: _text,
                                 fontSize: 24,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -936,7 +953,7 @@ class _ViewingCalendarSheetState extends State<_ViewingCalendarSheet> {
                                   color: Color(0xFF737781),
                                   fontSize: 12,
                                   letterSpacing: 0.8,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),

@@ -40,6 +40,15 @@ class Viewing {
   int get totalRon => priceRon + serviceFeeRon;
   final String? refundStatus;
 
+  bool get isActive => const {
+    'requested',
+    'counter_proposed',
+    'awaiting_payment',
+    'awaiting_verification',
+    'refund_pending',
+    'confirmed',
+  }.contains(status);
+
   factory Viewing.fromJson(Map<String, dynamic> json) => Viewing(
     id: (json['_id'] ?? '').toString(),
     productId: (json['productId'] ?? '').toString(),

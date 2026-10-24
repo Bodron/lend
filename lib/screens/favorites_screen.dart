@@ -6,8 +6,21 @@ import '../services/favorites_service.dart';
 import '../services/products_api.dart';
 import 'product_details_screen.dart';
 
-class FavoritesScreen extends StatelessWidget {
+class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
+
+  @override
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  late Future<List<LendProduct>> _products;
+
+  @override
+  void initState() {
+    super.initState();
+    _products = _load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +36,17 @@ class FavoritesScreen extends StatelessWidget {
         title: LendBackTopBar(title: strings.favorites),
       ),
       body: FutureBuilder<List<LendProduct>>(
-        future: _load(),
+        future: _products,
         builder: (context, snapshot) {
           final products = snapshot.data ?? const <LendProduct>[];
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(snapshot.error.toString(), textAlign: TextAlign.center),
+            ));
           }
           if (products.isEmpty) {
             return Center(child: Text(strings.emptyFavorites));
@@ -52,11 +71,14 @@ class FavoritesScreen extends StatelessWidget {
                 ),
                 subtitle: Text(product.pricePerDayLabel),
                 trailing: const Icon(Icons.favorite, color: Colors.red),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
+                onTap: () async {
+                  await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
                     builder: (_) => ProductDetailsScreen(product: product),
                   ),
-                ),
+                  );
+                  if (mounted) setState(() => _products = _load());
+                },
               );
             },
           );

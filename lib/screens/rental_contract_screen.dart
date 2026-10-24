@@ -34,6 +34,7 @@ class RentalContractScreen extends StatefulWidget {
     required this.serviceFee,
     required this.total,
     this.negotiatedSubtotal,
+    this.offerId,
   });
 
   final LendProduct product;
@@ -48,6 +49,7 @@ class RentalContractScreen extends StatefulWidget {
   final int serviceFee;
   final int total;
   final int? negotiatedSubtotal;
+  final String? offerId;
 
   @override
   State<RentalContractScreen> createState() => _RentalContractScreenState();
@@ -143,6 +145,7 @@ class _RentalContractScreenState extends State<RentalContractScreen> {
         endDate: widget.endDate,
         rentalMode: widget.rentalMode,
         negotiatedSubtotal: widget.negotiatedSubtotal,
+        offerId: widget.offerId,
         pickupTime: widget.pickupTime,
         returnTime: widget.returnTime,
         renterLatitude: renterPosition?.latitude,
@@ -497,7 +500,7 @@ class _LegalDocumentCard extends StatelessWidget {
                       color: _RentalContractScreenState._muted,
                       fontSize: 12,
                       letterSpacing: 0.8,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -610,7 +613,7 @@ class _LegalSection extends StatelessWidget {
           style: const TextStyle(
             color: _RentalContractScreenState._text,
             fontSize: 22,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 10),
@@ -663,7 +666,7 @@ class _HighlightedLegalSection extends StatelessWidget {
                     style: const TextStyle(
                       color: _RentalContractScreenState._text,
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -719,7 +722,7 @@ class _OwnerSignatureCard extends StatelessWidget {
                     color: _RentalContractScreenState._muted,
                     fontSize: 12,
                     letterSpacing: 0.6,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -752,7 +755,7 @@ class _OwnerSignatureCard extends StatelessWidget {
                       style: const TextStyle(
                         color: _RentalContractScreenState._text,
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -800,7 +803,7 @@ class _TenantSignatureCard extends StatelessWidget {
                 color: _RentalContractScreenState._muted,
                 fontSize: 12,
                 letterSpacing: 0.6,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 24),
@@ -1021,7 +1024,7 @@ class _PricingBar extends StatelessWidget {
                     ? (downloading ? 'Preparing...' : 'Save PDF')
                     : (downloading ? 'Se pregateste...' : 'Salveaza PDF'),
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               icon: downloading
                   ? const SizedBox(
@@ -1052,7 +1055,7 @@ class _PricingBar extends StatelessWidget {
                     ? GeneratedLocalizations.of(context).submitting
                     : GeneratedLocalizations.of(context).signAndSubmit,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+                style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               icon: submitting
                   ? const SizedBox(
@@ -1127,7 +1130,7 @@ class _TotalMetric extends StatelessWidget {
             style: TextStyle(
               color: _RentalContractScreenState._text,
               fontSize: 24,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

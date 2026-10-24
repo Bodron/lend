@@ -655,7 +655,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                           style: const TextStyle(
                             color: _RentalsScreenState._text,
                             fontSize: 20,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -712,7 +712,7 @@ class _RentalsScreenState extends State<RentalsScreen> {
                             )
                           : const Text(
                               'Salveaza programul',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                     ),
                   ),
@@ -771,7 +771,7 @@ class _ScheduleTextField extends StatelessWidget {
           style: const TextStyle(
             color: _RentalsScreenState._muted,
             fontSize: 13,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 8),
@@ -842,7 +842,7 @@ class _RentalsMessage extends StatelessWidget {
               style: const TextStyle(
                 color: _RentalsScreenState._text,
                 fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
@@ -960,7 +960,7 @@ class _PerspectiveTab extends StatelessWidget {
                 style: TextStyle(
                   color: selected ? Colors.white : _RentalsScreenState._muted,
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -1032,7 +1032,7 @@ class _RentalTab extends StatelessWidget {
                     ? _RentalsScreenState._text
                     : _RentalsScreenState._muted,
                 fontSize: 14,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
             const SizedBox(height: 4),
@@ -1209,7 +1209,7 @@ class _ActiveRentalCard extends StatelessWidget {
                         style: const TextStyle(
                           color: _RentalsScreenState._text,
                           fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -1266,7 +1266,7 @@ class _ActiveRentalCard extends StatelessWidget {
                               : _RentalsScreenState._muted,
                           fontSize: 14,
                           fontWeight: expiring
-                              ? FontWeight.w800
+                              ? FontWeight.w700
                               : FontWeight.w500,
                         ),
                       ),
@@ -1450,7 +1450,7 @@ class _ActiveRentalCard extends StatelessWidget {
                             : GeneratedLocalizations.of(context).scanReturnCode,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -1655,7 +1655,7 @@ class _HistoryRentalCard extends StatelessWidget {
                       style: const TextStyle(
                         color: _RentalsScreenState._muted,
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -1687,7 +1687,7 @@ class _HistoryRentalCard extends StatelessWidget {
                           style: const TextStyle(
                             color: _RentalsScreenState._text,
                             fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -1726,7 +1726,7 @@ class _StatusBadge extends StatelessWidget {
             color: Colors.white,
             fontSize: 10,
             letterSpacing: 0.6,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -1775,7 +1775,7 @@ class _VerifiedBadge extends StatelessWidget {
               style: const TextStyle(
                 color: _RentalsScreenState._secondary,
                 fontSize: 10,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],

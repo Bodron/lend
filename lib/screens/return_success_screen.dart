@@ -45,7 +45,7 @@ class ReturnSuccessScreen extends StatelessWidget {
                 color: _text,
                 fontSize: 30,
                 height: 1.12,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
@@ -115,7 +115,7 @@ class ReturnSuccessScreen extends StatelessWidget {
                   strings.backToRentals,
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

@@ -243,7 +243,7 @@ class _StatCard extends StatelessWidget {
                 color: _MyListingsScreenState._muted,
                 fontSize: 12,
                 letterSpacing: 0.8,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const Spacer(),
@@ -257,7 +257,7 @@ class _StatCard extends StatelessWidget {
                     style: TextStyle(
                       color: color,
                       fontSize: 23,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -358,7 +358,7 @@ class _ListingCard extends StatelessWidget {
                         style: const TextStyle(
                           color: _MyListingsScreenState._text,
                           fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -368,7 +368,7 @@ class _ListingCard extends StatelessWidget {
                       style: const TextStyle(
                         color: _MyListingsScreenState._text,
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -446,7 +446,7 @@ class _ListingCard extends StatelessWidget {
                           ),
                           child: Text(
                             GeneratedLocalizations.of(context).edit,
-                            style: const TextStyle(fontWeight: FontWeight.w800),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                         ),
                       ),
@@ -554,7 +554,7 @@ class _StatusPill extends StatelessWidget {
               style: TextStyle(
                 color: foreground,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -643,7 +643,7 @@ class _MessagePanel extends StatelessWidget {
               style: const TextStyle(
                 color: _MyListingsScreenState._text,
                 fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),

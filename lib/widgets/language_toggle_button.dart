@@ -32,7 +32,7 @@ class LanguageToggleButton extends StatelessWidget {
               style: TextStyle(
                 color: foreground,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

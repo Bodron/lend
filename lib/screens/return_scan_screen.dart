@@ -131,7 +131,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
           title: Text(
             strings.confirmReturnTitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900),
+            style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           content: Text(
             strings.confirmReturnBody,
@@ -284,7 +284,7 @@ class _ReturnScanScreenState extends State<ReturnScanScreen> {
                           style: const TextStyle(
                             color: _text,
                             fontSize: 16,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 6),
