@@ -85,12 +85,12 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
           )
         : DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
     _startDate = widget.rentalMode == RentalMode.hour
-        ? initialDate
+        ? (widget.initialStartDate ?? initialDate)
         : widget.rentalMode == RentalMode.month
         ? (widget.initialStartDate ?? initialDate)
         : widget.initialStartDate;
     _endDate = widget.rentalMode == RentalMode.hour
-        ? initialDate
+        ? (widget.initialEndDate ?? initialDate)
         : widget.rentalMode == RentalMode.month
         ? (widget.initialEndDate ?? _sameDayNextMonth(initialDate))
         : widget.initialEndDate;
@@ -98,8 +98,24 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
         widget.rentalMode == RentalMode.day &&
         _startDate != null &&
         _endDate == null;
-    _pickupTime = widget.product.pickupTime;
-    _returnTime = widget.product.returnTime;
+    final hasOfferHours =
+        widget.lockSelection &&
+        widget.rentalMode == RentalMode.hour &&
+        widget.initialStartDate != null &&
+        widget.initialEndDate != null &&
+        widget.initialStartDate!.year == widget.initialEndDate!.year &&
+        widget.initialStartDate!.month == widget.initialEndDate!.month &&
+        widget.initialStartDate!.day == widget.initialEndDate!.day &&
+        (widget.initialStartDate!.hour != 0 ||
+            widget.initialStartDate!.minute != 0 ||
+            widget.initialEndDate!.hour != 0 ||
+            widget.initialEndDate!.minute != 0);
+    _pickupTime = hasOfferHours
+        ? '${widget.initialStartDate!.hour.toString().padLeft(2, '0')}:${widget.initialStartDate!.minute.toString().padLeft(2, '0')}'
+        : widget.product.pickupTime;
+    _returnTime = hasOfferHours
+        ? '${widget.initialEndDate!.hour.toString().padLeft(2, '0')}:${widget.initialEndDate!.minute.toString().padLeft(2, '0')}'
+        : widget.product.returnTime;
     _loadAvailabilityForVisibleMonth();
     if (widget.enableRealtime) _connectAvailabilitySocket();
   }
@@ -207,20 +223,24 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
   }
 
   int get _checkoutTotalPrice {
+    if (widget.negotiatedSubtotal != null) return widget.negotiatedSubtotal!;
     if (widget.rentalMode == RentalMode.hour) {
       return _rentalHours * _hourlyPrice;
     }
-
-    return widget.negotiatedSubtotal ?? _totalPrice;
+    return _totalPrice;
   }
 
   List<String> get _availableTimeOptions {
     final first = _timeToMinutes(widget.product.pickupTime);
     final last = _timeToMinutes(widget.product.returnTime);
-    return _TimeSelectionCard.timeOptions.where((value) {
+    final options = _TimeSelectionCard.timeOptions.where((value) {
       final minutes = _timeToMinutes(value);
       return minutes >= first && minutes <= last;
     }).toList();
+    if (widget.lockSelection && widget.rentalMode == RentalMode.hour) {
+      options.addAll([_pickupTime, _returnTime]);
+    }
+    return options.toSet().toList()..sort();
   }
 
   void _goToPreviousMonth() {
@@ -446,12 +466,16 @@ class _RentalPeriodScreenState extends State<RentalPeriodScreen> {
                         returnTime: _returnTime,
                         options: _availableTimeOptions,
                         isUnavailable: _isHourUnavailable,
-                        onPickupChanged: (value) => setState(() {
-                          _pickupTime = value;
-                        }),
-                        onReturnChanged: (value) => setState(() {
-                          _returnTime = value;
-                        }),
+                        onPickupChanged: widget.lockSelection
+                            ? null
+                            : (value) => setState(() {
+                                _pickupTime = value;
+                              }),
+                        onReturnChanged: widget.lockSelection
+                            ? null
+                            : (value) => setState(() {
+                                _returnTime = value;
+                              }),
                       ),
                     ],
                     const SizedBox(height: 24),
@@ -908,8 +932,8 @@ class _TimeSelectionCard extends StatelessWidget {
 
   final String pickupTime;
   final String returnTime;
-  final ValueChanged<String> onPickupChanged;
-  final ValueChanged<String> onReturnChanged;
+  final ValueChanged<String>? onPickupChanged;
+  final ValueChanged<String>? onReturnChanged;
   final bool Function(String time) isUnavailable;
   final List<String> options;
 
@@ -976,7 +1000,7 @@ class _TimeSelector extends StatelessWidget {
   final String label;
   final String value;
   final List<String> options;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onChanged;
   final bool Function(String time) isUnavailable;
 
   @override
@@ -1007,9 +1031,9 @@ class _TimeSelector extends StatelessWidget {
                 label: Text(option),
                 selected: selected,
                 showCheckmark: false,
-                onSelected: isUnavailable(option)
+                onSelected: onChanged == null || isUnavailable(option)
                     ? null
-                    : (_) => onChanged(option),
+                    : (_) => onChanged!(option),
                 selectedColor: _RentalPeriodScreenState._primary,
                 backgroundColor: Colors.white,
                 labelStyle: TextStyle(

@@ -611,8 +611,7 @@ class _OfferCard extends StatelessWidget {
                 _OfferInfoRow(
                   icon: Icons.calendar_today_outlined,
                   label: 'Perioadă',
-                  value:
-                      '${_shortDate(offer.startDate)} – ${_shortDate(offer.endDate)}',
+                  value: _offerPeriodLabel(offer),
                 ),
                 const SizedBox(height: 8),
                 _OfferInfoRow(
@@ -1195,6 +1194,27 @@ String _offerStatus(String status) {
 String _shortDate(DateTime date) =>
     '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
 
+String _offerPeriodLabel(RentalOffer offer) {
+  if (offer.rentalMode == 'hour') {
+    if (offer.startDate.hour == 0 &&
+        offer.startDate.minute == 0 &&
+        offer.endDate.hour == 0 &&
+        offer.endDate.minute == 0) {
+      return '${_shortDate(offer.startDate)} – ${_shortDate(offer.endDate)}';
+    }
+    final pickup =
+        '${offer.startDate.hour.toString().padLeft(2, '0')}:${offer.startDate.minute.toString().padLeft(2, '0')}';
+    final dropoff =
+        '${offer.endDate.hour.toString().padLeft(2, '0')}:${offer.endDate.minute.toString().padLeft(2, '0')}';
+    return '${_shortDate(offer.startDate)} · $pickup – $dropoff';
+  }
+  if (offer.rentalMode == 'day') {
+    final lastDay = offer.endDate.subtract(const Duration(days: 1));
+    return '${_shortDate(offer.startDate)} – ${_shortDate(lastDay)}';
+  }
+  return '${_shortDate(offer.startDate)} – ${_shortDate(offer.endDate)}';
+}
+
 String _rentalModeLabel(String mode) {
   switch (mode) {
     case 'hour':
@@ -1219,60 +1239,129 @@ class _OfferDraft {
   final int amount;
 }
 
-class _OfferDraftSheet extends StatefulWidget {
-  const _OfferDraftSheet({
+class OfferDraftSheet extends StatefulWidget {
+  const OfferDraftSheet({
+    super.key,
     required this.modes,
     required this.today,
     required this.product,
-    required this.amountController,
   });
   final List<String> modes;
   final DateTime today;
   final LendProduct product;
-  final TextEditingController amountController;
 
   @override
-  State<_OfferDraftSheet> createState() => _OfferDraftSheetState();
+  State<OfferDraftSheet> createState() => _OfferDraftSheetState();
 }
 
-class _OfferDraftSheetState extends State<_OfferDraftSheet> {
+class _OfferDraftSheetState extends State<OfferDraftSheet> {
+  final _amountController = TextEditingController();
   int _step = 0;
-  bool _ignoreInitialCalendarChange = true;
+  bool _awaitingEndDate = false;
   late String _mode = widget.modes.first;
+  late String _pickupTime = widget.product.pickupTime;
+  late String _returnTime = widget.product.returnTime;
   DateTime? _start;
   DateTime? _end;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) setState(() => _ignoreInitialCalendarChange = false);
-    });
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
   }
 
   DateTime get _firstDate => DateTime(
     widget.today.year,
     widget.today.month,
-    widget.today.day,
-  ).add(const Duration(days: 1));
+    widget.today.day + (_mode == 'hour' ? 0 : 1),
+  );
+
+  int _minutes(String value) {
+    final parts = value.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
+
+  List<String> get _hourOptions {
+    final first = _minutes(widget.product.pickupTime);
+    final last = _minutes(widget.product.returnTime);
+    final options = <String>{
+      widget.product.pickupTime,
+      widget.product.returnTime,
+    };
+    for (var hour = 0; hour < 24; hour++) {
+      final minutes = hour * 60;
+      if (minutes >= first && minutes <= last) {
+        options.add('${hour.toString().padLeft(2, '0')}:00');
+      }
+    }
+    return options.toList()..sort();
+  }
+
+  bool get _hourPeriodValid {
+    if (_start == null || _minutes(_returnTime) <= _minutes(_pickupTime)) {
+      return false;
+    }
+    final start = DateTime(
+      _start!.year,
+      _start!.month,
+      _start!.day,
+      _minutes(_pickupTime) ~/ 60,
+      _minutes(_pickupTime) % 60,
+    );
+    return start.isAfter(DateTime.now());
+  }
+
+  bool get _periodValid =>
+      _start != null && _end != null && (_mode != 'hour' || _hourPeriodValid);
+
+  String get _selectedPeriodLabel {
+    if (_start == null || _end == null) return '';
+    if (_mode == 'hour') {
+      return '${_shortDate(_start!)} · $_pickupTime – $_returnTime';
+    }
+    final lastDay = DateTime(_end!.year, _end!.month, _end!.day - 1);
+    if (_mode == 'month') {
+      return '${_shortDate(_start!)} – ${_shortDate(_end!)} · 1 lună';
+    }
+    final days = DateTime.utc(
+      _end!.year,
+      _end!.month,
+      _end!.day,
+    ).difference(DateTime.utc(_start!.year, _start!.month, _start!.day)).inDays;
+    return '${_shortDate(_start!)} – ${_shortDate(lastDay)} · $days ${days == 1 ? 'zi' : 'zile'}';
+  }
+
+  DateTime _offerDate(DateTime date, [String? time]) {
+    final minutes = time == null ? 0 : _minutes(time);
+    return DateTime.utc(
+      date.year,
+      date.month,
+      date.day,
+      minutes ~/ 60,
+      minutes % 60,
+    );
+  }
 
   void _next() {
     if (_step == 0) {
       setState(() => _step = 1);
-    } else if (_step == 1 && _start != null && _end != null) {
+    } else if (_step == 1 && _periodValid) {
       setState(() => _step = 2);
     } else if (_step == 2 &&
-        _end != null &&
-        widget.amountController.text.trim().isNotEmpty) {
-      final amount = int.tryParse(widget.amountController.text.trim());
+        _periodValid &&
+        _amountController.text.trim().isNotEmpty) {
+      final amount = int.tryParse(_amountController.text.trim());
       if (amount != null && amount > 0) {
         FocusManager.instance.primaryFocus?.unfocus();
         Navigator.pop(
           context,
           _OfferDraft(
             rentalMode: _mode,
-            startDate: _start!,
-            endDate: _end!,
+            startDate: _offerDate(
+              _start!,
+              _mode == 'hour' ? _pickupTime : null,
+            ),
+            endDate: _offerDate(_end!, _mode == 'hour' ? _returnTime : null),
             amount: amount,
           ),
         );
@@ -1281,41 +1370,83 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
   }
 
   int get _normalPrice {
+    if (_mode == 'hour') {
+      final hours = ((_minutes(_returnTime) - _minutes(_pickupTime)) / 60)
+          .ceil();
+      final hourlyPrice = (widget.product.pricePerDay / 8).round().clamp(
+        1,
+        widget.product.pricePerDay,
+      );
+      return hours * hourlyPrice;
+    }
     final days = _start == null || _end == null
         ? 1
-        : _end!.difference(_start!).inDays.clamp(1, 365);
-    if (_mode == 'month') {
-      return widget.product.pricePerMonth ?? days * widget.product.pricePerDay;
-    }
+        : DateTime.utc(_end!.year, _end!.month, _end!.day)
+              .difference(
+                DateTime.utc(_start!.year, _start!.month, _start!.day),
+              )
+              .inDays
+              .clamp(1, 365);
+    if (_mode == 'month') return widget.product.pricePerMonth ?? 0;
     return days * widget.product.pricePerDay;
   }
 
   void _selectDate(DateTime date) {
-    if (_ignoreInitialCalendarChange) return;
-    if (_start == null) {
-      setState(() => _start = date);
-      return;
-    }
-    if (date.isAfter(_start!)) {
-      setState(() => _end = date);
-    } else {
+    if (_mode == 'hour') {
       setState(() {
         _start = date;
-        _end = null;
+        _end = date;
       });
+      return;
     }
+    if (_mode == 'month') {
+      final nextMonth = DateTime(date.year, date.month + 1, 1);
+      final lastDay = DateTime(nextMonth.year, nextMonth.month + 1, 0).day;
+      setState(() {
+        _start = date;
+        _end = DateTime(
+          nextMonth.year,
+          nextMonth.month,
+          date.day.clamp(1, lastDay),
+        );
+      });
+      return;
+    }
+    setState(() {
+      if (_start == null || !_awaitingEndDate || date.isBefore(_start!)) {
+        _start = date;
+        _end = DateTime(date.year, date.month, date.day + 1);
+        _awaitingEndDate = true;
+      } else {
+        _end = DateTime(date.year, date.month, date.day + 1);
+        _awaitingEndDate = false;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final title = _step == 0
-        ? 'Alege modul'
+        ? 'Alege modul de închiriere'
         : _step == 1
-        ? (_start == null ? 'Alege începutul' : 'Alege sfârșitul')
+        ? _mode == 'hour'
+              ? 'Alege ziua și intervalul orar'
+              : _mode == 'month'
+              ? 'Alege prima zi a lunii'
+              : _start == null
+              ? 'Alege prima zi'
+              : _awaitingEndDate
+              ? 'O zi selectată. Poți alege și ultima zi.'
+              : 'Perioada aleasă'
         : 'Verifică oferta';
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          20 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1364,6 +1495,9 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
                       child: OutlinedButton.icon(
                         onPressed: () => setState(() {
                           _mode = mode;
+                          _start = null;
+                          _end = null;
+                          _awaitingEndDate = false;
                           _step = 1;
                         }),
                         icon: Icon(
@@ -1378,20 +1512,78 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
                     ),
                   ),
                 ),
-              if (_step == 1)
+              if (_step == 1) ...[
                 _OfferRangeCalendar(
                   firstDate: _firstDate,
                   lastDate: DateTime(widget.today.year + 2),
                   startDate: _start,
-                  endDate: _end,
+                  endDate: _end == null || _mode == 'hour'
+                      ? _end
+                      : DateTime(_end!.year, _end!.month, _end!.day - 1),
                   onDateSelected: _selectDate,
                 ),
-              if (_step == 2) ...[
-                if (_mode == 'month')
-                  Text(
-                    'Perioada: ${_shortDate(_start!)} – ${_shortDate(_end!)}',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
+                if (_mode == 'hour') ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _pickupTime,
+                          decoration: const InputDecoration(
+                            labelText: 'Ridicare',
+                          ),
+                          items: _hourOptions
+                              .map(
+                                (time) => DropdownMenuItem(
+                                  value: time,
+                                  child: Text(time),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) => setState(
+                            () => _pickupTime = value ?? _pickupTime,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _returnTime,
+                          decoration: const InputDecoration(labelText: 'Retur'),
+                          items: _hourOptions
+                              .map(
+                                (time) => DropdownMenuItem(
+                                  value: time,
+                                  child: Text(time),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) => setState(
+                            () => _returnTime = value ?? _returnTime,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                  if (_start != null && !_hourPeriodValid)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: Text(
+                        'Alege o oră de ridicare viitoare și un retur după ridicare.',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                ],
+                if (_periodValid) ...[
+                  const SizedBox(height: 12),
+                  Text(_selectedPeriodLabel),
+                ],
+              ],
+              if (_step == 2) ...[
+                Text(
+                  _selectedPeriodLabel,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerLeft,
@@ -1416,7 +1608,7 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: widget.amountController,
+                  controller: _amountController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
                     labelText: 'Suma propusă de tine',
@@ -1429,18 +1621,19 @@ class _OfferDraftSheetState extends State<_OfferDraftSheet> {
                 Row(
                   children: [
                     TextButton(
-                      onPressed: () => setState(() {
-                        _step--;
-                        if (_step == 1) _end = null;
-                      }),
+                      onPressed: () => setState(() => _step--),
                       child: const Text('Înapoi'),
                     ),
                     const Spacer(),
-                    FilledButton(
-                      onPressed: _step == 1 && (_start == null || _end == null)
-                          ? null
-                          : _next,
-                      child: Text(_step == 2 ? 'Trimite oferta' : 'Continuă'),
+                    Flexible(
+                      child: FilledButton(
+                        onPressed: _step == 1 && !_periodValid ? null : _next,
+                        child: Text(
+                          _step == 2 ? 'Trimite oferta' : 'Continuă',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -1794,9 +1987,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
 
     if (!mounted) return;
     if (product == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Anunțul nu mai este disponibil.')),
-      );
+      LendToast.error(context, message: 'Anunțul nu mai este disponibil.');
       return;
     }
 
@@ -1825,11 +2016,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         setState(() => _messages = [..._messages, message]);
       }
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
+      if (mounted) LendToast.error(context, message: error.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -1840,30 +2027,26 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       await _sendRoommateProposal();
       return;
     }
-    final products = await ProductsApi().findAll();
-    final productMatches = products
-        .where((item) => item.id == widget.productId)
-        .toList();
-    final product = productMatches.isEmpty ? null : productMatches.first;
+    final product = await _ensureChatProduct();
+    if (!mounted) return;
     final modes =
         product?.rentalModes
             .where((mode) => const ['hour', 'day', 'month'].contains(mode))
+            .where(
+              (mode) => mode != 'month' || (product.pricePerMonth ?? 0) > 0,
+            )
             .toList() ??
         const <String>[];
     if (modes.isEmpty || !mounted) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Acest anunț nu are un mod de închiriere disponibil.',
-            ),
-          ),
+        LendToast.warning(
+          context,
+          message: 'Acest anunț nu are un mod de închiriere disponibil.',
         );
       }
       return;
     }
     final today = DateTime.now();
-    final amountController = TextEditingController();
     final draft = await showModalBottomSheet<_OfferDraft>(
       context: context,
       isScrollControlled: true,
@@ -1871,15 +2054,8 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (sheetContext) => _OfferDraftSheet(
-        modes: modes,
-        today: today,
-        product: product!,
-        amountController: amountController,
-      ),
-    );
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => amountController.dispose(),
+      builder: (_) =>
+          OfferDraftSheet(modes: modes, today: today, product: product!),
     );
     if (draft == null || !mounted) return;
     final start = draft.startDate;
@@ -1889,59 +2065,80 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       final availability = await RentalOrdersApi().getAvailability(
         productId: widget.productId,
         from: start,
-        to: end,
+        to: mode == 'hour'
+            ? DateTime.utc(start.year, start.month, start.day + 1)
+            : end,
       );
-      final occupied = <String>[];
-      for (
-        var date = DateTime(start.year, start.month, start.day);
-        date.isBefore(end);
-        date = date.add(const Duration(days: 1))
-      ) {
-        final key =
-            '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        if (availability.unavailableDates.contains(key)) occupied.add(key);
+      var unavailable = false;
+      if (mode == 'hour') {
+        final reservedUntil = end.add(const Duration(hours: 1));
+        unavailable = availability.manualBlocks.any(
+          (block) =>
+              block.startDate != null &&
+              block.endDate != null &&
+              block.startDate!.isBefore(reservedUntil) &&
+              block.endDate!.isAfter(start),
+        );
+        if (!unavailable) {
+          final events = <(DateTime, int)>[(start, 1), (reservedUntil, -1)];
+          for (final reservation in availability.reservations) {
+            final from = reservation.occupiedFrom;
+            final until = reservation.occupiedUntil;
+            if (from != null &&
+                until != null &&
+                from.isBefore(reservedUntil) &&
+                until.isAfter(start)) {
+              events.add((from.isBefore(start) ? start : from, 1));
+              events.add((
+                until.isAfter(reservedUntil) ? reservedUntil : until,
+                -1,
+              ));
+            }
+          }
+          events.sort((a, b) {
+            final byTime = a.$1.compareTo(b.$1);
+            return byTime != 0 ? byTime : a.$2.compareTo(b.$2);
+          });
+          var active = 0;
+          for (final event in events) {
+            active += event.$2;
+            if (active > product!.stockQuantity) {
+              unavailable = true;
+              break;
+            }
+          }
+        }
+      } else {
+        for (
+          var date = DateTime.utc(start.year, start.month, start.day);
+          date.isBefore(end);
+          date = date.add(const Duration(days: 1))
+        ) {
+          final key =
+              '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+          if (availability.unavailableDates.contains(key)) {
+            unavailable = true;
+            break;
+          }
+        }
       }
-      if (occupied.isNotEmpty) {
+      if (unavailable) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Perioada selectată este deja ocupată. Alege alte date.',
-            ),
-          ),
+        LendToast.warning(
+          context,
+          message: 'Perioada selectată este deja ocupată. Alege alte date.',
         );
         return;
       }
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Nu am putut verifica disponibilitatea: $error'),
-        ),
+      LendToast.error(
+        context,
+        message: 'Nu am putut verifica disponibilitatea: $error',
       );
       return;
     }
     if (!mounted) return;
-    /*
-    final amountController = TextEditingController();
-    var mode = modes.first;
-    final amount = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Trimite o ofertă'),
-        content: StatefulBuilder(builder: (context, setDialogState) => Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('${_shortDate(start)} – ${_shortDate(end)}', style: const TextStyle(fontSize: 13, color: Colors.black54)),
-          DropdownButtonFormField<String>(initialValue: mode, decoration: const InputDecoration(labelText: 'Mod închiriere'), items: modes.map((item) => DropdownMenuItem(value: item, child: Text(_rentalModeLabel(item)))).toList(), onChanged: (value) => setDialogState(() => mode = value ?? modes.first)),
-          TextField(controller: amountController, keyboardType: TextInputType.number, autofocus: true, decoration: const InputDecoration(labelText: 'Suma propusă (RON)', suffixText: 'RON')),
-        ])),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Anulează')),
-          FilledButton(onPressed: () => Navigator.pop(context, int.tryParse(amountController.text.trim())), child: const Text('Trimite')),
-        ],
-      ),
-    );
-    amountController.dispose();
-    */
     final amount = draft.amount;
     if (amount <= 0 || _token == null) return;
     try {
@@ -1957,11 +2154,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         _upsertOffer(offer);
       }
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
+      if (mounted) LendToast.error(context, message: error.toString());
     }
   }
 
@@ -2004,11 +2197,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         setState(() => _messages = [..._messages, message]);
       }
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
+      if (mounted) LendToast.error(context, message: error.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -2077,10 +2266,9 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
       if (!_messages.any((item) => item.id == acceptedMessage.id)) {
         setState(() => _messages = [..._messages, acceptedMessage]);
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Propunerea a fost trimis\u0103 proprietarului.'),
-        ),
+      LendToast.success(
+        context,
+        message: 'Propunerea a fost trimis\u0103 proprietarului.',
       );
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
@@ -2093,11 +2281,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         ),
       );
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
+      if (mounted) LendToast.error(context, message: error.toString());
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -2115,11 +2299,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         _upsertOffer(updated);
       }
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
+      if (mounted) LendToast.error(context, message: error.toString());
     }
   }
 
@@ -2169,11 +2349,7 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         ),
       );
     } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error.toString())));
-      }
+      if (mounted) LendToast.error(context, message: error.toString());
     }
   }
 

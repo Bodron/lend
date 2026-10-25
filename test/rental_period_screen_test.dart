@@ -4,11 +4,81 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lend/l10n/generated_localizations.dart';
+import 'package:lend/models/rental_mode.dart';
 import 'package:lend/screens/rental_period_screen.dart';
 import 'package:lend/services/products_api.dart';
 import 'package:lend/services/rental_orders_api.dart';
 
 void main() {
+  testWidgets('keeps the negotiated hourly interval and amount at checkout', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 1100);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final date = DateTime.utc(DateTime.now().year, DateTime.now().month + 2, 5);
+    final api = RentalOrdersApi(
+      client: MockClient(
+        (_) async => http.Response(
+          '{"unavailableDates":[],"reservations":[],"manualBlocks":[]}',
+          200,
+        ),
+      ),
+    );
+    final product = LendProduct(
+      id: 'product-1',
+      slug: 'test',
+      title: 'Test',
+      category: 'Objects',
+      categorySlug: 'objects',
+      description: 'Test listing',
+      pricePerDay: 100,
+      deposit: 0,
+      city: 'Iasi',
+      address: '',
+      latitude: null,
+      longitude: null,
+      pickupTime: '08:00',
+      returnTime: '18:00',
+      ownerName: 'Owner',
+      rating: 5,
+      isAvailable: true,
+      images: const [],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('en'),
+        localizationsDelegates: const [
+          GeneratedLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+        ],
+        home: RentalPeriodScreen(
+          enableRealtime: false,
+          product: product,
+          rentalMode: RentalMode.hour,
+          rentalOrdersApi: api,
+          initialStartDate: DateTime.utc(date.year, date.month, date.day, 10),
+          initialEndDate: DateTime.utc(date.year, date.month, date.day, 13),
+          negotiatedSubtotal: 77,
+          lockSelection: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -800));
+    await tester.pumpAndSettle();
+
+    expect(find.text('77 RON'), findsOneWidget);
+    expect(find.textContaining('\n10:00'), findsOneWidget);
+    expect(find.textContaining('\n13:00'), findsOneWidget);
+  });
+
   testWidgets('selects a multi-day rental with two date taps', (tester) async {
     tester.view.physicalSize = const Size(800, 1100);
     tester.view.devicePixelRatio = 1;

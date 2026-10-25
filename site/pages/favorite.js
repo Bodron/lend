@@ -28,9 +28,9 @@ export default function Favorites({ products }) {
       setLoading(true);
       setLoadError("");
       return favoriteIds().then((next) => { if (active) setIds(next); }).catch((cause) => {
-      if (!active) return;
-      if (cause.status === 401) router.replace(`/account?returnTo=${encodeURIComponent("/favorite")}`);
-      else setLoadError(cause.status === 404 ? "Serviciul de favorite nu este disponibil momentan." : cause.message);
+        if (!active) return;
+        if (cause.status === 401) router.replace(`/account?returnTo=${encodeURIComponent("/favorite")}`);
+        else setLoadError(cause.status === 404 ? "Serviciul de favorite nu este disponibil momentan." : cause.message);
       }).finally(() => { if (active) setLoading(false); });
     };
     update();

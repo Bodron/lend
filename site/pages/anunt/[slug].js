@@ -119,7 +119,7 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
     } catch (error) {
       if (error.status === 401) {
         router.push(`/account?returnTo=${encodeURIComponent(router.asPath)}`);
-      } else setFavoriteError(error.message);
+      } else setFavoriteError(error.status === 404 ? "Favoritele nu sunt disponibile momentan. Încearcă din nou mai târziu." : error.message);
     } finally { setFavoriteBusy(false); }
   }
   const modes = product ? availableModes(product) : [];
@@ -234,8 +234,8 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
               {hasMapLocation && <PinlendMap className="mt-5 h-72 w-full" points={mapPoints} selectedId={mapPoints[0].id} />}
               {mapPoints[0]?.approximate && <p className="mt-2 text-xs text-[#626977]">Poziție aproximativă bazată pe oraș. Adresa nu este marcată exact pe hartă.</p>}
               {hasMapLocation && (
-                <a className="mt-4 inline-flex items-center gap-2 font-bold text-[#30578F]" href={`https://www.openstreetmap.org/?mlat=${mapPoints[0].latitude}&mlon=${mapPoints[0].longitude}#map=15/${mapPoints[0].latitude}/${mapPoints[0].longitude}`} rel="noopener noreferrer" target="_blank">
-                  Deschide în OpenStreetMap <span className="material-symbols-outlined text-lg">open_in_new</span>
+                <a className="mt-4 inline-flex items-center gap-2 font-bold text-[#30578F]" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${mapPoints[0].latitude},${mapPoints[0].longitude}`)}`} rel="noopener noreferrer" target="_blank">
+                  Deschide în Google Maps <span className="material-symbols-outlined text-lg">open_in_new</span>
                 </a>
               )}
             </section>
@@ -259,7 +259,13 @@ export default function ListingDetails({ product, reviews, ownerListings, loadEr
                 </span>
                 {product.availabilityScope === "national" && <span className="rounded-full bg-[#446085]/10 px-3 py-2 text-xs font-bold text-[#446085]">Disponibil în toată țara</span>}
               </div>
-              <button aria-pressed={favorite} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#30578F]" disabled={favoriteBusy} onClick={changeFavorite} type="button"><span className="material-symbols-outlined">{favorite ? "favorite" : "favorite_border"}</span>{favorite ? "Salvat la favorite" : "Salvează la favorite"}</button>
+              <button aria-pressed={favorite} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#30578F]" disabled={favoriteBusy} onClick={changeFavorite} type="button">
+                <svg aria-hidden="true" className={`favorite-heart ${favorite ? "favorite-heart--saved" : ""}`} viewBox="0 0 24 24">
+                  <path className="favorite-heart__fill" d="M12 21.35 10.55 20.03C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35Z" />
+                  <path className="favorite-heart__outline" d="M12 21.35 10.55 20.03C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35Z" />
+                </svg>
+                {favorite ? "Salvat la favorite" : "Salvează la favorite"}
+              </button>
               
 
               {modes.length > 0 && (

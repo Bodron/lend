@@ -444,6 +444,44 @@ a {
   display: none;
 }
 
+.favorite-heart {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  overflow: visible;
+}
+
+.favorite-heart__fill {
+  fill: currentColor;
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 550ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.favorite-heart__outline {
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.favorite-heart--saved .favorite-heart__fill {
+  clip-path: inset(0 0 0 0);
+}
+
+.favorite-heart--saved {
+  animation: favorite-heart-pop 480ms ease-out;
+}
+
+@keyframes favorite-heart-pop {
+  0%, 55%, 100% { transform: scale(1); }
+  76% { transform: scale(1.16); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .favorite-heart__fill { transition: none; }
+  .favorite-heart--saved { animation: none; }
+}
+
 @media (max-width: 767px) {
   .desktop-site {
     display: none;
