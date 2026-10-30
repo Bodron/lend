@@ -1,9 +1,10 @@
 /* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
-import { Input } from "../components/ui/input";
 import Link from "next/link";
 import PublicHeader from "../components/PublicHeader";
+import PublicFooter from "../components/PublicFooter";
 import { useEffect } from "react";
+import { useRouter } from "next/router";
 
 const images = {
   chair:
@@ -40,6 +41,7 @@ const features = [
 ];
 
 export default function DespreNoi() {
+  const en = useRouter().locale === "en";
 
   useEffect(() => {
     const heroLines = document.querySelectorAll(".hero-line");
@@ -115,35 +117,35 @@ export default function DespreNoi() {
   return (
     <>
       <Head>
-        <title>Despre noi | PINLEND</title>
+        <title>{en ? "About us | PINLEND" : "Despre noi | PINLEND"}</title>
         <meta
           name="description"
-          content="PINLEND este platforma prin care inchiriezi si oferi obiecte verificate, sigur si simplu, in comunitatea ta."
+          content={en ? "PINLEND helps you rent and share verified items safely and simply in your community." : "PINLEND este platforma prin care inchiriezi si oferi obiecte verificate, sigur si simplu, in comunitatea ta."}
         />
       </Head>
 
       <PublicHeader current="/despre-noi" />
 
       <main className="w-full pt-20">
-        <Hero />
-        <Vision />
-        <Impact />
-        <Features />
-        <ArchiveBreak />
+        <Hero en={en} />
+        <Vision en={en} />
+        <Impact en={en} />
+        <Features en={en} />
+        <ArchiveBreak en={en} />
       </main>
 
-      <Footer />
+      <PublicFooter />
     </>
   );
 }
 
-function Hero() {
+function Hero({ en }) {
   return (
     <section className="relative flex min-h-[calc(100vh+180px)] items-center overflow-hidden px-5 py-24 md:px-20">
       <div className="pointer-events-none relative z-10 grid w-full grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-10">
           <h1 className="font-display text-[18vw] font-extrabold uppercase leading-[0.92] tracking-normal text-black md:text-[120px]">
-            {["DETINE MAI", "PUTIN.", "ACCESEAZA TOT."].map((line, index) => (
+            {(en ? ["OWN LESS.", "USE MORE.", "SHARE BETTER."] : ["DETINE MAI", "PUTIN.", "ACCESEAZA TOT."]).map((line, index) => (
               <span className="block overflow-hidden" key={line}>
                 <span
                   className={`hero-line inline-block transition-transform duration-1000 ease-out ${
@@ -159,14 +161,14 @@ function Hero() {
         </div>
         <div className="col-span-12 mt-12 lg:col-span-5 lg:col-start-8">
           <p className="hero-sub max-w-md text-xl leading-8 text-[#1a1c1c] transition-all delay-700 duration-1000">
-            PINLEND este platforma prin care inchiriezi obiecte de calitate doar cand ai nevoie de ele si le oferi mai departe atunci cand stau nefolosite.
+            {en ? "PINLEND lets you rent quality items when you need them and share yours when they are sitting unused." : "PINLEND este platforma prin care inchiriezi obiecte de calitate doar cand ai nevoie de ele si le oferi mai departe atunci cand stau nefolosite."}
           </p>
           <div className="hero-sub mt-8 flex flex-col gap-5 transition-all delay-1000 duration-1000 sm:flex-row sm:items-center sm:gap-8">
             <a className="inline-flex justify-center bg-black px-10 py-5 font-mono text-xs uppercase tracking-widest text-white transition-all duration-300 hover:bg-[#30578F]" href="#impact-section">
-              Explorează anunțurile
+              {en ? "Explore listings" : "Explorează anunțurile"}
             </a>
             <span className="flex items-center gap-2 font-mono text-xs uppercase tracking-widest">
-              Deruleaza pentru detalii
+              {en ? "Scroll to learn more" : "Deruleaza pentru detalii"}
               <span className="material-symbols-outlined animate-bounce">arrow_downward</span>
             </span>
           </div>
@@ -174,24 +176,24 @@ function Hero() {
       </div>
       <div className="absolute right-10 top-1/2 hidden -translate-y-1/2 [writing-mode:vertical-rl] lg:block">
         <span className="font-mono text-xs uppercase tracking-[0.5em] text-[#444748]">
-          Comunitate globala - 2026
+          {en ? "Global community - 2026" : "Comunitate globala - 2026"}
         </span>
       </div>
     </section>
   );
 }
 
-function Vision() {
+function Vision({ en }) {
   return (
     <section className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-black px-5 py-32 md:px-20 md:py-40">
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-1 -mt-10 font-mono text-7xl text-white/20">01</div>
         <div className="col-span-11 lg:col-span-8 lg:col-start-3">
           <p className="mb-8 font-mono text-xs uppercase tracking-widest text-[#8FABD4]">
-            Viziunea
+            {en ? "Our vision" : "Viziunea"}
           </p>
           <h2 className="reveal-text font-display text-5xl font-bold leading-tight text-white md:text-7xl">
-            O economie circulara construita pentru oameni practici. Inlocuim proprietatea inutila cu acces flexibil si transformam obiectele nefolosite in experiente comune.
+            {en ? "A circular economy built for practical people. We replace unnecessary ownership with flexible access and turn unused items into shared experiences." : "O economie circulara construita pentru oameni practici. Inlocuim proprietatea inutila cu acces flexibil si transformam obiectele nefolosite in experiente comune."}
           </h2>
         </div>
       </div>
@@ -199,17 +201,17 @@ function Vision() {
   );
 }
 
-function Impact() {
+function Impact({ en }) {
   return (
     <section className="relative bg-[#f9f9f9] px-5 py-32 md:px-20 md:py-40" id="impact-section">
       <div className="flex flex-col items-start justify-between gap-20 lg:flex-row">
         <div className="w-full lg:sticky lg:top-40 lg:w-1/2">
           <h3 className="mb-12 font-display text-5xl font-bold uppercase text-black md:text-7xl">
-            Impact masurabil
+            {en ? "Measurable impact" : "Impact masurabil"}
           </h3>
           <div className="flex flex-col gap-12">
-            <Stat label="Carbon redus" target="42" suffix="%" />
-            <Stat label="Schimburi active" target="185" suffix="K" />
+            <Stat label={en ? "Carbon saved" : "Carbon redus"} target="42" suffix="%" />
+            <Stat label={en ? "Active exchanges" : "Schimburi active"} target="185" suffix="K" />
           </div>
         </div>
         <div className="flex w-full flex-col gap-8 pt-8 lg:w-1/3 lg:pt-20">
@@ -217,16 +219,16 @@ function Impact() {
             <img
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               src={images.chair}
-              alt="Obiect premium intr-un spatiu minimalist, fotografiat editorial"
+              alt={en ? "Premium item in a minimalist space" : "Obiect premium intr-un spatiu minimalist, fotografiat editorial"}
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
               <span className="bg-black px-6 py-3 font-mono text-xs uppercase tracking-widest text-white">
-                Vezi obiectul
+                {en ? "View item" : "Vezi obiectul"}
               </span>
             </div>
           </div>
           <p className="text-base leading-6 text-[#444748]">
-            Fiecare inchiriere PINLEND reduce nevoia de productie noua. Obiectele sunt folosite mai eficient, iar comunitatea castiga acces la lucruri bune fara risipa.
+            {en ? "Each PINLEND rental reduces the need to make something new. Items are used more efficiently, and the community gets access to great things with less waste." : "Fiecare inchiriere PINLEND reduce nevoia de productie noua. Obiectele sunt folosite mai eficient, iar comunitatea castiga acces la lucruri bune fara risipa."}
           </p>
         </div>
       </div>
@@ -248,20 +250,20 @@ function Stat({ label, target, suffix }) {
   );
 }
 
-function Features() {
+function Features({ en }) {
   return (
     <section className="relative overflow-hidden bg-black px-5 py-32 md:px-20 md:py-40" id="features">
       <div className="mb-24 flex flex-col justify-between gap-12 lg:flex-row lg:items-end">
         <div className="max-w-2xl">
           <span className="mb-6 block font-mono text-xs uppercase tracking-widest text-[#8FABD4]">
-            Redefinim accesul
+            {en ? "Rethinking access" : "Redefinim accesul"}
           </span>
           <h2 className="font-display text-5xl font-bold uppercase text-white md:text-7xl">
-            Ecosistemul
+            {en ? "The ecosystem" : "Ecosistemul"}
           </h2>
         </div>
         <a className="group flex items-center gap-4 font-mono text-xs uppercase tracking-widest text-white" href="#">
-          Exploreaza toate functionalitatile
+          {en ? "Explore all features" : "Exploreaza toate functionalitatile"}
           <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 transition-all group-hover:bg-[#4A70A9] group-hover:text-white">
             <span className="material-symbols-outlined">arrow_forward</span>
           </span>
@@ -278,15 +280,15 @@ function Features() {
               <img
                 className="h-full w-full object-cover grayscale transition-all duration-700 hover:grayscale-0"
                 src={feature.image}
-                alt={feature.title}
+                alt={en ? ["Verified sharing", "Easy handover and return", "Community reputation"][index] : feature.title}
               />
               <div className="absolute left-6 top-6 flex h-10 w-10 items-center justify-center bg-black">
                 <span className="material-symbols-outlined text-white">{feature.icon}</span>
               </div>
             </div>
             <div>
-              <h4 className="mb-4 text-3xl font-medium leading-10 text-white">{feature.title}</h4>
-              <p className="text-base leading-6 text-white/60">{feature.text}</p>
+              <h4 className="mb-4 text-3xl font-medium leading-10 text-white">{en ? ["Thorough verification", "Simple handover and return", "Community reputation"][index] : feature.title}</h4>
+              <p className="text-base leading-6 text-white/60">{en ? ["Members and items go through checks designed to build trust between people.", "Clear steps for handover, return, deposits, and digital records make valuable rentals easier.", "Build trust through reviews, checks, and successful rentals. The more active you are, the more you can access."][index] : feature.text}</p>
             </div>
           </article>
         ))}
@@ -295,7 +297,7 @@ function Features() {
   );
 }
 
-function ArchiveBreak() {
+function ArchiveBreak({ en }) {
   const steps = [
     {
       number: "01",
@@ -323,20 +325,20 @@ function ArchiveBreak() {
       <div className="relative z-10 grid grid-cols-1 gap-14">
         <div className="min-w-0 max-w-6xl">
           <p className="mb-6 font-mono text-xs uppercase tracking-widest text-[#8FABD4]">
-            Cum functioneaza
+            {en ? "How it works" : "Cum functioneaza"}
           </p>
           <h2 className="section-flow-title font-display font-extrabold uppercase text-white">
-            <span className="block">Inchiriere clara,</span>
-            <span className="block">fara improvizatii.</span>
+            <span className="block">{en ? "Rent with clarity," : "Inchiriere clara,"}</span>
+            <span className="block">{en ? "from start to finish." : "fara improvizatii."}</span>
           </h2>
           <p className="mt-8 max-w-[680px] text-lg leading-8 text-white/60 md:text-xl">
-            PINLEND leaga cautarea, rezervarea, verificarea identitatii si contractul intr-un flux simplu, construit pentru incredere intre oameni reali.
+            {en ? "PINLEND brings search, booking, identity verification, and contracts into one simple flow built on trust between people." : "PINLEND leaga cautarea, rezervarea, verificarea identitatii si contractul intr-un flux simplu, construit pentru incredere intre oameni reali."}
           </p>
         </div>
 
         <div className="min-w-0">
           <div className="grid gap-5 lg:grid-cols-3">
-            {steps.map((step) => (
+            {steps.map((step, index) => (
               <article
                 className="group grid min-w-0 grid-cols-[56px_1fr] gap-4 border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-[#4A70A9]/70 hover:bg-white/[0.06] sm:grid-cols-[72px_1fr] md:grid-cols-[96px_64px_1fr] md:gap-5 md:p-7 lg:grid-cols-1"
                 key={step.number}
@@ -349,10 +351,10 @@ function ArchiveBreak() {
                 </span>
                 <div>
                   <h3 className="text-2xl font-semibold text-white">
-                    {step.title}
+                    {en ? ["Choose an item", "Book your dates", "Verified handover"][index] : step.title}
                   </h3>
                   <p className="mt-2 text-base leading-6 text-white/55">
-                    {step.text}
+                    {en ? ["Browse the community and check photos, daily price, and owner ratings.", "Choose your dates and see the total price and deposit before confirming.", "Identity, contract, and return are documented in the app."][index] : step.text}
                   </p>
                 </div>
               </article>
@@ -362,20 +364,20 @@ function ArchiveBreak() {
           <div className="mt-8 grid gap-5 border border-[#4A70A9]/50 bg-[#30578F] p-6 text-white md:grid-cols-[1fr_auto] md:items-end">
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-white/65">
-                Exemplu din app
+                {en ? "Example from the app" : "Exemplu din app"}
               </p>
               <h3 className="mt-3 text-3xl font-bold">
                 PlayStation 5 Digital Edition
               </h3>
               <div className="mt-5 flex flex-wrap gap-3">
                 <span className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#30578F]">
-                  85 RON / zi
+                  {en ? "85 RON / day" : "85 RON / zi"}
                 </span>
                 <span className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">
-                  Garantie 300 RON
+                  {en ? "300 RON deposit" : "Garantie 300 RON"}
                 </span>
                 <span className="rounded-full border border-white/25 px-4 py-2 text-sm font-bold">
-                  Proprietar verificat
+                  {en ? "Verified owner" : "Proprietar verificat"}
                 </span>
               </div>
             </div>
@@ -383,72 +385,11 @@ function ArchiveBreak() {
               className="inline-flex justify-center bg-white px-8 py-4 font-mono text-xs uppercase tracking-widest text-[#30578F] transition-colors hover:bg-black hover:text-white"
               href="#features"
             >
-              Vezi siguranta
+              {en ? "Explore safety" : "Vezi siguranta"}
             </a>
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="w-full bg-black px-5 py-32 md:px-20 md:py-40">
-      <div className="mb-12 flex flex-col items-start justify-between gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end">
-        <h2 className="max-w-4xl font-display text-6xl font-extrabold uppercase leading-none text-white md:text-[120px]">
-          Gata sa imparti?
-        </h2>
-        <Link className="bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
-          Incepe acum
-        </Link>
-      </div>
-      <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-        <FooterColumn title="Social">
-          <a href="#">Instagram</a>
-          <a href="#">Twitter/X</a>
-          <a href="#">LinkedIn</a>
-        </FooterColumn>
-        <FooterColumn title="Navigare">
-          <Link href="/despre-noi">Despre noi</Link>
-          <Link href="/features">Functionalitati</Link>
-          <Link href="/">Anunțuri</Link>
-        </FooterColumn>
-        <div className="flex flex-col gap-6 md:col-span-2">
-          <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
-          <form className="relative flex w-full items-center border-b border-white/20">
-            <Input
-              className="h-auto w-full rounded-none border-0 bg-transparent px-0 py-4 text-xl leading-8 text-white outline-none focus-visible:border-transparent focus-visible:ring-0"
-              placeholder="Introdu adresa de email"
-              type="email"
-            />
-            <button className="material-symbols-outlined text-white" type="button">
-              arrow_forward
-            </button>
-          </form>
-        </div>
-      </div>
-      <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
-        <span className="font-mono text-xs text-white/40">
-          © 2026 PINLEND. Creat pentru economia colaborativa.
-        </span>
-        <div className="flex flex-wrap gap-6">
-          <Link className="font-mono text-xs uppercase text-white/40" href="/privacy-policy">Confidentialitate</Link>
-          <Link className="font-mono text-xs uppercase text-white/40" href="/terms-and-conditions">Termeni</Link>
-          <Link className="font-mono text-xs uppercase text-white/40" href="/support">Suport</Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function FooterColumn({ title, children }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <p className="font-mono text-xs uppercase tracking-widest text-white/60">{title}</p>
-      <div className="flex flex-col gap-2 text-xl leading-8 text-white [&_a:hover]:text-[#8FABD4]">
-        {children}
-      </div>
-    </div>
   );
 }

@@ -30,8 +30,17 @@ class GeneratedLocalizationsRo extends GeneratedLocalizations {
   String get retry => 'Reîncearcă';
 
   @override
-  String get productsLoadError =>
-      'Nu am putut încărca produsele din baza de date.';
+  String get sendOffer => 'Trimite ofertă';
+
+  @override
+  String get ownListingOfferError =>
+      'Acesta este anunțul tău. Ofertele pot fi trimise doar de alți utilizatori.';
+
+  @override
+  String get productsLoadError => 'Ups, anunțurile nu se încarcă acum';
+
+  @override
+  String get productsLoadErrorHint => 'Mai încearcă o dată în câteva momente.';
 
   @override
   String get emptyProducts => 'Nu există produse disponibile momentan.';

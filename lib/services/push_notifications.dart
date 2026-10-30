@@ -151,7 +151,7 @@ class PushNotifications with WidgetsBindingObserver {
     return next;
   }
 
-  Future<void> signOut() async {
+  Future<void> signOut({bool unregisterDevice = true}) async {
     _paused = true;
     _retry?.cancel();
     pendingMessage.value = null;
@@ -160,7 +160,7 @@ class PushNotifications with WidgetsBindingObserver {
       try {
         final accessToken = await AuthSessionStore.getToken();
         final token = await FirebaseMessaging.instance.getToken();
-        if (accessToken != null && token != null) {
+        if (unregisterDevice && accessToken != null && token != null) {
           await _request('DELETE', accessToken, token);
         }
       } catch (error) {

@@ -6,6 +6,7 @@ import Link from "next/link";
 import PublicHeader from "../components/PublicHeader";
 import ListingCard from "../components/ListingCard";
 import { getPublicProducts } from "../lib/publicProductsServer";
+import { getBackendApiUrl } from "../lib/backendApi";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { useToastError } from "../lib/useToastError";
@@ -28,6 +29,9 @@ const copy = {
     approximateLocation: "locație aproximativă", previousMapCards: "Anunțurile anterioare", nextMapCards: "Anunțurile următoare", mapCards: "Anunțuri pe hartă",
     loadError: "Nu am putut încărca anunțurile. Încearcă din nou.", retry: "Reîncearcă",
     empty: "Nu am găsit anunțuri pentru filtrele alese.", noImage: "Fără imagine",
+    searchHint: "Caută după nume, categorie sau oraș", suggestions: "Sugestii de căutare",
+    clearSearch: "Șterge căutarea", clearFilters: "Șterge filtrele", noResultsHint: "Încearcă un termen mai scurt sau elimină un filtru.",
+    citySuggestion: "Oraș", listingSuggestion: "Anunț", categorySuggestion: "Categorie", activeFilters: "Filtre active",
     details: "Vezi detalii", detailsLabel: "Vezi detaliile anunțului", unknownCity: "Oraș nespecificat",
     ready: "Gata să împarți?", start: "Începe acum", navigation: "Navigare",
     emailPlaceholder: "Introdu adresa de email", privacy: "Confidențialitate", terms: "Termeni", support: "Suport",
@@ -45,6 +49,9 @@ const copy = {
     approximateLocation: "approximate location", previousMapCards: "Previous listings", nextMapCards: "Next listings", mapCards: "Listings on the map",
     loadError: "We couldn't load the listings. Please try again.", retry: "Try again",
     empty: "No listings match your filters.", noImage: "No image",
+    searchHint: "Search by name, category or city", suggestions: "Search suggestions",
+    clearSearch: "Clear search", clearFilters: "Clear filters", noResultsHint: "Try a shorter search or remove a filter.",
+    citySuggestion: "City", listingSuggestion: "Listing", categorySuggestion: "Category", activeFilters: "Active filters",
     details: "View details", detailsLabel: "View listing details for", unknownCity: "City not specified",
     ready: "Ready to share?", start: "Get started", navigation: "Navigation",
     emailPlaceholder: "Enter your email address", privacy: "Privacy", terms: "Terms", support: "Support",
@@ -54,6 +61,22 @@ const copy = {
 
 const cardAspects = ["aspect-[4/5]", "aspect-[3/4]", "aspect-square", "aspect-[4/3]"];
 const cardOffsets = ["", "md:mt-12", "", "xl:mt-16"];
+const existingEnglishCategoryNames = {
+  electronice: "Electronics",
+  "gaming-console": "Gaming & Consoles",
+  "foto-video": "Photo & Video",
+  drone: "Drones",
+  unelte: "Tools",
+  "casa-gradina": "Home & Garden",
+  "sport-outdoor": "Sports & Outdoors",
+  masini: "Cars",
+  imobiliare: "Real Estate",
+  evenimente: "Events",
+  mobilitate: "Mobility",
+  "fashion-accesorii": "Fashion & Accessories",
+  "copii-familie": "Kids & Family",
+  "muzica-audio": "Music & Audio",
+};
 function distanceKm(lat1, lng1, lat2, lng2) {
   if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) return Infinity;
   const rad = Math.PI / 180;
@@ -62,9 +85,31 @@ function distanceKm(lat1, lng1, lat2, lng2) {
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function normalizeSearchText(value) {
+  return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+function matchesSearch(value, query) {
+  const normalizedValue = normalizeSearchText(value);
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+  if (normalizedValue.includes(normalizedQuery)) return true;
+  if (normalizedValue.replaceAll(" ", "").includes(normalizedQuery.replaceAll(" ", ""))) return true;
+  return normalizedQuery.split(" ").every((word) => normalizedValue.includes(word));
+}
+
 export async function getServerSideProps({ res, locale }) {
   try {
-    const products = await getPublicProducts();
+    const [products, categoryResponse] = await Promise.all([
+      getPublicProducts(),
+      fetch(`${getBackendApiUrl()}/categories`, { signal: AbortSignal.timeout(8000) })
+        .then((response) => response.ok ? response.json() : [])
+        .catch(() => []),
+    ]);
+    const categoryBySlug = new Map(
+      (Array.isArray(categoryResponse) ? categoryResponse : []).map((category) => [category.slug, category]),
+    );
 
     const listings = products
       .filter((product) => product && product.isClosedByAdmin !== true)
@@ -77,7 +122,15 @@ export async function getServerSideProps({ res, locale }) {
           slug: String(product.slug ?? ""),
           title: String(product.title ?? ""),
           category: String(product.categorySlug ?? ""),
-          categoryLabel: String(product.category ?? product.categorySlug ?? ""),
+          categoryLabel: String(
+            (locale === "en"
+              ? categoryBySlug.get(product.categorySlug)?.nameEn || existingEnglishCategoryNames[product.categorySlug]
+              : categoryBySlug.get(product.categorySlug)?.name)
+            || categoryBySlug.get(product.categorySlug)?.name
+            || product.category
+            || product.categorySlug
+            || "",
+          ),
           city: String(product.city ?? "").trim(),
           priceNumber: Number(product.pricePerDay) || 0,
           latitude: product.latitude ?? null,
@@ -118,6 +171,8 @@ export default function ListingsHome({ listings, categories, loadError }) {
   const t = copy[locale] || copy.ro;
   const [activeFilter, setActiveFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [highlightedSuggestion, setHighlightedSuggestion] = useState(-1);
   const [city, setCity] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [position, setPosition] = useState(null);
@@ -147,6 +202,7 @@ export default function ListingsHome({ listings, categories, loadError }) {
   }
 
   function resetFilters() {
+    setActiveFilter("all");
     setSearch("");
     setCity("");
     setMaxPrice("");
@@ -156,14 +212,52 @@ export default function ListingsHome({ listings, categories, loadError }) {
   }
 
   const visibleListings = useMemo(() => {
-    return listings.filter((item) =>
+    const filtered = listings.filter((item) =>
       (activeFilter === "all" || item.category === activeFilter)
-      && (!search || `${item.title} ${item.text}`.toLocaleLowerCase("ro-RO").includes(search.toLocaleLowerCase("ro-RO")))
-      && (!city || item.city.toLocaleLowerCase("ro-RO").includes(city.toLocaleLowerCase("ro-RO")))
+      && matchesSearch(`${item.title} ${item.categoryLabel} ${item.city} ${item.text}`, search)
+      && matchesSearch(item.city, city)
       && (!maxPrice || item.priceNumber <= Number(maxPrice))
       && (!position || (item.latitude != null && item.longitude != null && distanceKm(position.latitude, position.longitude, Number(item.latitude), Number(item.longitude)) <= radiusKm)));
+    if (search.trim()) {
+      filtered.sort((a, b) => {
+        const score = (item) => {
+          if (matchesSearch(item.title, search)) return 0;
+          if (matchesSearch(item.categoryLabel, search)) return 1;
+          if (matchesSearch(item.city, search)) return 2;
+          return 3;
+        };
+        return score(a) - score(b);
+      });
+    }
+    return filtered;
   }, [activeFilter, listings, search, city, maxPrice, position, radiusKm]);
-  const hasSearchFilters = Boolean(search || city || maxPrice || position);
+  const hasSearchFilters = Boolean(activeFilter !== "all" || search || city || maxPrice || position);
+  const cityOptions = useMemo(() => [...new Set(listings.map((item) => item.city).filter(Boolean))].sort(), [listings]);
+  const suggestions = useMemo(() => {
+    if (!search.trim()) return [];
+    const matchingCategories = categories.slice(1)
+      .filter((item) => matchesSearch(item.label, search))
+      .slice(0, 2).map((item) => ({ kind: "category", label: item.label, value: item.id }));
+    const matchingListings = listings.filter((item) => matchesSearch(item.title, search))
+      .slice(0, 4).map((item) => ({ kind: "listing", label: item.title, value: item.title }));
+    const matchingCities = cityOptions.filter((item) => matchesSearch(item, search))
+      .slice(0, 2).map((item) => ({ kind: "city", label: item, value: item }));
+    return [...matchingCategories, ...matchingListings, ...matchingCities].slice(0, 6);
+  }, [categories, cityOptions, listings, search]);
+
+  function chooseSuggestion(suggestion) {
+    if (suggestion.kind === "category") {
+      setActiveFilter(suggestion.value);
+      setSearch("");
+    } else if (suggestion.kind === "city") {
+      setCity(suggestion.value);
+      setSearch("");
+    } else {
+      setSearch(suggestion.value);
+    }
+    setSearchOpen(false);
+    setHighlightedSuggestion(-1);
+  }
 
 
   return (
@@ -206,19 +300,65 @@ export default function ListingsHome({ listings, categories, loadError }) {
             })}
           </div>
           <div className="grid w-full gap-5 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.8fr)] md:gap-8">
-            <label className="block min-w-0 border-b border-black/30 pb-3 focus-within:border-black">
-              <span className="block font-mono text-[11px] uppercase tracking-widest text-black">{t.search}</span>
-              <Input aria-label={t.search} className="mt-2 h-auto w-full rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45" onChange={(event) => setSearch(event.target.value)} placeholder={t.searchPlaceholder} type="search" value={search} />
-            </label>
+            <div className="relative z-30 min-w-0" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setSearchOpen(false); }}>
+              <label className="block font-mono text-[11px] uppercase tracking-widest text-black" htmlFor="listing-search">{t.search}</label>
+              <div className="mt-2 flex items-center gap-2 border-b border-black/30 pb-3 focus-within:border-[#30578F]">
+                <span aria-hidden="true" className="material-symbols-outlined text-[20px] text-black/55">search</span>
+                <Input
+                  aria-autocomplete="list"
+                  aria-controls="listing-search-suggestions"
+                  aria-expanded={searchOpen && suggestions.length > 0}
+                  aria-label={t.search}
+                  autoComplete="off"
+                  className="h-auto min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45"
+                  id="listing-search"
+                  onChange={(event) => { setSearch(event.target.value); setSearchOpen(true); setHighlightedSuggestion(-1); }}
+                  onFocus={() => setSearchOpen(true)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") { setSearchOpen(false); setHighlightedSuggestion(-1); }
+                    if (event.key === "ArrowDown" && suggestions.length) { event.preventDefault(); setSearchOpen(true); setHighlightedSuggestion((index) => Math.min(index + 1, suggestions.length - 1)); }
+                    if (event.key === "ArrowUp" && suggestions.length) { event.preventDefault(); setHighlightedSuggestion((index) => Math.max(index - 1, 0)); }
+                    if (event.key === "Enter" && searchOpen && highlightedSuggestion >= 0) { event.preventDefault(); chooseSuggestion(suggestions[highlightedSuggestion]); }
+                  }}
+                  placeholder={t.searchPlaceholder}
+                  role="combobox"
+                  type="text"
+                  value={search}
+                />
+                {search && <button aria-label={t.clearSearch} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-black/55 hover:bg-black/5 hover:text-black" onClick={() => { setSearch(""); setSearchOpen(false); }} type="button"><span aria-hidden="true" className="material-symbols-outlined text-[18px]">close</span></button>}
+              </div>
+              {searchOpen && suggestions.length > 0 && <div className="absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-xl border border-black/10 bg-white py-2 shadow-xl" id="listing-search-suggestions" role="listbox">
+                <p className="px-4 pb-2 font-mono text-[10px] uppercase tracking-widest text-black/45">{t.suggestions}</p>
+                {suggestions.map((suggestion, index) => <button
+                  aria-selected={highlightedSuggestion === index}
+                  className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm hover:bg-[#edf3fb] ${highlightedSuggestion === index ? "bg-[#edf3fb]" : ""}`}
+                  key={`${suggestion.kind}-${suggestion.value}`}
+                  onClick={() => chooseSuggestion(suggestion)}
+                  onMouseEnter={() => setHighlightedSuggestion(index)}
+                  role="option"
+                  type="button"
+                ><span className="truncate text-black">{suggestion.label}</span><span className="shrink-0 text-[11px] text-black/45">{suggestion.kind === "city" ? t.citySuggestion : suggestion.kind === "category" ? t.categorySuggestion : t.listingSuggestion}</span></button>)}
+              </div>}
+              <p className="mt-2 text-xs text-black/50">{t.searchHint}</p>
+            </div>
             <label className="block min-w-0 border-b border-black/30 pb-3 focus-within:border-black">
               <span className="block font-mono text-[11px] uppercase tracking-widest text-black">{t.city}</span>
-              <Input aria-label={t.city} className="mt-2 h-auto w-full rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45" onChange={(event) => setCity(event.target.value)} placeholder={t.anyCity} value={city} />
+              <Input aria-label={t.city} className="mt-2 h-auto w-full rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45" list="listing-cities" onChange={(event) => setCity(event.target.value)} placeholder={t.anyCity} value={city} />
+              <datalist id="listing-cities">{cityOptions.map((option) => <option key={option} value={option} />)}</datalist>
             </label>
             <label className="block min-w-0 border-b border-black/30 pb-3 focus-within:border-black">
               <span className="block font-mono text-[11px] uppercase tracking-widest text-black">{t.maxPrice}</span>
               <span className="mt-2 flex items-baseline gap-2"><Input aria-label={t.maxPriceLabel} className="h-auto w-full min-w-0 appearance-none rounded-none border-0 bg-transparent px-0 py-0 text-base text-black outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-black/45 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" min="1" onChange={(event) => setMaxPrice(event.target.value)} placeholder={t.anyPrice} type="number" value={maxPrice} />{maxPrice && <span className="shrink-0 font-mono text-xs text-black/60">RON</span>}</span>
             </label>
           </div>
+          {hasSearchFilters && <div aria-label={t.activeFilters} className="flex w-full flex-wrap items-center gap-2">
+            {search && <button className="rounded-full border border-[#30578F]/20 bg-[#edf3fb] px-3 py-1.5 text-xs text-[#30578F] hover:bg-[#dce8f7]" onClick={() => setSearch("")} type="button">{search} <span aria-hidden="true">×</span></button>}
+            {activeFilter !== "all" && <button className="rounded-full border border-[#30578F]/20 bg-[#edf3fb] px-3 py-1.5 text-xs text-[#30578F] hover:bg-[#dce8f7]" onClick={() => setActiveFilter("all")} type="button">{categories.find((item) => item.id === activeFilter)?.label} <span aria-hidden="true">×</span></button>}
+            {city && <button className="rounded-full border border-[#30578F]/20 bg-[#edf3fb] px-3 py-1.5 text-xs text-[#30578F] hover:bg-[#dce8f7]" onClick={() => setCity("")} type="button">{city} <span aria-hidden="true">×</span></button>}
+            {maxPrice && <button className="rounded-full border border-[#30578F]/20 bg-[#edf3fb] px-3 py-1.5 text-xs text-[#30578F] hover:bg-[#dce8f7]" onClick={() => setMaxPrice("")} type="button">≤ {maxPrice} RON <span aria-hidden="true">×</span></button>}
+            {position && <button className="rounded-full border border-[#30578F]/20 bg-[#edf3fb] px-3 py-1.5 text-xs text-[#30578F] hover:bg-[#dce8f7]" onClick={() => setPosition(null)} type="button">{t.nearby} · {radiusKm} km <span aria-hidden="true">×</span></button>}
+            <button className="ml-1 text-xs font-semibold text-[#30578F] underline-offset-4 hover:underline" onClick={resetFilters} type="button">{t.clearFilters}</button>
+          </div>}
           <div className="flex w-full flex-wrap items-center justify-between gap-x-6 gap-y-4 border-b border-black/10 pb-6">
             <p aria-live="polite" className="font-mono text-[11px] uppercase tracking-[0.16em] text-black/55">{visibleListings.length} {visibleListings.length === 1 ? t.oneResult : t.manyResults}</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
@@ -242,7 +382,12 @@ export default function ListingsHome({ listings, categories, loadError }) {
               </Link>
             </div>
           ) : visibleListings.length === 0 ? (
-            <p className="py-16 text-center text-[#444748]">{t.empty}</p>
+            <div className="mx-auto max-w-lg py-16 text-center text-[#444748]">
+              <span aria-hidden="true" className="material-symbols-outlined text-4xl text-[#30578F]">search_off</span>
+              <h2 className="mt-3 text-xl font-semibold text-black">{t.empty}</h2>
+              <p className="mt-2 text-sm">{t.noResultsHint}</p>
+              {hasSearchFilters && <button className="mt-6 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#30578F]" onClick={resetFilters} type="button">{t.clearFilters}</button>}
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-8 transition-all duration-700 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {visibleListings.map((item) => (

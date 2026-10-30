@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../l10n/generated_localizations.dart';
 import '../models/rental_mode.dart';
 import '../services/products_api.dart';
+import '../services/auth_api.dart';
 import '../services/favorites_service.dart';
 import '../widgets/lend_screen_frame.dart';
 import '../widgets/lend_back_top_bar.dart';
@@ -58,13 +59,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         ? RentalMode.day
         : RentalMode.month;
     _loadMapStyle();
-    FavoritesService.getIds().then((ids) {
-      if (mounted) {
-        setState(() => _isFavorite = ids.contains(widget.product.id));
-      }
-    }).catchError((Object error) {
-      // Favoritele necesită autentificare; butonul rămâne disponibil pentru conectare.
-    });
+    FavoritesService.getIds()
+        .then((ids) {
+          if (mounted) {
+            setState(() => _isFavorite = ids.contains(widget.product.id));
+          }
+        })
+        .catchError((Object error) {
+          // Favoritele necesită autentificare; butonul rămâne disponibil pentru conectare.
+        });
   }
 
   static bool _hasPriceForMode(LendProduct product, RentalMode mode) {
@@ -114,18 +117,24 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     } on FavoritesException catch (error) {
                       if (!mounted) return;
                       if (error.requiresLogin) {
-                        Navigator.of(this.context).push(MaterialPageRoute<void>(
-                          builder: (_) => const LoginScreen(),
-                        ));
-                      } else {
-                        ScaffoldMessenger.of(this.context).showSnackBar(
-                          SnackBar(content: Text(error.message)),
+                        Navigator.of(this.context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const LoginScreen(),
+                          ),
                         );
+                      } else {
+                        ScaffoldMessenger.of(
+                          this.context,
+                        ).showSnackBar(SnackBar(content: Text(error.message)));
                       }
                     } catch (_) {
                       if (mounted) {
                         ScaffoldMessenger.of(this.context).showSnackBar(
-                          const SnackBar(content: Text('Nu am putut actualiza favoritele. Încearcă din nou.')),
+                          const SnackBar(
+                            content: Text(
+                              'Nu am putut actualiza favoritele. Încearcă din nou.',
+                            ),
+                          ),
                         );
                       }
                     } finally {
@@ -1095,13 +1104,24 @@ class _OwnerCard extends StatelessWidget {
               width: double.infinity,
               height: 48,
               child: OutlinedButton(
-                onPressed: () {
+                onPressed: () async {
+                  if (await AuthSessionStore.getToken() == null) {
+                    if (!context.mounted) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const LoginScreen(),
+                      ),
+                    );
+                    return;
+                  }
+                  if (!context.mounted) return;
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => ProductChatScreen(
                         productId: product.id,
                         productTitle: product.title,
                         ownerName: product.ownerName,
+                        initialProduct: product,
                       ),
                     ),
                   );
@@ -1118,6 +1138,83 @@ class _OwnerCard extends StatelessWidget {
                 child: Text(
                   GeneratedLocalizations.of(context).sendMessage,
                   style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton.icon(
+                onPressed: () async {
+                  final token = await AuthSessionStore.getToken();
+                  if (!context.mounted) return;
+                  if (token == null) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const LoginScreen(),
+                      ),
+                    );
+                    return;
+                  }
+                  try {
+                    final user = await AuthApi().me(token);
+                    if (!context.mounted) return;
+                    if (product.ownerId == user.id) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            GeneratedLocalizations.of(
+                              context,
+                            ).ownListingOfferError,
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ProductChatScreen(
+                          productId: product.id,
+                          productTitle: product.title,
+                          ownerName: product.ownerName,
+                          initialProduct: product,
+                          openOfferOnStart: true,
+                        ),
+                      ),
+                    );
+                  } on AuthApiException catch (error) {
+                    if (!context.mounted) return;
+                    if (error.statusCode == 401) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const LoginScreen(),
+                        ),
+                      );
+                      return;
+                    }
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(error.message)));
+                  } catch (_) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Nu am putut verifica sesiunea. Încearcă din nou.',
+                        ),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.local_offer_outlined),
+                label: Text(GeneratedLocalizations.of(context).sendOffer),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _ProductDetailsScreenState._primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ),
@@ -1254,7 +1351,17 @@ class _BottomActionBar extends StatelessWidget {
             child: SizedBox(
               height: 50,
               child: FilledButton(
-                onPressed: () {
+                onPressed: () async {
+                  if (await AuthSessionStore.getToken() == null) {
+                    if (!context.mounted) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const LoginScreen(),
+                      ),
+                    );
+                    return;
+                  }
+                  if (!context.mounted) return;
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
                       builder: (_) => RentalPeriodScreen(

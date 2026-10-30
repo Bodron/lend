@@ -267,12 +267,14 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   Future<_ExploreData> _loadExploreData() async {
-    final productsFuture = ProductsApi().findAll();
-    final categoriesFuture = CategoriesApi().findAll();
+    final results = await Future.wait<Object>([
+      ProductsApi().findAll(),
+      CategoriesApi().findAll(),
+    ]);
 
     return _ExploreData(
-      products: await productsFuture,
-      categories: await categoriesFuture,
+      products: results[0] as List<LendProduct>,
+      categories: results[1] as List<LendCategory>,
     );
   }
 
@@ -458,9 +460,7 @@ class _RecommendedSection extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: _SectionHeader(
-            title: strings.recommended,
-          ),
+          child: _SectionHeader(title: strings.recommended),
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -601,6 +601,7 @@ class _MapPreviewState extends State<_MapPreview> {
             ConfiguredMap(
               child: GoogleMap(
                 style: _mapStyle,
+                liteModeEnabled: true,
                 initialCameraPosition: const CameraPosition(
                   target: LatLng(44.4268, 26.1025),
                   zoom: 10.5,
@@ -888,26 +889,52 @@ class _ProductsErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 116),
+      padding: const EdgeInsets.fromLTRB(28, 40, 28, 116),
       child: Column(
         children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: _ExploreScreenState._primary.withValues(alpha: 0.10),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              color: _ExploreScreenState._primary,
+              size: 30,
+            ),
+          ),
+          const SizedBox(height: 18),
           Text(
-            AppLocalizations.of(context).productsLoadError,
+            l10n.productsLoadError,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: _ExploreScreenState._text,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.productsLoadErrorHint,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: _ExploreScreenState._muted,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              height: 1.4,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           FilledButton(
             onPressed: onRetry,
             style: FilledButton.styleFrom(
               backgroundColor: _ExploreScreenState._primary,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            child: Text(AppLocalizations.of(context).retry),
+            child: Text(l10n.retry),
           ),
         ],
       ),

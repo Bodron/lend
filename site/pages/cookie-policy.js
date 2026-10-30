@@ -1,6 +1,22 @@
 import LegalLayout from "@/components/LegalLayout";
+import { useRouter } from "next/router";
 
 export default function CookiePolicy() {
+  if (useRouter().locale === "en") return <LegalLayout title="Cookie policy" eyebrow="Cookies" updated="25 July 2026" description="How PINLEND may use cookies and similar technologies on this site.">
+    <h2>1. What cookies are</h2>
+    <p>Cookies are small files stored in your browser for functionality, security, preferences, and performance measurement.</p>
+    <h2>2. Types of cookies</h2>
+    <ul>
+      <li>Strictly necessary: site operation and security;</li>
+      <li>Preferences: language and display settings;</li>
+      <li>Analytics: traffic measurement and product improvement;</li>
+      <li>Marketing: only if enabled and you have consented where required.</li>
+    </ul>
+    <h2>3. How to control them</h2>
+    <p>You can block or delete cookies in your browser settings. Some features may be limited if you disable strictly necessary cookies.</p>
+    <h2>4. Contact</h2>
+    <p>For questions about cookies, write to <a href="mailto:support@pinfers.com">support@pinfers.com</a>.</p>
+  </LegalLayout>;
   return (
     <LegalLayout
       title="Politica de cookies"

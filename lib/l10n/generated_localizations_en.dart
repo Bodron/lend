@@ -30,8 +30,17 @@ class GeneratedLocalizationsEn extends GeneratedLocalizations {
   String get retry => 'Retry';
 
   @override
-  String get productsLoadError =>
-      'We could not load products from the database.';
+  String get sendOffer => 'Send an offer';
+
+  @override
+  String get ownListingOfferError =>
+      'This is your listing. Only other users can send offers for it.';
+
+  @override
+  String get productsLoadError => 'Oops, listings aren\'t loading right now';
+
+  @override
+  String get productsLoadErrorHint => 'Give it another try in a moment.';
 
   @override
   String get emptyProducts => 'There are no products available right now.';

@@ -8,6 +8,12 @@ import AccountAvatarLink from "./AccountAvatarLink";
 
 const menuLinks = [
   { key: "listings", href: "/" },
+  { key: "messages", href: "/mesaje" },
+  { key: "viewings", href: "/vizionari" },
+  { key: "findRoommate", href: "/colegi" },
+  { key: "favorites", href: "/favorite" },
+  { key: "notifications", href: "/notificari" },
+  { key: "account", href: "/account" },
   { key: "about", href: "/despre-noi" },
   { key: "features", href: "/features" },
   { key: "download", href: "/download" },
@@ -26,7 +32,7 @@ export default function PublicHeader({ current = "" }) {
           <Link aria-current={current === "/" ? "page" : undefined} className="hidden font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black lg:inline" href="/">
             {t.listings}
           </Link>
-          <button aria-expanded={menuOpen} aria-label="Deschide meniul" className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={() => setMenuOpen(true)} type="button">
+          <button aria-expanded={menuOpen} aria-label={t.menu} className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={() => setMenuOpen(true)} type="button">
             <span className="h-px w-6 bg-black transition-all group-hover:w-8 sm:w-8 sm:group-hover:w-12" />
             <span className="hidden sm:inline">{t.menu}</span>
           </button>
@@ -37,13 +43,13 @@ export default function PublicHeader({ current = "" }) {
         </div>
       </div>
     </header>
-    <div aria-hidden={!menuOpen} className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center bg-black px-5 md:px-20 ${menuOpen ? "mega-menu-open" : ""}`}>
+    <div aria-hidden={!menuOpen} className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center overflow-y-auto bg-black px-5 py-20 md:px-20 ${menuOpen ? "mega-menu-open" : ""}`}>
       <button className="absolute right-6 top-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-white md:right-10 md:top-10" onClick={() => setMenuOpen(false)} type="button">
         <span className="material-symbols-outlined">close</span>
         {t.close}
       </button>
-      <nav aria-label="Meniu" className="flex flex-col space-y-6">
-        {menuLinks.map(({ key, href }) => <Link className={`font-display text-5xl font-bold transition-all duration-300 md:text-7xl ${current === href ? "text-[#8FABD4]" : "text-white hover:text-[#8FABD4]"}`} href={href} key={href} onClick={() => setMenuOpen(false)} tabIndex={menuOpen ? 0 : -1}>{t[key]}</Link>)}
+      <nav aria-label={t.menu} className="grid grid-cols-1 gap-x-12 gap-y-4 md:grid-cols-2 xl:grid-cols-3">
+        {menuLinks.map(({ key, href }) => <Link className={`font-display text-3xl font-bold transition-all duration-300 md:text-4xl ${current === href ? "text-[#8FABD4]" : "text-white hover:text-[#8FABD4]"}`} href={href} key={href} onClick={() => setMenuOpen(false)} tabIndex={menuOpen ? 0 : -1}>{t[key]}</Link>)}
       </nav>
     </div>
   </>;

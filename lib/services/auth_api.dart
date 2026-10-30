@@ -99,7 +99,10 @@ class AuthApi {
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw AuthApiException(_extractMessage(payload));
+      throw AuthApiException(
+        _extractMessage(payload),
+        statusCode: response.statusCode,
+      );
     }
 
     return AuthUser.fromJson(payload);
@@ -210,9 +213,10 @@ class AuthApi {
 }
 
 class AuthApiException implements Exception {
-  AuthApiException(this.message);
+  AuthApiException(this.message, {this.statusCode});
 
   final String message;
+  final int? statusCode;
 
   @override
   String toString() => message;
@@ -304,8 +308,10 @@ class AuthSessionStore {
     return preferences.getString(_tokenKey);
   }
 
-  static Future<void> clear() async {
-    await PushNotifications.instance.signOut();
+  static Future<void> clear({bool unregisterPushDevice = true}) async {
+    await PushNotifications.instance.signOut(
+      unregisterDevice: unregisterPushDevice,
+    );
     await RealtimeSocketService.instance.disconnect();
     final preferences = await SharedPreferences.getInstance();
     await preferences.remove(_tokenKey);

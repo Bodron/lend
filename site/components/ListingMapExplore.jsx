@@ -72,8 +72,8 @@ export default function ListingMapExplore({ listings, t }) {
   }
 
   return <div className="relative mb-8 h-[480px] overflow-hidden rounded-2xl bg-[#E8EDF3] shadow-sm sm:h-[520px] lg:h-[560px]">
-    {selected ? <>
-      <PinlendMap className="absolute inset-0 h-full w-full rounded-none" fitBoundsPadding={fitBoundsPadding} onSelect={setSelectedId} points={mappedListings} selectedId={selected.id} />
+    <PinlendMap className="absolute inset-0 h-full w-full rounded-none" fitBoundsPadding={fitBoundsPadding} onSelect={setSelectedId} points={mappedListings} selectedId={selected?.id ?? null} />
+    {selected && <>
       <div className="pointer-events-none absolute inset-x-4 bottom-[194px] z-20 flex justify-end gap-2">
         <button aria-label={t.previousMapCards} className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white text-xl text-[#30578F] shadow-md hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30578F]" onClick={() => scrollCards(-1)} type="button">←</button>
         <button aria-label={t.nextMapCards} className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-white text-xl text-[#30578F] shadow-md hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#30578F]" onClick={() => scrollCards(1)} type="button">→</button>
@@ -96,6 +96,6 @@ export default function ListingMapExplore({ listings, t }) {
           </div>
         </Link>)}
       </div>
-    </> : <p className="flex h-full items-center justify-center p-5 text-[#626977]">{t.noMap}</p>}
+    </>}
   </div>;
 }

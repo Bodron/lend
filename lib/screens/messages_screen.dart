@@ -1835,6 +1835,8 @@ class ProductChatScreen extends StatefulWidget {
     this.roommateInterestId,
     this.participantId,
     this.contextLabel,
+    this.initialProduct,
+    this.openOfferOnStart = false,
   });
 
   final String productId;
@@ -1843,6 +1845,8 @@ class ProductChatScreen extends StatefulWidget {
   final String? roommateInterestId;
   final String? participantId;
   final String? contextLabel;
+  final LendProduct? initialProduct;
+  final bool openOfferOnStart;
 
   @override
   State<ProductChatScreen> createState() => _ProductChatScreenState();
@@ -1874,6 +1878,10 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
   @override
   void initState() {
     super.initState();
+    _chatProduct = widget.initialProduct;
+    _productImageUrl = widget.initialProduct?.imageUrl.isEmpty == true
+        ? null
+        : widget.initialProduct?.imageUrl;
     _load();
   }
 
@@ -1912,7 +1920,12 @@ class _ProductChatScreenState extends State<ProductChatScreen> {
         _chatParticipantAvatarUrl = thread.participantAvatarUrl;
         _loading = false;
       });
-      unawaited(_loadProductImage());
+      if (_chatProduct == null) unawaited(_loadProductImage());
+      if (widget.openOfferOnStart && !_isOwner) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) unawaited(_sendOffer());
+        });
+      }
       _messageSubscription = await _realtime.subscribe(
         accessToken: token,
         apiBaseUrl: AuthApi.baseUrl,

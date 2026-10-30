@@ -3,7 +3,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'l10n/app_language.dart';
 import 'l10n/generated_localizations.dart';
-import 'screens/home_screen.dart';
 import 'screens/main_shell.dart';
 import 'screens/legal_documents_screen.dart';
 import 'services/auth_api.dart';
@@ -99,8 +98,12 @@ class _AuthGateState extends State<AuthGate> {
     try {
       await _authApi.me(token);
       return true;
+    } on AuthApiException catch (error) {
+      if (error.statusCode == 401) {
+        await AuthSessionStore.clear(unregisterPushDevice: false);
+      }
+      return false;
     } catch (_) {
-      await AuthSessionStore.clear();
       return false;
     }
   }
@@ -116,7 +119,7 @@ class _AuthGateState extends State<AuthGate> {
 
         return snapshot.data!
             ? const LegalGate(child: MainShell())
-            : const HomeScreen();
+            : const MainShell(isGuest: true);
       },
     );
   }

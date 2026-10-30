@@ -1,33 +1,21 @@
 import Head from "next/head";
 import Link from "next/link";
-import BrandLogo from "./BrandLogo";
-import { useState } from "react";
 import { useRouter } from "next/router";
-import LanguageSwitcher from "./LanguageSwitcher";
-import { translations } from "../lib/i18n";
-import AccountAvatarLink from "./AccountAvatarLink";
-
-const navLinks = [
-  { key: "about", href: "/despre-noi" },
-  { key: "features", href: "/features" },
-  { key: "listings", href: "/" },
-  { key: "download", href: "/download" },
-];
+import PublicHeader from "./PublicHeader";
+import PublicFooter from "./PublicFooter";
 
 export default function LegalLayout({ title, description, eyebrow, updated, children }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { locale } = useRouter();
-  const t = translations(locale);
+  const { locale, pathname } = useRouter();
+  const en = locale === "en";
 
   return (
     <>
       <Head>
-        <title>{title} | PINLEND</title>
+        <title>{`${title} | PINLEND`}</title>
         <meta name="description" content={description} />
       </Head>
 
-      <MegaMenu onClose={() => setMenuOpen(false)} open={menuOpen} t={t} />
-      <Header onMenu={() => setMenuOpen(true)} t={t} />
+      <PublicHeader current={pathname} />
 
       <main className="bg-[#f9f9f9] px-5 pb-24 pt-36 md:px-20 md:pb-40 md:pt-48">
         <section className="mx-auto max-w-6xl">
@@ -40,107 +28,27 @@ export default function LegalLayout({ title, description, eyebrow, updated, chil
           </h1>
           <p className="mt-10 max-w-2xl text-xl leading-8 text-[#444748]">{description}</p>
           <p className="mt-6 font-mono text-xs uppercase tracking-widest text-black/40">
-            Ultima actualizare: {updated}
+            {en ? "Last updated" : "Ultima actualizare"}: {en && updated === "25 iulie 2026" ? "25 July 2026" : updated}
           </p>
         </section>
 
         <section className="mx-auto mt-20 grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-[260px_1fr]">
           <aside className="h-fit border-l border-black/10 pl-6 lg:sticky lg:top-28">
-            <p className="mb-5 font-mono text-xs uppercase tracking-widest text-black/40">Pagini utile</p>
+            <p className="mb-5 font-mono text-xs uppercase tracking-widest text-black/40">{en ? "Useful pages" : "Pagini utile"}</p>
             <nav className="flex flex-col gap-3 text-base leading-6">
-              <Link href="/privacy-policy">Politica de confidentialitate</Link>
-              <Link href="/privacy-choices">Optiuni de confidentialitate</Link>
-              <Link href="/terms-and-conditions">Termeni si conditii</Link>
-              <Link href="/cookie-policy">Politica de cookies</Link>
-              <Link href="/account-deletion">Stergere cont</Link>
-              <Link href="/support">Suport</Link>
+              <Link href="/privacy-policy">{en ? "Privacy policy" : "Politica de confidentialitate"}</Link>
+              <Link href="/privacy-choices">{en ? "Privacy choices" : "Optiuni de confidentialitate"}</Link>
+              <Link href="/terms-and-conditions">{en ? "Terms and conditions" : "Termeni si conditii"}</Link>
+              <Link href="/cookie-policy">{en ? "Cookie policy" : "Politica de cookies"}</Link>
+              <Link href="/account-deletion">{en ? "Delete account" : "Stergere cont"}</Link>
+              <Link href="/support">{en ? "Support" : "Suport"}</Link>
             </nav>
           </aside>
           <div className="legal-content min-w-0">{children}</div>
         </section>
       </main>
 
-      <Footer />
+      <PublicFooter />
     </>
-  );
-}
-
-function Header({ onMenu, t }) {
-  return (
-    <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
-      <div className="flex h-20 w-full items-center justify-between gap-2 px-4 sm:px-5 md:px-20">
-        <div className="shrink-0 [&_img]:!h-6 sm:[&_img]:!h-9"><BrandLogo /></div>
-        <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/">
-            {t.listings}
-          </Link>
-          <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
-            <span className="h-px w-8 bg-black transition-all group-hover:w-12" />
-            {t.menu}
-          </button>
-        </nav>
-        <div className="flex shrink-0 items-center gap-3">
-        <LanguageSwitcher />
-        <AccountAvatarLink className="[&>span:last-child]:hidden" label={t.account} />
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function MegaMenu({ open, onClose, t }) {
-  return (
-    <div className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center bg-black px-5 md:px-20 ${open ? "mega-menu-open" : ""}`} aria-hidden={!open}>
-      <button className="absolute right-6 top-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-white md:right-10 md:top-10" onClick={onClose} type="button">
-        <span className="material-symbols-outlined">close</span>
-        {t.close}
-      </button>
-      <nav className="flex flex-col space-y-6">
-        {navLinks.map((link) => (
-          <Link className="font-display text-5xl font-bold text-white transition-all duration-300 hover:text-[#8FABD4] md:text-7xl" href={link.href} key={link.key} onClick={onClose}>
-            {t[link.key]}
-          </Link>
-        ))}
-      </nav>
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="w-full bg-black px-5 py-24 md:px-20 md:py-32">
-      <div className="mb-12 flex flex-col items-start justify-between gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end">
-        <h2 className="max-w-4xl font-display text-5xl font-extrabold uppercase leading-none text-white md:text-[96px]">Gata sa imparti?</h2>
-        <Link className="bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
-          Incepe acum
-        </Link>
-      </div>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        <FooterColumn title="Navigare">
-          <Link href="/despre-noi">Despre noi</Link>
-          <Link href="/features">Functionalitati</Link>
-          <Link href="/">Anunțuri</Link>
-        </FooterColumn>
-        <FooterColumn title="Legal">
-          <Link href="/privacy-policy">Confidentialitate</Link>
-          <Link href="/terms-and-conditions">Termeni</Link>
-          <Link href="/cookie-policy">Cookies</Link>
-          <Link href="/account-deletion">Stergere cont</Link>
-        </FooterColumn>
-        <FooterColumn title="Contact">
-          <a href="mailto:support@pinfers.com">support@pinfers.com</a>
-          <Link href="/support">Suport</Link>
-        </FooterColumn>
-      </div>
-    </footer>
-  );
-}
-
-function FooterColumn({ title, children }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <p className="font-mono text-xs uppercase tracking-widest text-white/60">{title}</p>
-      <div className="flex flex-col gap-2 text-xl leading-8 text-white">{children}</div>
-    </div>
   );
 }

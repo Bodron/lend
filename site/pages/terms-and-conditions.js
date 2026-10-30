@@ -1,6 +1,21 @@
 import LegalLayout from "@/components/LegalLayout";
+import { useRouter } from "next/router";
 
 export default function TermsAndConditions() {
+  if (useRouter().locale === "en") return <LegalLayout title="Terms and conditions" eyebrow="Terms" updated="25 July 2026" description="The main rules for using PINLEND, including accounts, rentals, deposits, payments, responsibilities, and limitations.">
+    <h2>1. Accepting the terms</h2><p>By using PINLEND, you accept these terms. If you disagree, do not use the service.</p>
+    <h2>2. Eligibility</h2><p>You must be at least 18 and legally able to enter into contracts. We may require identity verification for rentals.</p>
+    <h2>3. Your account</h2><p>You are responsible for the information you provide, your account security, and activity under your account.</p>
+    <h2>4. Listings and rentals</h2><p>Owners must describe items accurately, post real photos, and hand over items in the stated condition. Renters must use items responsibly and return them on time.</p>
+    <h2>5. Payments, deposits, and fees</h2><p>Payments, deposits, and refunds may be processed by third parties. PINLEND may charge fees and hold or release deposits under the rental terms.</p>
+    <h2>6. Verification and safety</h2><p>We may refuse, suspend, or limit accounts when we detect fraud, safety risks, false information, or a breach of these terms.</p>
+    <h2>7. Prohibited items</h2><p>Illegal or dangerous items, weapons, controlled substances, counterfeit goods, and items that violate laws or others’ rights are prohibited.</p>
+    <h2>8. Damage and disputes</h2><p>Users should document handover and return. In a dispute, PINLEND may review evidence and decide on deposits, refunds, or account restrictions.</p>
+    <h2>9. Intellectual property</h2><p>The PINLEND brand, design, text, and software belong to PINLEND or its licensors. You may not copy or use them without permission.</p>
+    <h2>10. Limitation of liability</h2><p>The service is provided as is, to the extent permitted by law. We do not guarantee uninterrupted availability or that the service is error-free.</p>
+    <h2>11. Ending access</h2><p>We may suspend or close your account if you breach these terms, the law, or our safety rules.</p>
+    <h2>12. Contact</h2><p>For questions about the terms, write to <a href="mailto:support@pinfers.com">support@pinfers.com</a>.</p>
+  </LegalLayout>;
   return (
     <LegalLayout
       title="Termeni si conditii"

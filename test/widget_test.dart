@@ -1,29 +1,37 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lend/main.dart';
-import 'package:lend/l10n/generated_localizations.dart';
-import 'package:lend/screens/home_screen.dart';
-import 'package:lend/screens/register_screen.dart';
+import 'package:lend/screens/explore_screen.dart';
+import 'package:lend/screens/login_screen.dart';
+import 'package:lend/screens/main_shell.dart';
 
 void main() {
-  testWidgets('opens register screen from home screen', (
-    WidgetTester tester,
+  testWidgets('guests can explore and protected navigation opens login', (
+    tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
 
     await tester.pumpWidget(const LendApp());
     await tester.pumpAndSettle();
 
-    final strings = GeneratedLocalizations.of(
-      tester.element(find.byType(HomeScreen)),
-    )!;
-    expect(find.text(strings.heroTitle), findsOneWidget);
-    expect(find.text(strings.startNow), findsOneWidget);
+    expect(find.byType(ExploreScreen), findsOneWidget);
+    expect(tester.widget<MainShell>(find.byType(MainShell)).isGuest, isTrue);
 
-    await tester.tap(find.text(strings.startNow));
-    await tester.pumpAndSettle();
+    for (final icon in [
+      Icons.list_alt_rounded,
+      Icons.handshake_outlined,
+      Icons.person_outline_rounded,
+      Icons.add_rounded,
+    ]) {
+      await tester.tap(find.byIcon(icon).last);
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginScreen), findsOneWidget);
 
-    expect(find.byType(RegisterScreen), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded).last);
+      await tester.pumpAndSettle();
+      expect(find.byType(ExploreScreen), findsOneWidget);
+    }
   });
 }

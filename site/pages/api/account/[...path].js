@@ -139,6 +139,20 @@ export default async function handler(req, res) {
       path: `messages/product/${productId}${query}`,
     };
   }
+  if (action === "offerProduct") {
+    const slug = req.query.slug;
+    if (typeof slug !== "string" || !/^[a-z0-9-]{1,100}$/i.test(slug)) {
+      return res.status(400).json({ message: "Anunț invalid." });
+    }
+    route = { method: "GET", path: `products/${encodeURIComponent(slug)}` };
+  }
+  if (action === "offerAvailability") {
+    const { productId, from, to } = req.query;
+    if (!validId(productId) || !/^\d{4}-\d{2}-\d{2}$/.test(from || "") || !/^\d{4}-\d{2}-\d{2}$/.test(to || "")) {
+      return res.status(400).json({ message: "Perioadă invalidă." });
+    }
+    route = { method: "GET", path: `rental-orders/products/${productId}/availability?${new URLSearchParams({ from, to })}` };
+  }
   const resourceActions = {
     productUpdate: { method: "PATCH", path: (id) => `products/${id}` },
     availabilityBlock: { method: "POST", path: (id) => `rental-orders/products/${id}/availability-blocks` },

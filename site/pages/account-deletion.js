@@ -1,6 +1,20 @@
 import LegalLayout from "@/components/LegalLayout";
+import { useRouter } from "next/router";
 
 export default function AccountDeletion() {
+  if (useRouter().locale === "en") return <LegalLayout title="Delete your account" eyebrow="Account deletion" updated="25 July 2026" description="Request deletion of your PINLEND account and associated data.">
+    <h2>1. How to request deletion</h2>
+    <p>Send a request to <a href="mailto:support@pinfers.com?subject=PINLEND%20account%20deletion%20request">support@pinfers.com</a> from the email address linked to your account, or include the phone number used in the app.</p>
+    <p>Include your name, account email, phone number, and a clear request to delete your PINLEND account.</p>
+    <h2>2. What we delete</h2>
+    <ul><li>Your account profile and preferences;</li><li>Inactive listings and their photos;</li><li>Support messages that we are not legally required to retain;</li><li>Tokens, sessions, and operational data no longer needed.</li></ul>
+    <h2>3. What we may retain temporarily</h2>
+    <p>We may retain some data for legal obligations, accounting, active disputes, fraud prevention, chargebacks, user safety, or requests from authorities.</p>
+    <h2>4. Processing time</h2>
+    <p>We normally confirm and process the request within 30 days, unless the law requires or permits a longer period.</p>
+    <h2>5. Deletion in the app</h2>
+    <p>If the app offers account deletion in settings, you can use that flow. This page remains available as an alternative web method.</p>
+  </LegalLayout>;
   return (
     <LegalLayout
       title="Stergere cont"

@@ -11,14 +11,16 @@ import 'add_listing_screen.dart';
 import 'explore_screen.dart';
 import 'my_listings_screen.dart';
 import 'messages_screen.dart';
+import 'login_screen.dart';
 import 'profile_screen.dart';
 import 'product_details_screen.dart';
 import 'rentals_screen.dart';
 
 class MainShell extends StatefulWidget {
-  const MainShell({super.key, this.initialIndex = 0});
+  const MainShell({super.key, this.initialIndex = 0, this.isGuest = false});
 
   final int initialIndex;
+  final bool isGuest;
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -27,7 +29,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   static const _background = Color(0xFFF5F5F7);
   final _authApi = AuthApi();
-  late int _currentIndex = widget.initialIndex.clamp(0, 3);
+  late int _currentIndex = widget.isGuest ? 0 : widget.initialIndex.clamp(0, 3);
   String? _pendingRentalOrderId;
   bool _pendingOwnedRental = false;
   String _topBarUserName = 'Pinlend';
@@ -36,15 +38,21 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    _loadTopBarAvatar();
-    PushNotifications.instance.sessionStarted();
-    PushNotifications.instance.pendingMessage.addListener(_openPushMessage);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _openPushMessage());
+    if (!widget.isGuest) {
+      _loadTopBarAvatar();
+      PushNotifications.instance.sessionStarted();
+      PushNotifications.instance.pendingMessage.addListener(_openPushMessage);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _openPushMessage());
+    }
   }
 
   @override
   void dispose() {
-    PushNotifications.instance.pendingMessage.removeListener(_openPushMessage);
+    if (!widget.isGuest) {
+      PushNotifications.instance.pendingMessage.removeListener(
+        _openPushMessage,
+      );
+    }
     super.dispose();
   }
 
@@ -148,6 +156,10 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _selectTab(int index) {
+    if (widget.isGuest && index != 0) {
+      _openLogin();
+      return;
+    }
     if (index == _currentIndex) {
       return;
     }
@@ -158,15 +170,29 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _openAddListing() {
+    if (widget.isGuest) {
+      _openLogin();
+      return;
+    }
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const AddListingScreen()));
   }
 
   void _openNotifications() {
+    if (widget.isGuest) {
+      _openLogin();
+      return;
+    }
     Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const MessagesScreen()));
+  }
+
+  void _openLogin() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const LoginScreen()));
   }
 
   @override
@@ -189,38 +215,40 @@ class _MainShellState extends State<MainShell> {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: IndexedStack(
-                    index: _currentIndex,
-                    children: [
-                      ExploreScreen(
-                        showChrome: false,
-                        isActive: _currentIndex == 0,
-                        onNavigate: _selectTab,
-                      ),
-                      MyListingsScreen(
-                        showChrome: false,
-                        onNavigate: _selectTab,
-                      ),
-                      RentalsScreen(
-                        showChrome: false,
-                        onNavigate: _selectTab,
-                        initialRentalOrderId: _pendingRentalOrderId,
-                        initialShowOwnedRentals: _pendingOwnedRental,
-                        onRentalOpened: () {
-                          if (!mounted) return;
-                          setState(() {
-                            _pendingRentalOrderId = null;
-                            _pendingOwnedRental = false;
-                          });
-                        },
-                      ),
-                      ProfileScreen(
-                        showChrome: false,
-                        onNavigate: _selectTab,
-                        onAvatarChanged: _loadTopBarAvatar,
-                      ),
-                    ],
-                  ),
+                  child: widget.isGuest
+                      ? ExploreScreen(showChrome: false, onNavigate: _selectTab)
+                      : IndexedStack(
+                          index: _currentIndex,
+                          children: [
+                            ExploreScreen(
+                              showChrome: false,
+                              isActive: _currentIndex == 0,
+                              onNavigate: _selectTab,
+                            ),
+                            MyListingsScreen(
+                              showChrome: false,
+                              onNavigate: _selectTab,
+                            ),
+                            RentalsScreen(
+                              showChrome: false,
+                              onNavigate: _selectTab,
+                              initialRentalOrderId: _pendingRentalOrderId,
+                              initialShowOwnedRentals: _pendingOwnedRental,
+                              onRentalOpened: () {
+                                if (!mounted) return;
+                                setState(() {
+                                  _pendingRentalOrderId = null;
+                                  _pendingOwnedRental = false;
+                                });
+                              },
+                            ),
+                            ProfileScreen(
+                              showChrome: false,
+                              onNavigate: _selectTab,
+                              onAvatarChanged: _loadTopBarAvatar,
+                            ),
+                          ],
+                        ),
                 ),
                 Align(
                   alignment: Alignment.topCenter,
@@ -228,7 +256,7 @@ class _MainShellState extends State<MainShell> {
                     title: _titleFor(context, _currentIndex),
                     userName: _topBarUserName,
                     avatarUrl: _topBarAvatarUrl,
-                    hasUnreadNotifications: true,
+                    hasUnreadNotifications: !widget.isGuest,
                     onNotificationPressed: _openNotifications,
                   ),
                 ),

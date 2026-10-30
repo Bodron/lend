@@ -143,11 +143,29 @@ abstract class GeneratedLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// No description provided for @sendOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'Send an offer'**
+  String get sendOffer;
+
+  /// No description provided for @ownListingOfferError.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your listing. Only other users can send offers for it.'**
+  String get ownListingOfferError;
+
   /// No description provided for @productsLoadError.
   ///
   /// In en, this message translates to:
-  /// **'We could not load products from the database.'**
+  /// **'Oops, listings aren\'t loading right now'**
   String get productsLoadError;
+
+  /// No description provided for @productsLoadErrorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it another try in a moment.'**
+  String get productsLoadErrorHint;
 
   /// No description provided for @emptyProducts.
   ///

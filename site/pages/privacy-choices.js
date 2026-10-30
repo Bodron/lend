@@ -1,6 +1,17 @@
 import LegalLayout from "@/components/LegalLayout";
+import { useRouter } from "next/router";
 
 export default function PrivacyChoices() {
+  if (useRouter().locale === "en") return <LegalLayout title="Privacy choices" eyebrow="Data rights" updated="25 July 2026" description="Request access, correction, export, restriction, or deletion of your data.">
+    <h2>1. Available requests</h2>
+    <ul><li>Access to the data we hold about you;</li><li>Correction of inaccurate data;</li><li>Export in a portable format, where applicable;</li><li>Restriction of certain processing;</li><li>Objection to processing where the law allows;</li><li>Deletion of data or your account.</li></ul>
+    <h2>2. How to submit a request</h2>
+    <p>Write to <a href="mailto:support@pinfers.com?subject=PINLEND%20personal%20data%20request">support@pinfers.com</a> and include the email address or phone number linked to your account.</p>
+    <h2>3. Verifying your request</h2>
+    <p>For security, we may ask for additional information to confirm that the request comes from the account holder.</p>
+    <h2>4. Response</h2>
+    <p>We respond within the periods required by applicable law. For EU users, these rights are handled under the GDPR.</p>
+  </LegalLayout>;
   return (
     <LegalLayout
       title="Optiuni de confidentialitate"

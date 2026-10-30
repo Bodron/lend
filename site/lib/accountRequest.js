@@ -1,3 +1,5 @@
+import Router from "next/router";
+
 export async function accountRequest(action, options = {}) {
   const response = await fetch(`/api/account/${action}`, {
     credentials: "same-origin",
@@ -17,6 +19,6 @@ export async function accountRequest(action, options = {}) {
 
 export function requireLogin(error, returnTo) {
   if (error?.status !== 401) return false;
-  window.location.assign(`/account?returnTo=${encodeURIComponent(returnTo)}`);
+  Router.push(`/account?returnTo=${encodeURIComponent(returnTo)}`);
   return true;
 }

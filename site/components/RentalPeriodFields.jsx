@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { ro } from "date-fns/locale";
+import { useRouter } from "next/router";
+import { enGB, ro } from "date-fns/locale";
 import { CalendarDays, ChevronDown, Clock3, Minus, Plus } from "lucide-react";
 import { Button } from "./ui/button";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
-const dateFormatter = new Intl.DateTimeFormat("ro-RO", { day: "2-digit", month: "long", year: "numeric" });
 const twoDigits = (value) => String(value).padStart(2, "0");
 const dateFromKey = (key) => key ? new Date(`${key}T12:00:00`) : undefined;
 const dateKey = (date) => `${date.getFullYear()}-${twoDigits(date.getMonth() + 1)}-${twoDigits(date.getDate())}`;
 const minutesOf = (value) => Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5));
 
 export function RentalDateField({ label, value, min, onChange, disabled = false }) {
+  const en = useRouter().locale === "en";
   const [open, setOpen] = useState(false);
   const selected = dateFromKey(value);
   const minimum = dateFromKey(min);
@@ -27,7 +28,7 @@ export function RentalDateField({ label, value, min, onChange, disabled = false 
           type="button"
           variant="outline"
         >
-          <span className={selected ? "text-[#1B1B1B]" : "text-[#69717E]"}>{selected ? dateFormatter.format(selected) : "Alege data"}</span>
+          <span className={selected ? "text-[#1B1B1B]" : "text-[#69717E]"}>{selected ? new Intl.DateTimeFormat(en ? "en-GB" : "ro-RO", { day: "2-digit", month: "long", year: "numeric" }).format(selected) : (en ? "Choose a date" : "Alege data")}</span>
           <CalendarDays aria-hidden="true" className="size-4 text-[#30578F]" />
         </Button>
       </PopoverTrigger>
@@ -37,7 +38,7 @@ export function RentalDateField({ label, value, min, onChange, disabled = false 
           className="[--cell-size:2.5rem]"
           defaultMonth={selected || minimum}
           disabled={minimum ? { before: minimum } : undefined}
-          locale={ro}
+          locale={en ? enGB : ro}
           mode="single"
           onSelect={(date) => { if (date) { onChange(dateKey(date)); setOpen(false); } }}
           selected={selected}
@@ -50,6 +51,7 @@ export function RentalDateField({ label, value, min, onChange, disabled = false 
 }
 
 export function RentalTimeField({ label, value, min = "00:00", max = "23:59", onChange, disabled = false }) {
+  const en = useRouter().locale === "en";
   const [open, setOpen] = useState(false);
   const first = minutesOf(min);
   const last = minutesOf(max);
@@ -78,28 +80,29 @@ export function RentalTimeField({ label, value, min = "00:00", max = "23:59", on
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] gap-0 p-4">
         <div className="flex items-center justify-between"><span className="text-sm font-bold">{label}</span><span className="rounded-lg bg-[#E7F0FD] px-3 py-1 font-bold text-[#30578F]">{value}</span></div>
-        <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-[#69717E]">Ora</p>
+        <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-[#69717E]">{en ? "Hour" : "Ora"}</p>
         <div className="grid grid-cols-6 gap-1.5">
-          {hours.map((option) => <Button aria-label={`Ora ${twoDigits(option)}`} aria-pressed={hour === option} className="h-9 rounded-lg px-0" key={option} onClick={() => changeHour(option)} size="sm" type="button" variant={hour === option ? "default" : "ghost"}>{twoDigits(option)}</Button>)}
+          {hours.map((option) => <Button aria-label={`${en ? "Hour" : "Ora"} ${twoDigits(option)}`} aria-pressed={hour === option} className="h-9 rounded-lg px-0" key={option} onClick={() => changeHour(option)} size="sm" type="button" variant={hour === option ? "default" : "ghost"}>{twoDigits(option)}</Button>)}
         </div>
         <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-[#69717E]">Minute</p>
         <div className="grid grid-cols-4 gap-1.5">
-          {minuteChoices.map((option) => <Button aria-label={`${option} minute`} aria-pressed={minute === option} className="h-9 rounded-lg px-0" key={option} onClick={() => onChange(`${twoDigits(hour)}:${twoDigits(option)}`)} size="sm" type="button" variant={minute === option ? "default" : "ghost"}>{twoDigits(option)}</Button>)}
+          {minuteChoices.map((option) => <Button aria-label={`${option} ${en ? "minutes" : "minute"}`} aria-pressed={minute === option} className="h-9 rounded-lg px-0" key={option} onClick={() => onChange(`${twoDigits(hour)}:${twoDigits(option)}`)} size="sm" type="button" variant={minute === option ? "default" : "ghost"}>{twoDigits(option)}</Button>)}
         </div>
         <div className="mt-4 flex items-center justify-between border-t border-black/10 pt-3">
-          <span className="text-xs text-[#69717E]">Ajustare cu 1 minut</span>
+          <span className="text-xs text-[#69717E]">{en ? "Adjust by 1 minute" : "Ajustare cu 1 minut"}</span>
           <div className="flex items-center gap-1">
-            <Button aria-label="Cu un minut mai devreme" className="size-8 rounded-lg" disabled={current <= first} onClick={() => onChange(`${twoDigits(Math.floor((current - 1) / 60))}:${twoDigits((current - 1) % 60)}`)} size="icon" type="button" variant="outline"><Minus className="size-4" /></Button>
-            <Button aria-label="Cu un minut mai târziu" className="size-8 rounded-lg" disabled={current >= last} onClick={() => onChange(`${twoDigits(Math.floor((current + 1) / 60))}:${twoDigits((current + 1) % 60)}`)} size="icon" type="button" variant="outline"><Plus className="size-4" /></Button>
+            <Button aria-label={en ? "One minute earlier" : "Cu un minut mai devreme"} className="size-8 rounded-lg" disabled={current <= first} onClick={() => onChange(`${twoDigits(Math.floor((current - 1) / 60))}:${twoDigits((current - 1) % 60)}`)} size="icon" type="button" variant="outline"><Minus className="size-4" /></Button>
+            <Button aria-label={en ? "One minute later" : "Cu un minut mai târziu"} className="size-8 rounded-lg" disabled={current >= last} onClick={() => onChange(`${twoDigits(Math.floor((current + 1) / 60))}:${twoDigits((current + 1) % 60)}`)} size="icon" type="button" variant="outline"><Plus className="size-4" /></Button>
           </div>
         </div>
-        <Button className="mt-3 h-9 w-full rounded-full font-bold" onClick={() => setOpen(false)} type="button">Gata</Button>
+        <Button className="mt-3 h-9 w-full rounded-full font-bold" onClick={() => setOpen(false)} type="button">{en ? "Done" : "Gata"}</Button>
       </PopoverContent>
     </Popover>
   </div>;
 }
 
 export function RentalDateTimeField({ label, value = "", min = "", onChange, disabled = false }) {
+  const en = useRouter().locale === "en";
   const [date = "", time = ""] = value.split("T");
   const [minDate = "", minTime = "00:00"] = min.split("T");
   const earliestTime = date === minDate ? minTime : "00:00";
@@ -107,7 +110,7 @@ export function RentalDateTimeField({ label, value = "", min = "", onChange, dis
   return <div className="grid min-w-0 gap-3 sm:grid-cols-2">
     <RentalDateField
       disabled={disabled}
-      label={`${label} · data`}
+      label={`${label} · ${en ? "date" : "data"}`}
       min={minDate}
       onChange={(nextDate) => {
         const nextMinimum = nextDate === minDate ? minTime : "00:00";
@@ -118,7 +121,7 @@ export function RentalDateTimeField({ label, value = "", min = "", onChange, dis
     />
     <RentalTimeField
       disabled={disabled || !date}
-      label={`${label} · ora`}
+      label={`${label} · ${en ? "time" : "ora"}`}
       min={earliestTime}
       onChange={(nextTime) => onChange(`${date}T${nextTime}`)}
       value={time || "10:00"}

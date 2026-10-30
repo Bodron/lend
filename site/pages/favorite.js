@@ -17,6 +17,7 @@ export async function getServerSideProps() {
 
 export default function Favorites({ products }) {
   const router = useRouter();
+  const en = router.locale === "en";
   const [ids, setIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -30,13 +31,13 @@ export default function Favorites({ products }) {
       return favoriteIds().then((next) => { if (active) setIds(next); }).catch((cause) => {
         if (!active) return;
         if (cause.status === 401) router.replace(`/account?returnTo=${encodeURIComponent("/favorite")}`);
-        else setLoadError(cause.status === 404 ? "Serviciul de favorite nu este disponibil momentan." : cause.message);
+        else setLoadError(cause.status === 404 ? (en ? "Favorites are unavailable right now." : "Serviciul de favorite nu este disponibil momentan.") : cause.message);
       }).finally(() => { if (active) setLoading(false); });
     };
     update();
     window.addEventListener("pinlend:favorites", update);
     return () => { active = false; window.removeEventListener("pinlend:favorites", update); };
-  }, [router, reloadKey]);
+  }, [router, reloadKey, en]);
   async function remove(id) {
     setError("");
     try {
@@ -48,9 +49,9 @@ export default function Favorites({ products }) {
   return <>
     <Head><title>Favorite | PINLEND</title></Head>
     <AppHeader />
-    <main className="mx-auto max-w-7xl px-5 py-12 md:px-8"><p className="font-mono text-xs uppercase tracking-widest text-[#30578F]">Colecția ta</p><h1 className="mt-3 font-display text-4xl font-extrabold">Favorite</h1><p className="mt-3 text-[#626977]">Anunțurile salvate în contul tău, pe site și în aplicație.</p>
+    <main className="mx-auto max-w-7xl px-5 py-12 md:px-8"><p className="font-mono text-xs uppercase tracking-widest text-[#30578F]">{en ? "Your collection" : "Colecția ta"}</p><h1 className="mt-3 font-display text-4xl font-extrabold">{en ? "Favorites" : "Favorite"}</h1><p className="mt-3 text-[#626977]">{en ? "Listings saved to your account on the website and in the app." : "Anunțurile salvate în contul tău, pe site și în aplicație."}</p>
       
-      {loading ? <BrandLoader className="mt-8 py-12" label="Se încarcă favoritele..." /> : loadError ? <div className="account-card mt-8" role="alert"><p>{loadError}</p><button className="account-button mt-5" onClick={() => setReloadKey((key) => key + 1)} type="button">Încearcă din nou</button></div> : saved.length === 0 ? <div className="account-card mt-8"><p>Nu ai anunțuri salvate.</p><Link className="account-button mt-5 inline-block" href="/">Descoperă anunțuri</Link></div> : <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{saved.map((item) => <article className="overflow-hidden rounded-2xl bg-white shadow-sm" key={item._id || item.id}><Link href={`/anunt/${encodeURIComponent(item.slug)}`}>{item.images?.[0]?.url ? <img alt={item.title} className="aspect-[4/3] w-full object-cover" src={item.images[0].url} /> : <div className="flex aspect-[4/3] items-center justify-center bg-[#E7F0FD]">Fără imagine</div>}</Link><div className="p-5"><Link className="text-xl font-extrabold hover:text-[#30578F]" href={`/anunt/${encodeURIComponent(item.slug)}`}>{item.title}</Link><p className="mt-2 text-sm text-[#626977]">{item.city} · {item.pricePerDay} RON/zi</p><button className="mt-4 text-sm font-bold text-red-700" onClick={() => remove(String(item._id || item.id))} type="button">Elimină din favorite</button></div></article>)}</div>}
+      {loading ? <BrandLoader className="mt-8 py-12" label={en ? "Loading favorites..." : "Se încarcă favoritele..."} /> : loadError ? <div className="account-card mt-8" role="alert"><p>{loadError}</p><button className="account-button mt-5" onClick={() => setReloadKey((key) => key + 1)} type="button">{en ? "Try again" : "Încearcă din nou"}</button></div> : saved.length === 0 ? <div className="account-card mt-8"><p>{en ? "You have no saved listings." : "Nu ai anunțuri salvate."}</p><Link className="account-button mt-5 inline-block" href="/">{en ? "Explore listings" : "Descoperă anunțuri"}</Link></div> : <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{saved.map((item) => <article className="overflow-hidden rounded-2xl bg-white shadow-sm" key={item._id || item.id}><Link href={`/anunt/${encodeURIComponent(item.slug)}`}>{item.images?.[0]?.url ? <img alt={item.title} className="aspect-[4/3] w-full object-cover" src={item.images[0].url} /> : <div className="flex aspect-[4/3] items-center justify-center bg-[#E7F0FD]">{en ? "No image" : "Fără imagine"}</div>}</Link><div className="p-5"><Link className="text-xl font-extrabold hover:text-[#30578F]" href={`/anunt/${encodeURIComponent(item.slug)}`}>{item.title}</Link><p className="mt-2 text-sm text-[#626977]">{item.city} · {item.pricePerDay} RON/{en ? "day" : "zi"}</p><button className="mt-4 text-sm font-bold text-red-700" onClick={() => remove(String(item._id || item.id))} type="button">{en ? "Remove from favorites" : "Elimină din favorite"}</button></div></article>)}</div>}
     </main>
   </>;
 }

@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
-import { Input } from "../components/ui/input";
 import Link from "next/link";
-import BrandLogo from "../components/BrandLogo";
-import AccountAvatarLink from "../components/AccountAvatarLink";
+import PublicHeader from "../components/PublicHeader";
+import PublicFooter from "../components/PublicFooter";
+import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 
 const images = {
@@ -56,7 +56,7 @@ const testimonials = [
 ];
 
 export default function Community() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const en = useRouter().locale === "en";
   const [parallax, setParallax] = useState(0);
 
   useEffect(() => {
@@ -92,40 +92,39 @@ export default function Community() {
   return (
     <>
       <Head>
-        <title>Comunitate PINLEND | Povesti reale din economia de sharing</title>
+        <title>{en ? "PINLEND community | Stories of sharing" : "Comunitate PINLEND | Povesti reale din economia de sharing"}</title>
         <meta
           name="description"
-          content="Descopera comunitatea PINLEND: povesti despre oameni, obiecte verificate si incredere construita prin inchirieri locale."
+          content={en ? "Meet the PINLEND community: people, verified items, and trust built through local rentals." : "Descopera comunitatea PINLEND: povesti despre oameni, obiecte verificate si incredere construita prin inchirieri locale."}
         />
       </Head>
 
-      <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <Header onMenu={() => setMenuOpen(true)} />
+      <PublicHeader current="/community" />
 
       <main className="w-full overflow-hidden bg-[#f9f9f9] pt-20">
         <section className="relative flex flex-col items-end gap-8 px-5 py-24 md:px-20 md:py-40 lg:flex-row">
           <div className="relative z-10 lg:w-7/12">
             <span className="mb-8 block font-mono text-xs uppercase tracking-[0.2em] text-[#444748]/70">
-              Vocile comunitatii
+              {en ? "Community voices" : "Vocile comunitatii"}
             </span>
             <h1 className="community-display-2xl mb-12 font-display font-extrabold text-black">
-              Arhiva <br />
-              <span className="italic text-[#444748]">experientelor</span>
+              {en ? "Stories" : "Arhiva"} <br />
+              <span className="italic text-[#444748]">{en ? "worth" : "experientelor"}</span>
               <br />
-              impartite.
+              {en ? "sharing." : "impartite."}
             </h1>
             <p className="max-w-xl text-xl leading-8 text-[#444748]">
-              PINLEND este mai mult decat o platforma. Este o comunitate de oameni care aleg accesul inteligent in locul proprietatii inutile.
+              {en ? "PINLEND is a community of people who choose smart access instead of owning things they rarely use." : "PINLEND este mai mult decat o platforma. Este o comunitate de oameni care aleg accesul inteligent in locul proprietatii inutile."}
             </p>
           </div>
           <div className="community-reveal group relative overflow-hidden lg:w-5/12">
             <img
               className="reveal-image h-[420px] w-full object-cover grayscale transition-all duration-700 ease-in-out hover:grayscale-0 md:h-[600px]"
               src={images.hero}
-              alt="Membri ai comunitatii PINLEND impartind o camera foto"
+              alt={en ? "PINLEND community members sharing a camera" : "Membri ai comunitatii PINLEND impartind o camera foto"}
             />
             <div className="absolute bottom-0 left-0 bg-black p-6 font-mono text-xs uppercase tracking-widest text-white md:p-8">
-              Poveste: colectivul creatorilor
+              {en ? "Story: the creators' collective" : "Poveste: colectivul creatorilor"}
             </div>
           </div>
         </section>
@@ -134,15 +133,15 @@ export default function Community() {
           <div className="mb-20 flex flex-col items-start justify-between gap-10 lg:flex-row">
             <div className="max-w-2xl">
               <h2 className="community-display-lg mb-6 font-display font-bold">
-                Pulsul retelei
+                {en ? "The network in motion" : "Pulsul retelei"}
               </h2>
               <p className="text-base leading-6 text-white/70">
-                Schimburi reale intre oameni. Fiecare nod inseamna un obiect folosit mai bine, o resursa salvata si o conexiune noua.
+                {en ? "Real exchanges between people. Each point represents an item put to better use, a resource saved, and a new connection." : "Schimburi reale intre oameni. Fiecare nod inseamna un obiect folosit mai bine, o resursa salvata si o conexiune noua."}
               </p>
             </div>
             <div className="flex gap-12">
-              <NetworkStat value="12.4k" label="Noduri active" />
-              <NetworkStat value="89%" label="Incredere repetata" />
+              <NetworkStat value="12.4k" label={en ? "Active members" : "Noduri active"} />
+              <NetworkStat value="89%" label={en ? "Repeat trust" : "Incredere repetata"} />
             </div>
           </div>
 
@@ -187,7 +186,7 @@ export default function Community() {
             </svg>
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="text-center transition-transform duration-500 group-hover:scale-110">
-                <span className="mb-2 block font-mono text-xs uppercase tracking-widest">Retea live</span>
+                <span className="mb-2 block font-mono text-xs uppercase tracking-widest">{en ? "Live network" : "Retea live"}</span>
                 <div className="mx-auto h-px w-24 bg-[#8FABD4]" />
               </div>
             </div>
@@ -197,17 +196,17 @@ export default function Community() {
         <section className="space-y-32 px-5 py-24 md:px-20 md:py-40">
           <Story
             image={images.cello}
-            label="Schimb muzical"
-            title="Andrei si violoncelul de secol XVIII"
-            text="Aveam nevoie de un instrument profesional pentru o sesiune de inregistrare aparuta pe ultima suta de metri. Prin PINLEND am gasit rapid un proprietar verificat si un obiect documentat corect."
-            cta="Citeste povestea"
+            label={en ? "Sharing music" : "Schimb muzical"}
+            title={en ? "Andrei and the 18th-century cello" : "Andrei si violoncelul de secol XVIII"}
+            text={en ? "I needed a professional instrument for a recording session arranged at the last minute. Through PINLEND, I quickly found a verified owner and an item with clear records." : "Aveam nevoie de un instrument profesional pentru o sesiune de inregistrare aparuta pe ultima suta de metri. Prin PINLEND am gasit rapid un proprietar verificat si un obiect documentat corect."}
+            cta={en ? "Read the story" : "Citeste povestea"}
           />
           <Story
             image={images.closet}
-            label="Stil sustenabil"
-            title="Dulapul care circula prin oras"
-            text="Aveam haine bune pe care nu le purtam aproape niciodata. Acum sunt folosite de alti oameni, iar eu castig bani fara sa cumpar si mai multe lucruri."
-            cta="Explorează anunțurile"
+            label={en ? "Sustainable style" : "Stil sustenabil"}
+            title={en ? "The wardrobe shared across town" : "Dulapul care circula prin oras"}
+            text={en ? "I had good clothes I almost never wore. Now other people use them, and I earn money without buying even more things." : "Aveam haine bune pe care nu le purtam aproape niciodata. Acum sunt folosite de alti oameni, iar eu castig bani fara sa cumpar si mai multe lucruri."}
+            cta={en ? "Explore listings" : "Explorează anunțurile"}
             inverse
           />
         </section>
@@ -215,17 +214,17 @@ export default function Community() {
         <section className="relative flex h-[800px] w-full items-center justify-center overflow-hidden bg-[#eeeeee]">
           <div className="pointer-events-none absolute inset-0 opacity-10">
             <h2 className="select-none whitespace-nowrap font-display text-[20vw] font-extrabold uppercase text-black">
-              Comunitatea pe primul loc Comunitatea pe primul loc
+              {en ? "Community first Community first" : "Comunitatea pe primul loc Comunitatea pe primul loc"}
             </h2>
           </div>
           <div className="relative h-full w-full max-w-[1440px]">
-            {testimonials.map((item) => (
+            {testimonials.map((item, index) => (
               <div
                 className={`absolute max-w-xs shadow-sm ${item.className.includes("p-10") ? "" : "p-8"} ${item.className}`}
                 key={item.author}
                 style={{ transform: `translateY(${-parallax * item.speed / 28}px)` }}
               >
-                <p className="mb-4 text-base italic leading-6">{item.quote}</p>
+                <p className="mb-4 text-base italic leading-6">{en ? ["The easiest way to use great things without filling my home with them.", "A simple exchange of tools introduced me to wonderful people.", "Trust takes time to build, and PINLEND makes the process clear."][index] : item.quote}</p>
                 <span className="font-mono text-xs uppercase tracking-widest">- {item.author}</span>
               </div>
             ))}
@@ -234,7 +233,7 @@ export default function Community() {
               style={{ transform: `translateY(${-parallax * 3 / 28}px)` }}
             >
               <p className="font-mono text-sm font-bold uppercase leading-5">
-                1.200 kg de risipa evitata luna aceasta.
+                {en ? "1,200 kg of waste avoided this month." : "1.200 kg de risipa evitata luna aceasta."}
               </p>
             </div>
           </div>
@@ -243,81 +242,31 @@ export default function Community() {
         <section className="bg-[#f9f9f9] px-5 py-24 text-center md:px-20 md:py-40">
           <div className="mx-auto max-w-3xl">
             <h2 className="community-display-lg mb-8 font-display font-bold text-black">
-              Scrie propriul <span className="text-[#4A70A9]">capitol.</span>
+              {en ? "Write your own" : "Scrie propriul"} <span className="text-[#4A70A9]">{en ? "chapter." : "capitol."}</span>
             </h2>
             <p className="mb-12 text-xl leading-8 text-[#444748]">
-              Pune un obiect la inchiriat sau rezerva ceva de care ai nevoie. Intra in economia circulara cu pasi simpli si verificati.
+              {en ? "List an item or book something you need. Join the circular economy through simple, verified steps." : "Pune un obiect la inchiriat sau rezerva ceva de care ai nevoie. Intra in economia circulara cu pasi simpli si verificati."}
             </p>
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Link
                 className="bg-black px-10 py-5 font-mono text-xs uppercase tracking-widest text-white transition-colors hover:bg-[#30578F]"
                 href="/download"
               >
-                Adauga un obiect
+                {en ? "List an item" : "Adauga un obiect"}
               </Link>
               <Link
                 className="border border-black px-10 py-5 font-mono text-xs uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white"
                 href="/"
               >
-                Vezi anunțurile
+                {en ? "Browse listings" : "Vezi anunțurile"}
               </Link>
             </div>
           </div>
         </section>
       </main>
 
-      <Footer />
+      <PublicFooter />
     </>
-  );
-}
-
-function Header({ onMenu }) {
-  return (
-    <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
-      <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <BrandLogo />
-        <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/">
-            Anunțuri
-          </Link>
-          <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
-            <span className="h-px w-8 bg-black transition-all group-hover:w-12" />
-            Meniu
-          </button>
-        </nav>
-        <AccountAvatarLink className="[&>span:last-child]:hidden" label="Contul meu" />
-      </div>
-    </header>
-  );
-}
-
-function MegaMenu({ open, onClose }) {
-  const links = [
-    { label: "Despre noi", href: "/despre-noi" },
-    { label: "Functionalitati", href: "/features" },
-    { label: "Anunțuri", href: "/" },
-    { label: "Descarca", href: "/download" },
-  ];
-
-  return (
-    <div className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center bg-black px-5 md:px-20 ${open ? "mega-menu-open" : ""}`} aria-hidden={!open}>
-      <button className="absolute right-6 top-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-white md:right-10 md:top-10" onClick={onClose} type="button">
-        <span className="material-symbols-outlined">close</span>
-        Inchide
-      </button>
-      <nav className="flex flex-col space-y-6">
-        {links.map((link) => (
-          <Link
-            className={`font-display text-5xl font-bold transition-all duration-300 md:text-7xl ${link.href === "/community" ? "text-[#8FABD4]" : "text-white hover:text-[#8FABD4]"}`}
-            href={link.href}
-            key={link.label}
-            onClick={onClose}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-    </div>
   );
 }
 
@@ -357,54 +306,6 @@ function Story({ image, label, title, text, cta, inverse = false }) {
           {cta}
         </Link>
       </div>
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="w-full bg-black px-5 py-32 md:px-20 md:py-40">
-      <div className="mb-12 flex flex-col items-start justify-between gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end">
-        <h2 className="max-w-4xl font-display text-6xl font-extrabold uppercase leading-none text-white md:text-[120px]">Gata sa imparti?</h2>
-        <Link className="bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
-          Incepe acum
-        </Link>
-      </div>
-      <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-        <FooterColumn title="Social">
-          <a href="#">Instagram</a>
-          <a href="#">Twitter/X</a>
-          <a href="#">LinkedIn</a>
-        </FooterColumn>
-        <FooterColumn title="Navigare">
-          <Link href="/despre-noi">Despre noi</Link>
-          <Link href="/">Anunțuri</Link>
-        </FooterColumn>
-        <div className="flex flex-col gap-6 md:col-span-2">
-          <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
-          <form className="relative flex w-full items-center border-b border-white/20">
-            <Input className="h-auto w-full rounded-none border-0 bg-transparent px-0 py-4 text-xl leading-8 text-white outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-white/35" placeholder="Introdu adresa de email" type="email" />
-            <button className="material-symbols-outlined text-white" type="submit">arrow_forward</button>
-          </form>
-        </div>
-      </div>
-      <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
-        <span className="font-mono text-xs uppercase tracking-widest text-white/40">© 2026 PINLEND. Construit pentru economia de sharing.</span>
-        <div className="flex flex-wrap gap-6">
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/privacy-policy">Confidentialitate</Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/terms-and-conditions">Termeni</Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/support">Suport</Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function FooterColumn({ title, children }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <p className="font-mono text-xs uppercase tracking-widest text-white/60">{title}</p>
-      <div className="flex flex-col gap-2 text-xl leading-8 text-white">{children}</div>
     </div>
   );
 }

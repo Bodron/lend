@@ -1,11 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import Head from "next/head";
-import { Input } from "../components/ui/input";
 import Link from "next/link";
-import BrandLogo from "../components/BrandLogo";
-import AccountAvatarLink from "../components/AccountAvatarLink";
+import PublicHeader from "../components/PublicHeader";
+import PublicFooter from "../components/PublicFooter";
 import { useEffect, useState } from "react";
 import StoreBadge from "../components/StoreBadge";
+import { useRouter } from "next/router";
 
 const images = {
   qr:
@@ -15,7 +15,7 @@ const images = {
 };
 
 export default function Download() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const en = useRouter().locale === "en";
   const [buttonTransform, setButtonTransform] = useState("translate(0px, 0px)");
   const [labelTransform, setLabelTransform] = useState("translate(0px, 0px)");
   const [phoneTransform, setPhoneTransform] = useState("perspective(1000px) rotateY(0deg) rotateX(0deg)");
@@ -53,15 +53,14 @@ export default function Download() {
   return (
     <>
       <Head>
-        <title>Descarca PINLEND | Aplicatia pentru inchirieri intre oameni</title>
+        <title>{en ? "Download PINLEND | Rent from people nearby" : "Descarca PINLEND | Aplicatia pentru inchirieri intre oameni"}</title>
         <meta
           name="description"
-          content="Descarca aplicatia PINLEND si inchiriaza obiecte verificate sau publica propriile obiecte in comunitate."
+          content={en ? "Download PINLEND to rent verified items or share your own with the community." : "Descarca aplicatia PINLEND si inchiriaza obiecte verificate sau publica propriile obiecte in comunitate."}
         />
       </Head>
 
-      <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <Header onMenu={() => setMenuOpen(true)} />
+      <PublicHeader current="/download" />
 
       <main className="w-full bg-[#f9f9f9] pt-20">
         <div className="flex w-full flex-col">
@@ -74,15 +73,15 @@ export default function Download() {
               <div className="mb-8 flex items-center gap-4">
                 <span className="h-px w-12 bg-black" />
                 <span className="font-mono text-xs uppercase tracking-widest text-[#444748]">
-                  Disponibila acum
+                  {en ? "Available now" : "Disponibila acum"}
                 </span>
               </div>
               <h1 className="download-display-2xl mb-12 font-display font-extrabold text-black">
-                Viitorul <br />
-                <span className="italic text-outline-blue">se imparte.</span>
+                {en ? "The future" : "Viitorul"} <br />
+                <span className="italic text-outline-blue">{en ? "is shared." : "se imparte."}</span>
               </h1>
               <p className="mb-16 max-w-xl text-xl leading-8 text-[#444748]">
-                Intra intr-o comunitate de oameni practici. Inchiriaza obiecte bune, publică propriile anunțuri si redefineste proprietatea pentru viata moderna.
+                {en ? "Join a community of practical people. Rent useful items, list your own, and rethink ownership for modern life." : "Intra intr-o comunitate de oameni practici. Inchiriaza obiecte bune, publică propriile anunțuri si redefineste proprietatea pentru viata moderna."}
               </p>
               <div className="flex flex-wrap items-center gap-8">
                 <div
@@ -97,7 +96,7 @@ export default function Download() {
                     onClick={() => document.getElementById("store-downloads")?.scrollIntoView({ behavior: "smooth", block: "center" })}
                   >
                     <span className="relative z-10 transition-transform" style={{ transform: labelTransform }}>
-                      Descarca aplicatia
+                      {en ? "Download the app" : "Descarca aplicatia"}
                     </span>
                     <span className="material-symbols-outlined relative z-10 transition-transform group-hover:translate-x-2">
                       arrow_downward
@@ -107,13 +106,13 @@ export default function Download() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <span className="font-mono text-[10px] uppercase tracking-normal text-[#444748]/60">
-                    Scaneaza pentru acces instant
+                    {en ? "Scan for instant access" : "Scaneaza pentru acces instant"}
                   </span>
                   <div className="h-24 w-24 border border-[#c4c7c7] bg-[#eeeeee] p-2">
                     <img
                       className="h-full w-full grayscale transition-all duration-700 hover:grayscale-0"
                       src={images.qr}
-                      alt="Cod QR pentru descarcarea aplicatiei PINLEND"
+                      alt={en ? "QR code to download PINLEND" : "Cod QR pentru descarcarea aplicatiei PINLEND"}
                     />
                   </div>
                 </div>
@@ -126,7 +125,7 @@ export default function Download() {
                   <img
                     className="h-full w-full object-contain drop-shadow-2xl"
                     src={images.phone}
-                    alt="Telefon cu interfata aplicatiei PINLEND"
+                    alt={en ? "Phone showing the PINLEND app" : "Telefon cu interfata aplicatiei PINLEND"}
                   />
                   <div className="absolute -right-20 -top-10 border border-[#c4c7c7]/20 bg-[#f9f9f9]/90 p-6 shadow-xl backdrop-blur-xl">
                     <div className="flex items-center gap-3">
@@ -134,7 +133,7 @@ export default function Download() {
                         <span className="material-symbols-outlined text-[20px]">verified</span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-mono text-[10px] uppercase opacity-60">Membru verificat</span>
+                        <span className="font-mono text-[10px] uppercase opacity-60">{en ? "Verified member" : "Membru verificat"}</span>
                         <span className="text-base font-medium leading-6">9.2k online</span>
                       </div>
                     </div>
@@ -142,7 +141,7 @@ export default function Download() {
                   <div className="absolute -bottom-12 -left-24 hidden bg-black p-8 shadow-2xl lg:block">
                     <span className="font-display text-[40px] font-bold text-white">98%</span>
                     <p className="font-mono text-xs uppercase tracking-widest text-white/60">
-                      Rating incredere
+                      {en ? "Trust rating" : "Rating incredere"}
                     </p>
                   </div>
                 </div>
@@ -153,9 +152,9 @@ export default function Download() {
           <section id="store-downloads" className="w-full scroll-mt-20 border-y border-[#c4c7c7]/10 bg-[#eeeeee] px-5 py-24 md:px-20">
             <div className="flex flex-col items-center justify-between gap-12 lg:flex-row">
               <div className="flex max-w-sm flex-col gap-4">
-                <h3 className="text-[32px] font-medium leading-10 text-black">Utilitate cross-platform</h3>
+                <h3 className="text-[32px] font-medium leading-10 text-black">{en ? "Works across devices" : "Utilitate cross-platform"}</h3>
                 <p className="text-base leading-6 text-[#444748]">
-                  Sincronizează anunțurile tale intre dispozitive. Optimizat pentru iOS si Android.
+                  {en ? "Keep your listings in sync across devices. Optimized for iOS and Android." : "Sincronizează anunțurile tale intre dispozitive. Optimizat pentru iOS si Android."}
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-4">
@@ -168,106 +167,7 @@ export default function Download() {
         </div>
       </main>
 
-      <Footer />
+      <PublicFooter />
     </>
-  );
-}
-
-function Header({ onMenu }) {
-  return (
-    <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
-      <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <BrandLogo />
-        <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/">
-            Anunțuri
-          </Link>
-          <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
-            <span className="h-px w-8 bg-black transition-all group-hover:w-12" />
-            Meniu
-          </button>
-        </nav>
-        <AccountAvatarLink className="[&>span:last-child]:hidden" label="Contul meu" />
-      </div>
-    </header>
-  );
-}
-
-function MegaMenu({ open, onClose }) {
-  const links = [
-    { label: "Despre noi", href: "/despre-noi" },
-    { label: "Functionalitati", href: "/features" },
-    { label: "Anunțuri", href: "/" },
-    { label: "Descarca", href: "/download" },
-  ];
-
-  return (
-    <div className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center bg-black px-5 md:px-20 ${open ? "mega-menu-open" : ""}`} aria-hidden={!open}>
-      <button className="absolute right-6 top-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-white md:right-10 md:top-10" onClick={onClose} type="button">
-        <span className="material-symbols-outlined">close</span>
-        Inchide
-      </button>
-      <nav className="flex flex-col space-y-6">
-        {links.map((link) => (
-          <Link
-            className={`font-display text-5xl font-bold transition-all duration-300 md:text-7xl ${link.href === "/download" ? "text-[#8FABD4]" : "text-white hover:text-[#8FABD4]"}`}
-            href={link.href}
-            key={link.label}
-            onClick={onClose}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="w-full bg-black px-5 py-32 md:px-20 md:py-40">
-      <div className="mb-12 flex flex-col items-start justify-between gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end">
-        <h2 className="max-w-4xl font-display text-6xl font-extrabold uppercase leading-none text-white md:text-[120px]">Gata sa imparti?</h2>
-        <Link className="rounded-full bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
-          Incepe acum
-        </Link>
-      </div>
-      <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-        <FooterColumn title="Social">
-          <a href="#">Instagram</a>
-          <a href="#">Twitter/X</a>
-          <a href="#">LinkedIn</a>
-        </FooterColumn>
-        <FooterColumn title="Navigare">
-          <Link href="/despre-noi">Despre noi</Link>
-          <Link href="/">Anunțuri</Link>
-          <Link href="/download">Descarca</Link>
-        </FooterColumn>
-        <div className="flex flex-col gap-6 md:col-span-2">
-          <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
-          <form className="relative flex w-full items-center border-b border-white/20">
-            <Input className="h-auto w-full rounded-none border-0 bg-transparent px-0 py-4 text-xl leading-8 text-white outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-white/35" placeholder="Introdu adresa de email" type="email" />
-            <button className="material-symbols-outlined text-white" type="submit">arrow_forward</button>
-          </form>
-        </div>
-      </div>
-      <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
-        <span className="font-mono text-xs uppercase tracking-widest text-white/40">© 2026 PINLEND. Construit pentru economia de sharing.</span>
-        <div className="flex flex-wrap gap-6">
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/privacy-policy">Confidentialitate</Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/terms-and-conditions">Termeni</Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/support">Suport</Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function FooterColumn({ title, children }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <p className="font-mono text-xs uppercase tracking-widest text-white/60">{title}</p>
-      <div className="flex flex-col gap-2 text-xl leading-8 text-white">{children}</div>
-    </div>
   );
 }

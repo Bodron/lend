@@ -1,8 +1,8 @@
 import Head from "next/head";
-import { Input } from "../components/ui/input";
 import Link from "next/link";
-import BrandLogo from "../components/BrandLogo";
-import AccountAvatarLink from "../components/AccountAvatarLink";
+import PublicHeader from "../components/PublicHeader";
+import PublicFooter from "../components/PublicFooter";
+import { useRouter } from "next/router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const featureCards = [
@@ -76,8 +76,25 @@ const specs = [
   },
 ];
 
+const englishFeatures = [
+  { eyebrow: "Protocol / 01", title: ["Safe", "sharing"], text: "Every item is protected by checks, deposits, and digital records. Handover and return are clear, so valuable items stay in good condition.", note: "Verified handover" },
+  { eyebrow: "Mechanics / 02", title: ["Instant", "booking"], text: "See available dates, the total price, and the deposit at a glance. Book directly in the app.", note: "Fast booking" },
+  { eyebrow: "Community / 03", title: ["Trust in", "the community"], text: "Verified profiles, ratings, and rental history build a real reputation between owners and renters.", note: "Verified identity" },
+];
+const englishStats = [
+  { label: "Transaction value", text: "RON processed annually through our booking, deposit, and digital contract services." },
+  { label: "Trust rating", text: "Average rating for verified members using PINLEND." },
+  { label: "Active inventory", text: "Clean, verified items available for local rental." },
+];
+const englishSpecs = [
+  { title: "Protection for owners", text: "Coverage for valuable items, clear deposits, and records at handover and return." },
+  { title: "Digital contracts", text: "Rental agreements created automatically, with confirmations for the deposit, period, and return." },
+  { title: "Guided handover", text: "Simple steps for important items: photos, condition, location, and confirmation from both sides." },
+  { title: "Dynamic pricing", text: "Price suggestions based on category, demand, duration, and item value." },
+];
+
 export default function FeaturesPage() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const en = useRouter().locale === "en";
   const [horizontalHeight, setHorizontalHeight] = useState("180vh");
   const [counts, setCounts] = useState(["0", "0", "0"]);
   const horizontalSectionRef = useRef(null);
@@ -178,30 +195,29 @@ export default function FeaturesPage() {
   return (
     <>
       <Head>
-        <title>Functionalitati PINLEND | Siguranta, rezervari si incredere</title>
+        <title>{en ? "PINLEND features | Safe sharing and quick bookings" : "Functionalitati PINLEND | Siguranta, rezervari si incredere"}</title>
         <meta
           name="description"
-          content="Descopera functionalitatile PINLEND: verificare, garantii, contracte digitale, rezervari rapide si reputatie in comunitate."
+          content={en ? "Explore PINLEND features: verification, deposits, digital contracts, quick bookings, and community trust." : "Descopera functionalitatile PINLEND: verificare, garantii, contracte digitale, rezervari rapide si reputatie in comunitate."}
         />
       </Head>
 
-      <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <Header onMenu={() => setMenuOpen(true)} />
+      <PublicHeader current="/features" />
 
       <main className="w-full [overflow-x:clip] bg-[#f9f9f9] pt-20">
         <section className="relative flex w-full flex-col items-start overflow-hidden px-5 py-24 md:px-20 md:py-40">
           <GridTexture />
           <span className="mb-8 flex items-center gap-4 font-mono text-xs uppercase tracking-[0.3em] text-black">
             <span className="h-px w-12 bg-black" />
-            Mecanica increderii
+            {en ? "How trust works" : "Mecanica increderii"}
           </span>
           <h1 className="download-display-2xl relative z-10 mb-12 max-w-5xl font-display font-extrabold text-black">
-            Un protocol pentru <br />
-            <span className="italic text-[#444748]">inchiriere fara frictiune.</span>
+            {en ? "A better way to" : "Un protocol pentru"} <br />
+            <span className="italic text-[#444748]">{en ? "rent with confidence." : "inchiriere fara frictiune."}</span>
           </h1>
           <div className="flex w-full justify-end">
             <p className="max-w-xl text-xl leading-8 text-[#444748]">
-              Am reconstruit felul in care oamenii imprumuta obiecte. De la verificarea identitatii pana la rezervari rapide si contracte digitale, PINLEND este gandit pentru acces sigur fara proprietate inutila.
+              {en ? "We have made it easier to share useful things. From identity verification to quick bookings and digital contracts, PINLEND gives you safe access without unnecessary ownership." : "Am reconstruit felul in care oamenii imprumuta obiecte. De la verificarea identitatii pana la rezervari rapide si contracte digitale, PINLEND este gandit pentru acces sigur fara proprietate inutila."}
             </p>
           </div>
         </section>
@@ -212,8 +228,8 @@ export default function FeaturesPage() {
             ref={horizontalViewportRef}
           >
             <div className="flex items-center gap-8 will-change-transform" ref={railRef}>
-              {featureCards.map((feature) => (
-                <FeatureCard feature={feature} key={feature.eyebrow} />
+              {featureCards.map((feature, index) => (
+                <FeatureCard feature={en ? { ...feature, ...englishFeatures[index] } : feature} key={feature.eyebrow} />
               ))}
               <div className="w-5 shrink-0 md:w-20" />
             </div>
@@ -224,9 +240,9 @@ export default function FeaturesPage() {
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {stats.map((stat, index) => (
               <div className="flex flex-col gap-4" key={stat.label}>
-                <span className="font-mono text-xs uppercase tracking-widest text-black/40">{stat.label}</span>
+                <span className="font-mono text-xs uppercase tracking-widest text-black/40">{en ? englishStats[index].label : stat.label}</span>
                 <span className="community-display-lg font-display font-bold text-black">{counts[index]}</span>
-                <p className="text-base leading-6 text-[#444748]">{stat.text}</p>
+                <p className="text-base leading-6 text-[#444748]">{en ? englishStats[index].text : stat.text}</p>
               </div>
             ))}
           </div>
@@ -235,12 +251,12 @@ export default function FeaturesPage() {
         <section className="w-full bg-[#eeeeee] px-5 py-24 md:px-20 md:py-40">
           <div className="mb-20">
             <h3 className="mb-4 text-[32px] font-medium uppercase leading-10 tracking-widest text-black">
-              Specificatii principale
+              {en ? "Key features" : "Specificatii principale"}
             </h3>
             <div className="h-1 w-32 bg-black" />
           </div>
           <div className="grid grid-cols-1 gap-x-24 gap-y-16 md:grid-cols-2">
-            {specs.map((spec) => (
+            {specs.map((spec, index) => (
               <article
                 className="group cursor-default border-b border-black/10 pb-8 transition-colors hover:border-black"
                 key={spec.number}
@@ -251,15 +267,15 @@ export default function FeaturesPage() {
                     arrow_outward
                   </span>
                 </div>
-                <h4 className="mb-4 font-display text-[32px] font-bold leading-10 text-black">{spec.title}</h4>
-                <p className="text-base leading-6 text-[#444748]">{spec.text}</p>
+                <h4 className="mb-4 font-display text-[32px] font-bold leading-10 text-black">{en ? englishSpecs[index].title : spec.title}</h4>
+                <p className="text-base leading-6 text-[#444748]">{en ? englishSpecs[index].text : spec.text}</p>
               </article>
             ))}
           </div>
         </section>
       </main>
 
-      <Footer />
+      <PublicFooter />
     </>
   );
 }
@@ -348,105 +364,6 @@ function FeatureVisual({ type }) {
         ))}
       </div>
       <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
-    </div>
-  );
-}
-
-function Header({ onMenu }) {
-  return (
-    <header className="fixed top-0 z-50 w-full bg-[#f9f9f9]/20 backdrop-blur-md transition-all duration-500 hover:bg-[#f9f9f9]">
-      <div className="flex h-20 w-full items-center justify-between px-5 md:px-20">
-        <BrandLogo />
-        <nav className="hidden items-center gap-[clamp(2rem,5vw,6rem)] lg:flex">
-          <Link className="font-mono text-xs uppercase tracking-widest text-[#444748] hover:text-black" href="/">
-            Anunțuri
-          </Link>
-          <button className="group flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-black" onClick={onMenu} type="button">
-            <span className="h-px w-8 bg-black transition-all group-hover:w-12" />
-            Meniu
-          </button>
-        </nav>
-        <AccountAvatarLink className="[&>span:last-child]:hidden" label="Contul meu" />
-      </div>
-    </header>
-  );
-}
-
-function MegaMenu({ open, onClose }) {
-  const links = [
-    { label: "Despre noi", href: "/despre-noi" },
-    { label: "Functionalitati", href: "/features" },
-    { label: "Anunțuri", href: "/" },
-    { label: "Descarca", href: "/download" },
-  ];
-
-  return (
-    <div className={`mega-menu-overlay fixed inset-0 z-[60] flex flex-col justify-center bg-black px-5 md:px-20 ${open ? "mega-menu-open" : ""}`} aria-hidden={!open}>
-      <button className="absolute right-6 top-8 flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-white md:right-10 md:top-10" onClick={onClose} type="button">
-        <span className="material-symbols-outlined">close</span>
-        Inchide
-      </button>
-      <nav className="flex flex-col space-y-6">
-        {links.map((link) => (
-          <Link
-            className={`font-display text-5xl font-bold transition-all duration-300 md:text-7xl ${link.href === "/features" ? "text-[#8FABD4]" : "text-white hover:text-[#8FABD4]"}`}
-            href={link.href}
-            key={link.label}
-            onClick={onClose}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="w-full bg-black px-5 py-32 md:px-20 md:py-40">
-      <div className="mb-12 flex flex-col items-start justify-between gap-10 border-b border-white/10 pb-12 lg:flex-row lg:items-end">
-        <h2 className="max-w-4xl font-display text-6xl font-extrabold uppercase leading-none text-white md:text-[120px]">Gata sa imparti?</h2>
-        <Link className="bg-[#4A70A9] px-12 py-6 font-mono text-xs uppercase tracking-widest text-white transition-colors duration-300 hover:bg-white hover:text-[#30578F]" href="/download">
-          Incepe acum
-        </Link>
-      </div>
-      <div className="mb-20 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-        <FooterColumn title="Social">
-          <a href="#">Instagram</a>
-          <a href="#">Twitter/X</a>
-          <a href="#">LinkedIn</a>
-        </FooterColumn>
-        <FooterColumn title="Navigare">
-          <Link href="/despre-noi">Despre noi</Link>
-          <Link href="/features">Functionalitati</Link>
-          <Link href="/">Anunțuri</Link>
-        </FooterColumn>
-        <div className="flex flex-col gap-6 md:col-span-2">
-          <p className="font-mono text-xs uppercase tracking-widest text-white/60">Newsletter</p>
-          <form className="relative flex w-full items-center border-b border-white/20">
-            <Input className="h-auto w-full rounded-none border-0 bg-transparent px-0 py-4 text-xl leading-8 text-white outline-none focus-visible:border-transparent focus-visible:ring-0 placeholder:text-white/35" placeholder="Introdu adresa de email" type="email" />
-            <button className="material-symbols-outlined text-white" type="submit">arrow_forward</button>
-          </form>
-        </div>
-      </div>
-      <div className="flex flex-col justify-between gap-8 border-t border-white/5 pt-8 md:flex-row">
-        <span className="font-mono text-xs uppercase tracking-widest text-white/40">© 2026 PINLEND. Construit pentru economia de sharing.</span>
-        <div className="flex flex-wrap gap-6">
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/privacy-policy">Confidentialitate</Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/terms-and-conditions">Termeni</Link>
-          <Link className="font-mono text-xs uppercase tracking-widest text-white/40" href="/support">Suport</Link>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function FooterColumn({ title, children }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <p className="font-mono text-xs uppercase tracking-widest text-white/60">{title}</p>
-      <div className="flex flex-col gap-2 text-xl leading-8 text-white">{children}</div>
     </div>
   );
 }

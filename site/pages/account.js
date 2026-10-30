@@ -3,6 +3,7 @@ import { useToastNotice } from "../lib/useToastNotice";
 import FormSelect from "../components/FormSelect";
 import { Input } from "../components/ui/input";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "../components/AppHeader";
 import BrandLoader from "../components/BrandLoader";
@@ -72,6 +73,8 @@ function validStripeUrl(value) {
 }
 
 export default function Account() {
+  const router = useRouter();
+  const en = router.locale === "en";
   const confirmAction = useConfirmAction();
   const { setProfile } = useAccountProfile();
   const [loading, setLoading] = useState(true);
@@ -175,7 +178,7 @@ export default function Account() {
       await refresh();
       const returnTo = new URLSearchParams(window.location.search).get("returnTo");
       if (returnTo?.startsWith("/") && !returnTo.startsWith("//") && !returnTo.includes("\\") && new URL(returnTo, window.location.origin).origin === window.location.origin) {
-        window.location.assign(returnTo);
+        router.push(returnTo);
         return;
       }
     } catch (cause) {
@@ -377,39 +380,39 @@ export default function Account() {
 
   return (
     <>
-      <Head><title>Contul meu | PINLEND</title><meta name="description" content="Gestionează contul, locația, identitatea și încasările PINLEND." /></Head>
+      <Head><title>{`${en ? "My account" : "Contul meu"} | PINLEND`}</title><meta name="description" content={en ? "Manage your PINLEND account, location, identity, and earnings." : "Gestionează contul, locația, identitatea și încasările PINLEND."} /></Head>
       <AppHeader />
 
       <main className="mx-auto max-w-7xl px-5 pb-24 pt-12 md:px-8 md:pt-16">
-        {loading ? <BrandLoader className="py-20" label="Se încarcă contul..." /> : sessionCheckError && !user ? (
-          <div className="mx-auto max-w-[490px] rounded-[20px] bg-white p-8 text-center shadow-sm"><p className="text-[#434750]">{sessionCheckError}</p><button className="account-button mt-6" onClick={retrySession} type="button">Reîncearcă</button></div>
+        {loading ? <BrandLoader className="py-20" label={en ? "Loading account..." : "Se încarcă contul..."} /> : sessionCheckError && !user ? (
+          <div className="mx-auto max-w-[490px] rounded-[20px] bg-white p-8 text-center shadow-sm"><p className="text-[#434750]">{sessionCheckError}</p><button className="account-button mt-6" onClick={retrySession} type="button">{en ? "Try again" : "Reîncearcă"}</button></div>
         ) : !user ? (
           <div className="flex min-h-[calc(100dvh-15rem)] items-center justify-center">
             <form autoComplete="off" className="w-full max-w-[490px] rounded-[20px] bg-white p-6 shadow-sm md:p-9" onSubmit={submitAuth}>
-              <div className="flex gap-2 rounded-full bg-[#F3F3F3] p-1"><button className={`flex-1 rounded-full px-4 py-3 text-sm font-bold ${authMode === "login" ? "bg-[#30578F] text-white" : "text-[#434750]"}`} onClick={() => { setAuthMode("login"); setForm({ fullName: "", email: "", phone: "", password: "" }); setCredentialsEditable(false); setError(""); }} type="button">Autentificare</button><button className={`flex-1 rounded-full px-4 py-3 text-sm font-bold ${authMode === "register" ? "bg-[#30578F] text-white" : "text-[#434750]"}`} onClick={() => { setAuthMode("register"); setForm({ fullName: "", email: "", phone: "", password: "" }); setCredentialsEditable(false); setError(""); }} type="button">Cont nou</button></div>
-              <h2 className="mt-7 text-2xl font-extrabold">{authMode === "login" ? "Bine ai revenit" : "Creează cont"}</h2>
-              {authMode === "register" && <><label className="mt-5 block text-sm font-bold" htmlFor="full-name">Nume complet</label><Input className="account-input" id="full-name" onChange={(event) => setForm({ ...form, fullName: event.target.value })} required value={form.fullName} /><label className="mt-5 block text-sm font-bold" htmlFor="phone">Telefon</label><Input className="account-input" id="phone" onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="+407..." required type="tel" value={form.phone} /></>}
+              <div className="flex gap-2 rounded-full bg-[#F3F3F3] p-1"><button className={`flex-1 rounded-full px-4 py-3 text-sm font-bold ${authMode === "login" ? "bg-[#30578F] text-white" : "text-[#434750]"}`} onClick={() => { setAuthMode("login"); setForm({ fullName: "", email: "", phone: "", password: "" }); setCredentialsEditable(false); setError(""); }} type="button">{en ? "Sign in" : "Autentificare"}</button><button className={`flex-1 rounded-full px-4 py-3 text-sm font-bold ${authMode === "register" ? "bg-[#30578F] text-white" : "text-[#434750]"}`} onClick={() => { setAuthMode("register"); setForm({ fullName: "", email: "", phone: "", password: "" }); setCredentialsEditable(false); setError(""); }} type="button">{en ? "New account" : "Cont nou"}</button></div>
+              <h2 className="mt-7 text-2xl font-extrabold">{authMode === "login" ? (en ? "Welcome back" : "Bine ai revenit") : (en ? "Create an account" : "Creează cont")}</h2>
+              {authMode === "register" && <><label className="mt-5 block text-sm font-bold" htmlFor="full-name">{en ? "Full name" : "Nume complet"}</label><Input className="account-input" id="full-name" onChange={(event) => setForm({ ...form, fullName: event.target.value })} required value={form.fullName} /><label className="mt-5 block text-sm font-bold" htmlFor="phone">{en ? "Phone" : "Telefon"}</label><Input className="account-input" id="phone" onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="+407..." required type="tel" value={form.phone} /></>}
               <label className="mt-5 block text-sm font-bold" htmlFor="account-email-entry">Email</label><Input autoComplete="off" className="account-input" data-1p-ignore data-lpignore="true" id="account-email-entry" onChange={(event) => setForm({ ...form, email: event.target.value })} onFocus={() => setCredentialsEditable(true)} readOnly={!credentialsEditable} required type="email" value={form.email} />
-              <label className="mt-5 block text-sm font-bold" htmlFor="account-password-entry">Parolă</label><Input autoComplete="new-password" className="account-input" data-1p-ignore data-lpignore="true" id="account-password-entry" minLength={8} onChange={(event) => setForm({ ...form, password: event.target.value })} onFocus={() => setCredentialsEditable(true)} readOnly={!credentialsEditable} required type="password" value={form.password} />
+              <label className="mt-5 block text-sm font-bold" htmlFor="account-password-entry">{en ? "Password" : "Parolă"}</label><Input autoComplete="new-password" className="account-input" data-1p-ignore data-lpignore="true" id="account-password-entry" minLength={8} onChange={(event) => setForm({ ...form, password: event.target.value })} onFocus={() => setCredentialsEditable(true)} readOnly={!credentialsEditable} required type="password" value={form.password} />
               
-              <button className="mt-7 w-full rounded-full bg-[#30578F] px-6 py-4 font-bold text-white disabled:opacity-50" disabled={busy === "auth"} type="submit">{busy === "auth" ? "Se procesează..." : authMode === "login" ? "Intră în cont" : "Creează contul"}</button>
+              <button className="mt-7 w-full rounded-full bg-[#30578F] px-6 py-4 font-bold text-white disabled:opacity-50" disabled={busy === "auth"} type="submit">{busy === "auth" ? (en ? "Processing..." : "Se procesează...") : authMode === "login" ? (en ? "Sign in" : "Intră în cont") : (en ? "Create account" : "Creează contul")}</button>
             </form>
           </div>
         ) : (
           <>
-            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5"><UserAvatar className="size-16 ring-4 ring-white shadow-md md:size-20" fallbackClassName="text-xl md:text-2xl" user={user} /><div><p className="font-mono text-xs uppercase tracking-[0.25em] text-[#30578F]">Contul meu</p><h1 className="mt-3 font-display text-4xl font-extrabold md:text-6xl">Salut, {user.fullName?.split(" ")[0] || "bine ai venit"}.</h1><p className="mt-3 text-[#434750]">{user.email}</p></div></div><div className="flex gap-3"><button className="rounded-full border border-black/15 px-5 py-2.5 text-sm font-bold hover:border-[#30578F]" onClick={() => refresh().catch((cause) => setError(cause.message))} type="button">Actualizează</button><button className="rounded-full border border-red-400 px-5 py-2.5 text-sm font-bold transition-colors hover:border-red-600 hover:bg-red-50" disabled={busy === "logout"} onClick={logout} type="button">Ieși din cont</button></div></div>
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5"><UserAvatar className="size-16 ring-4 ring-white shadow-md md:size-20" fallbackClassName="text-xl md:text-2xl" user={user} /><div><p className="font-mono text-xs uppercase tracking-[0.25em] text-[#30578F]">{en ? "My account" : "Contul meu"}</p><h1 className="mt-3 font-display text-4xl font-extrabold md:text-6xl">{en ? "Hello" : "Salut"}, {user.fullName?.split(" ")[0] || (en ? "welcome" : "bine ai venit")}.</h1><p className="mt-3 text-[#434750]">{user.email}</p></div></div><div className="flex gap-3"><button className="rounded-full border border-black/15 px-5 py-2.5 text-sm font-bold hover:border-[#30578F]" onClick={() => refresh().catch((cause) => setError(cause.message))} type="button">{en ? "Refresh" : "Actualizează"}</button><button className="rounded-full border border-red-400 px-5 py-2.5 text-sm font-bold transition-colors hover:border-red-600 hover:bg-red-50" disabled={busy === "logout"} onClick={logout} type="button">{en ? "Sign out" : "Ieși din cont"}</button></div></div>
             
             
             
 
-            <nav aria-label="Navigare cont" className="mt-9 flex gap-2 overflow-x-auto rounded-[20px] bg-white p-2 shadow-sm">
+            <nav aria-label={en ? "Account navigation" : "Navigare cont"} className="mt-9 flex gap-2 overflow-x-auto rounded-[20px] bg-white p-2 shadow-sm">
               {accountSections.map((section) => <button
                 aria-current={activeSection === section.id ? "page" : undefined}
                 className={`flex shrink-0 items-center gap-2 rounded-[14px] px-4 py-3 text-sm font-bold transition-[background-color,color] duration-[220ms] ${activeSection === section.id ? "bg-[#30578F] text-white" : "text-[#434750] hover:bg-[#E7F0FD]"}`}
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
                 type="button"
-              ><span aria-hidden="true" className="material-symbols-outlined text-[20px]">{section.icon}</span>{section.label}</button>)}
+              ><span aria-hidden="true" className="material-symbols-outlined text-[20px]">{section.icon}</span>{en ? { overview: "Overview", listings: "My listings", rentals: "Rentals", earnings: "Earnings", profile: "Profile" }[section.id] : section.label}</button>)}
             </nav>
 
             {(activeSection === "overview" || activeSection === "earnings") && <section className="mt-8 grid gap-4 md:grid-cols-3"><Metric label="Câștiguri din închirieri" value={formatRon(figures.earned)} note="Închirieri finalizate și plătite" /><Metric label="Disponibili pentru transfer" value={formatRon(figures.available)} note="După perioada de așteptare" /><Metric label="Trimiși către Stripe" value={formatRon(figures.paid)} note="Transferuri inițiate" /></section>}

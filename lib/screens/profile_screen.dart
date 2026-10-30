@@ -19,7 +19,7 @@ import '../widgets/lend_toast.dart';
 import '../widgets/lend_top_bar.dart';
 import 'add_listing_screen.dart';
 import 'explore_screen.dart';
-import 'home_screen.dart';
+import 'main_shell.dart';
 import 'my_listings_screen.dart';
 import 'payout_settings_screen.dart';
 import 'rentals_screen.dart';
@@ -388,7 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+      MaterialPageRoute<void>(builder: (_) => const MainShell(isGuest: true)),
       (route) => false,
     );
   }

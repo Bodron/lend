@@ -16,11 +16,17 @@ const labels = {
   awaiting_verification: "Așteaptă verificarea", refund_pending: "Rambursare în curs",
   confirmed: "Confirmată", completed: "Finalizată", cancelled: "Anulată", rejected: "Respinsă",
 };
+const englishLabels = {
+  requested: "Request sent", counter_proposed: "Another time suggested", awaiting_payment: "Awaiting payment",
+  awaiting_verification: "Awaiting verification", refund_pending: "Refund pending",
+  confirmed: "Confirmed", completed: "Completed", cancelled: "Cancelled", rejected: "Declined",
+};
 const validId = (id) => typeof id === "string" && /^[a-f\d]{24}$/i.test(id);
-const displayDate = (value) => value ? new Date(value).toLocaleString("ro-RO", { dateStyle: "medium", timeStyle: "short" }) : "—";
+const displayDate = (value, locale) => value ? new Date(value).toLocaleString(locale === "en" ? "en-GB" : "ro-RO", { dateStyle: "medium", timeStyle: "short" }) : "—";
 const localDateTime = (value) => new Date(value - new Date(value).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
 function Payment({ viewingId, clientSecret, publishableKey, onPaid, onError }) {
+  const en = useRouter().locale === "en";
   const mountRef = useRef(null);
   const [stripeState, setStripeState] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -43,7 +49,7 @@ function Payment({ viewingId, clientSecret, publishableKey, onPaid, onError }) {
     try {
       const result = await stripeState.stripe.confirmPayment({
         elements: stripeState.elements,
-        confirmParams: { return_url: `${window.location.origin}/vizionari?paymentId=${viewingId}` },
+        confirmParams: { return_url: `${window.location.origin}${en ? "/en" : ""}/vizionari?paymentId=${viewingId}` },
         redirect: "if_required",
       });
       if (result.error) throw new Error(result.error.message);
@@ -51,12 +57,13 @@ function Payment({ viewingId, clientSecret, publishableKey, onPaid, onError }) {
     } catch (cause) { onError(cause.message); }
     finally { setBusy(false); }
   }
-  return <form className="mt-4" onSubmit={pay}><div ref={mountRef} /><button className="account-button mt-4" disabled={!stripeState || busy} type="submit">{busy ? "Se procesează..." : "Plătește vizionarea"}</button></form>;
+  return <form className="mt-4" onSubmit={pay}><div ref={mountRef} /><button className="account-button mt-4" disabled={!stripeState || busy} type="submit">{busy ? (en ? "Processing..." : "Se procesează...") : (en ? "Pay for viewing" : "Plătește vizionarea")}</button></form>;
 }
 
 export default function ViewingsPage() {
   const confirmAction = useConfirmAction();
   const router = useRouter();
+  const en = router.locale === "en";
   const [user, setUser] = useState(null);
   const [items, setItems] = useState([]);
   const [startsAt, setStartsAt] = useState("");
@@ -147,27 +154,27 @@ export default function ViewingsPage() {
   }
 
   return <>
-    <Head><title>Vizionări | PINLEND</title></Head>
+    <Head><title>{`${en ? "Viewings" : "Vizionări"} | PINLEND`}</title></Head>
     <AppHeader />
-    <main className="mx-auto max-w-5xl px-5 py-12 md:px-8"><p className="font-mono text-xs uppercase tracking-widest text-[#30578F]">Locuințe</p><h1 className="mt-3 font-display text-4xl font-extrabold">Vizionări</h1><p className="mt-3 text-[#626977]">Trimiți cererea gratuit. Dacă proprietarul o acceptă, achiți vizionarea aici.</p>
+    <main className="mx-auto max-w-5xl px-5 py-12 md:px-8"><p className="font-mono text-xs uppercase tracking-widest text-[#30578F]">{en ? "Homes" : "Locuințe"}</p><h1 className="mt-3 font-display text-4xl font-extrabold">{en ? "Viewings" : "Vizionări"}</h1><p className="mt-3 text-[#626977]">{en ? "Request a viewing for free. If the owner accepts, you can pay for it here." : "Trimiți cererea gratuit. Dacă proprietarul o acceptă, achiți vizionarea aici."}</p>
       
-      {validId(productId) && user && <form className="account-card mt-8" onSubmit={requestViewing}><h2 className="text-xl font-extrabold">Propune data și ora</h2><p className="mt-2 text-sm text-[#626977]">O singură cerere activă pentru acest anunț.</p><div className="mt-5 flex flex-wrap items-end gap-3"><RentalDateTimeField label="Vizionare" min={minimumStartAt} onChange={setStartsAt} value={startsAt} /><button className="account-button" disabled={busy === "new" || myActive} type="submit">{myActive ? "Vizionare în curs" : "Trimite cererea"}</button></div></form>}
+      {validId(productId) && user && <form className="account-card mt-8" onSubmit={requestViewing}><h2 className="text-xl font-extrabold">{en ? "Suggest a date and time" : "Propune data și ora"}</h2><p className="mt-2 text-sm text-[#626977]">{en ? "Only one active request per listing." : "O singură cerere activă pentru acest anunț."}</p><div className="mt-5 flex flex-wrap items-end gap-3"><RentalDateTimeField label={en ? "Viewing" : "Vizionare"} min={minimumStartAt} onChange={setStartsAt} value={startsAt} /><button className="account-button" disabled={busy === "new" || myActive} type="submit">{myActive ? (en ? "Viewing in progress" : "Vizionare în curs") : (en ? "Send request" : "Trimite cererea")}</button></div></form>}
       <div className="mt-8 space-y-4">{items.map((item) => {
         const mine = item.visitorId === (user?.id || user?._id);
-        return <article className="account-card" key={item._id}><div className="flex flex-wrap justify-between gap-3"><div><h2 className="text-lg font-extrabold">{item.productTitle}</h2><p className="mt-1 text-sm text-[#626977]">{mine ? "Cererea mea" : `De la ${item.visitorName}`} · {displayDate(item.startsAt)}</p></div><span className="h-fit rounded-full bg-[#E7F0FD] px-4 py-2 text-sm font-bold text-[#30578F]">{labels[item.status] || item.status}</span></div>
-          {item.status === "counter_proposed" && <p className="mt-4 text-sm">Proprietarul propune: <strong>{displayDate(item.proposedStartsAt)}</strong></p>}
+        return <article className="account-card" key={item._id}><div className="flex flex-wrap justify-between gap-3"><div><h2 className="text-lg font-extrabold">{item.productTitle}</h2><p className="mt-1 text-sm text-[#626977]">{mine ? (en ? "My request" : "Cererea mea") : `${en ? "From" : "De la"} ${item.visitorName}`} · {displayDate(item.startsAt, router.locale)}</p></div><span className="h-fit rounded-full bg-[#E7F0FD] px-4 py-2 text-sm font-bold text-[#30578F]">{(en ? englishLabels : labels)[item.status] || item.status}</span></div>
+          {item.status === "counter_proposed" && <p className="mt-4 text-sm">{en ? "Owner suggests" : "Proprietarul propune"}: <strong>{displayDate(item.proposedStartsAt, router.locale)}</strong></p>}
           <div className="mt-5 flex flex-wrap gap-2">
-            {!mine && item.status === "requested" && <><button className="account-button" disabled={busy === item._id} onClick={() => run("viewingAccept", item._id)} type="button">Acceptă</button><button className="account-button-light" disabled={busy === item._id} onClick={() => run("viewingReject", item._id)} type="button">Respinge</button></>}
-            {!mine && ["requested", "counter_proposed"].includes(item.status) && <div className="flex items-end gap-2"><RentalDateTimeField label="Altă propunere" onChange={(value) => setProposal({ ...proposal, [item._id]: value })} value={proposal[item._id] || ""} /><button className="account-button-light" disabled={busy === item._id || !proposal[item._id]} onClick={() => run("viewingPropose", item._id, { startsAt: new Date(proposal[item._id]).toISOString() })} type="button">Propune</button></div>}
-            {mine && item.status === "counter_proposed" && <><button className="account-button" onClick={() => run("viewingAcceptProposal", item._id)} type="button">Acceptă ora</button><button className="account-button-light" onClick={() => run("viewingDeclineProposal", item._id)} type="button">Refuză ora</button></>}
-            {mine && item.status === "awaiting_payment" && item.priceRon > 0 && <button className="account-button" onClick={() => startPayment(item)} type="button">Plătește {item.priceRon + (item.serviceFeeRon || 0)} RON</button>}
-            {item.status === "awaiting_verification" && <button className="account-button-light" onClick={() => verifyIdentity(item)} type="button">Verifică identitatea</button>}
-            {!mine && item.status === "confirmed" && new Date(item.startsAt) <= new Date() && <button className="account-button" onClick={() => run("viewingComplete", item._id)} type="button">Finalizează vizionarea</button>}
-            {["requested", "counter_proposed", "awaiting_payment", "confirmed", "awaiting_verification"].includes(item.status) && (!mine || item.status !== "confirmed" || item.priceRon === 0) && <button className="account-button-light" onClick={async () => { if (await confirmAction({ title: "Anulezi vizionarea?", description: "Cererea de vizionare va fi anulată.", confirmLabel: "Anulează vizionarea", destructive: true })) run("viewingCancel", item._id); }} type="button">Anulează</button>}
+            {!mine && item.status === "requested" && <><button className="account-button" disabled={busy === item._id} onClick={() => run("viewingAccept", item._id)} type="button">{en ? "Accept" : "Acceptă"}</button><button className="account-button-light" disabled={busy === item._id} onClick={() => run("viewingReject", item._id)} type="button">{en ? "Decline" : "Respinge"}</button></>}
+            {!mine && ["requested", "counter_proposed"].includes(item.status) && <div className="flex items-end gap-2"><RentalDateTimeField label={en ? "Another time" : "Altă propunere"} onChange={(value) => setProposal({ ...proposal, [item._id]: value })} value={proposal[item._id] || ""} /><button className="account-button-light" disabled={busy === item._id || !proposal[item._id]} onClick={() => run("viewingPropose", item._id, { startsAt: new Date(proposal[item._id]).toISOString() })} type="button">{en ? "Suggest" : "Propune"}</button></div>}
+            {mine && item.status === "counter_proposed" && <><button className="account-button" onClick={() => run("viewingAcceptProposal", item._id)} type="button">{en ? "Accept time" : "Acceptă ora"}</button><button className="account-button-light" onClick={() => run("viewingDeclineProposal", item._id)} type="button">{en ? "Decline time" : "Refuză ora"}</button></>}
+            {mine && item.status === "awaiting_payment" && item.priceRon > 0 && <button className="account-button" onClick={() => startPayment(item)} type="button">{en ? "Pay" : "Plătește"} {item.priceRon + (item.serviceFeeRon || 0)} RON</button>}
+            {item.status === "awaiting_verification" && <button className="account-button-light" onClick={() => verifyIdentity(item)} type="button">{en ? "Verify identity" : "Verifică identitatea"}</button>}
+            {!mine && item.status === "confirmed" && new Date(item.startsAt) <= new Date() && <button className="account-button" onClick={() => run("viewingComplete", item._id)} type="button">{en ? "Complete viewing" : "Finalizează vizionarea"}</button>}
+            {["requested", "counter_proposed", "awaiting_payment", "confirmed", "awaiting_verification"].includes(item.status) && (!mine || item.status !== "confirmed" || item.priceRon === 0) && <button className="account-button-light" onClick={async () => { if (await confirmAction({ title: en ? "Cancel this viewing?" : "Anulezi vizionarea?", description: en ? "The viewing request will be cancelled." : "Cererea de vizionare va fi anulată.", confirmLabel: en ? "Cancel viewing" : "Anulează vizionarea", destructive: true })) run("viewingCancel", item._id); }} type="button">{en ? "Cancel" : "Anulează"}</button>}
           </div>
           {payment?.viewingId === item._id && <Payment clientSecret={payment.clientSecret} onError={setError} onPaid={async (id) => { await run("viewingPaymentConfirmed", id); setPayment(null); }} publishableKey={payment.publishableKey} viewingId={item._id} />}
         </article>;
-      })}{user && items.length === 0 && <p className="account-card text-[#626977]">Nu ai vizionări încă.</p>}</div>
+      })}{user && items.length === 0 && <p className="account-card text-[#626977]">{en ? "You have no viewings yet." : "Nu ai vizionări încă."}</p>}</div>
     </main>
   </>;
 }
